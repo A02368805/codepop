@@ -37,9 +37,9 @@ Follow these instructions to set up the CodePop project on your machine.
    - Run the following commands to apply migrations and start the server:
      ```bash
      python manage.py migrate
-     python manage.py runserver <YOUR IP ADDRESS>
+     python manage.py runserver <YOUR IP ADDRESS:8000>
      ```
-   - **Note:** Each time you run the server, you will need to provide your IP address. This is necessary for the Android emulator to access the backend.
+   - **Note:** Each time you run the server, you will need to provide your IP address. This is necessary for the Android emulator to access the backend. you can find your ip address by using the ipconfig command in the terminal
 
 ## Frontend Setup
 
