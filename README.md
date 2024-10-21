@@ -53,6 +53,10 @@ Follow these instructions to set up the CodePop project on your machine.
 
 3. **Start the React Native App**
    - Navigate to the `codepop` directory and edit the base URL in `app.js` to match your IP address and port.
+   - Install dependancies by running the following command:
+      ```bash
+      npm install
+      ```
    - Run the following command to start the app:
      ```bash
      npm run android
@@ -60,5 +64,21 @@ Follow these instructions to set up the CodePop project on your machine.
 
 You should now see a terminal displaying logs from the backend and an Android emulator with the app running!
 
+## After Installation
+Once everything has been installed you should be able to run the code using the following commands
+- In the backend directory (codepop_backend) run the following:
+    ```bash
+    python manage.py migrate
+
+    python manage.py runserver <YOUR IP ADDRESS:8000>
+    ```
+- Start an android emulator in android studio
+
+- In the front end directory (codepop) run the following: 
+    ```bash
+    npm install
+
+    npm run android
+    ```
 ## Troubleshooting
-If you encounter any issues while setting up or running the application, feel free to reach out for help!
+If you encounter any issues while setting up or running the application, feel free to reach out to Wesley for help!
