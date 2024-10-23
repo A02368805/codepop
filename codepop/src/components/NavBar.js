@@ -1,4 +1,12 @@
 // src/components/NavBar.js
+/*
+colors:
+D30C7B - dark pink
+8DF1D3 - teal
+C6C8EE - purple
+F92758 - light pink
+FFA686 - peach
+ */
 
 import React from 'react';
 import { View, TouchableOpacity, Text, StyleSheet } from 'react-native';
