@@ -6,10 +6,10 @@ from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 from rest_framework.authtoken.views import ObtainAuthToken
 from rest_framework.authtoken.models import Token
-from rest_framework import status
+from rest_framework import status, viewsets
 from rest_framework.views import APIView
-from .models import Preference
-from .serializers import CreateUserSerializer, PreferenceSerializer
+from .models import Preference, Drink
+from .serializers import CreateUserSerializer, PreferenceSerializer,    DrinkSerializer
 from rest_framework.permissions import IsAuthenticated
 
 #Custom login to so that it get's a token but also the user's first name and the user id
@@ -53,19 +53,23 @@ class LogoutUserAPIView(APIView):
         request.user.auth_token.delete()
         return Response({"detail": "Successfully logged out."}, status=status.HTTP_200_OK)
     
-# List all preferences or create a new preference
-class PreferenceListCreateAPIView(ListCreateAPIView):
+class PreferencesOperations(viewsets.ModelViewSet):
     queryset = Preference.objects.all()
     serializer_class = PreferenceSerializer
 
-# Retrieve, update, or delete a specific preference by ID
-class PreferenceRetrieveUpdateDestroyAPIView(RetrieveUpdateDestroyAPIView):
-    queryset = Preference.objects.all()
-    serializer_class = PreferenceSerializer
-    lookup_field = 'pk'  # 'pk' refers to the primary key, which is PreferenceID
-    
-# List all preferences for a specific user
-class UserPreferenceListAPIView(ListAPIView):
+    def create(self, request, *args, **kwargs):
+        # Custom logic for creating a drink can go here
+        return super().create(request, *args, **kwargs)
+
+    def update(self, request, *args, **kwargs):
+        # Custom logic for updating a drink can go here
+        return super().update(request, *args, **kwargs)
+
+    def destroy(self, request, *args, **kwargs):
+        # Custom logic for deleting a drink can go here
+        return super().destroy(request, *args, **kwargs)
+
+class UserPreferenceLookup(ListAPIView):
     serializer_class = PreferenceSerializer
 
     # Override get_queryset to filter preferences by the provided UserID
@@ -74,3 +78,44 @@ class UserPreferenceListAPIView(ListAPIView):
         # Check if the user exists first, and raise a 404 if not
         user = get_object_or_404(User, pk=user_id)
         return Preference.objects.filter(UserID=user_id)
+    
+class DrinkOperations(viewsets.ModelViewSet):
+    queryset = Drink.objects.all()
+    serializer_class = DrinkSerializer
+
+    def get_queryset(self):
+        # Modify the basic GET request behavior so it only returns drinks not user created
+        return Drink.objects.filter(User_Created=False)
+
+    def get_permissions(self):
+        """
+        Instantiates and returns the list of permissions that this view requires.
+        Only authenticated users can create, update, or delete a drink.
+        """
+        if self.action in ['create', 'update', 'destroy']:
+            # Require authentication for create, update, and destroy actions
+            return [IsAuthenticated()]
+        return super().get_permissions()
+
+    def create(self, request, *args, **kwargs):
+        # Custom logic for creating a drink
+        return super().create(request, *args, **kwargs)
+
+    def update(self, request, *args, **kwargs):
+        # Custom logic for updating a drink
+        return super().update(request, *args, **kwargs)
+
+    def destroy(self, request, *args, **kwargs):
+        # Custom logic for deleting a drink
+        return super().destroy(request, *args, **kwargs)
+
+class UserDrinksLookup(ListAPIView):
+    serializer_class = DrinkSerializer
+    permission_classes = [IsAuthenticated]
+
+    # Override get_queryset to filter preferences by the provided UserID
+    def get_queryset(self):
+        user_id = self.kwargs['user_id']  # Retrieve the 'user_id' from the URL
+        # Check if the user exists first, and raise a 404 if not
+        user = get_object_or_404(User, pk=user_id)
+        return Drink.objects.filter(Favorite=user_id)

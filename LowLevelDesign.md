@@ -434,7 +434,7 @@ The CodePop interface is carefully designed to support both usability and access
 
 ## Database tables
 
-### User Table
+### User Table (Done with the built in django authentication)
 
 | Field Data | Data Type | Constraints |
 | :---- | :---- | :---- |
@@ -443,7 +443,6 @@ The CodePop interface is carefully designed to support both usability and access
 | Password | String |  |
 | Email | String (Email) |  |
 | UserRole | String | Default “Customer” |
-| FavoriteDrinks | List of Drink IDs | Default “Empty List” |
 
 ### Preference Table
 
@@ -470,11 +469,14 @@ The CodePop interface is carefully designed to support both usability and access
 | Field Data | Data Type | Constraints |
 | :---- | :---- | :---- |
 | DrinkID | int | Primary Key |
-| SyrupsUsed | List\[Strings\] |  |
-| SodaUsed | List\[Strings\] |  |
-| AddIns | List\[Strings\] |  |
+| Name | String | NONE |
+| SyrupsUsed | List\[Strings\] | None |
+| SodaUsed | List\[Strings\] | Required |
+| AddIns | List\[Strings\] |None |
 | Rating | double | Default NULL |
-| Price | double |  |
+| Price | double | Required |
+| User_Created | Boolean | Required|
+| Favorite | UserID | |
 
 ### Inventory Table
 
