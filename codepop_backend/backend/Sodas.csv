@@ -1,0 +1,20 @@
+index,name,type,calorie,best-match-flavors
+0,Mtn. Dew,citrus,full,fruit candy herbal
+1,Diet Mtn. Dew,citrus,diet,fruit candy herbal
+2,Dr. Pepper,cola,full,fruit dessert spice herbal
+3,Diet Dr. Pepper,cola,diet,fruit dessert spice herbal
+4,Dr. Pepper Zero,cola,diet,fruit dessert spice herbal
+5,Dr Pepper Cream Soda,cola,full,fruit dessert spice herbal
+6,Sprite,citrus,full,fruit candy
+7,Sprite Zero,citrus,diet,fruit candy
+8,Coke,cola,full,fruit dessert spice herbal
+9,Diet Coke,cola,diet,fruit dessert spice herbal
+10,Coke Zero,cola,diet,fruit dessert spice herbal
+11,Pepsi,cola,full,fruit dessert spice herbal
+12,Diet Pepsi,cola,diet,fruit dessert spice herbal
+13,Rootbeer,cola,full,fruit
+14,Fanta,fruit,full,fruit candy
+15,Big Red,fruit,full,fruit candy
+16,Powerade,energy,full,fruit
+17,Lemonade,citrus,full,fruit candy herbal
+18,Light Lemonade,citrus,diet,fruit candy herbal

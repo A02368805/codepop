@@ -1,6 +1,6 @@
 from django.contrib.auth import get_user_model
 from rest_framework import serializers
-from .models import Preference
+from .models import Preference, Drink
 
 
 class CreateUserSerializer(serializers.ModelSerializer):
@@ -54,3 +54,8 @@ class PreferenceSerializer(serializers.ModelSerializer):
 
         # Return the lowercase value for saving
         return value
+    
+class DrinkSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Drink
+        fields = '__all__'
