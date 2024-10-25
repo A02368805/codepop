@@ -25,7 +25,7 @@ class Drink(models.Model):
     Rating = models.FloatField(null=True, blank=True)
     Price = models.FloatField()
     User_Created = models.BooleanField()
-    Favorite = models.ForeignKey('auth.User', on_delete=models.CASCADE)
+    Favorite = models.ForeignKey('auth.User', on_delete=models.CASCADE, null=True, blank=True)
 
     def __str__(self):
         return self.Name

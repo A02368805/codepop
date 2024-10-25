@@ -33,10 +33,14 @@ Follow these instructions to set up the CodePop project on your machine.
      CREATE DATABASE codepop_database;
      ```
 
-5. **Run Migrations and Start the Server**
-   - Run the following commands to apply migrations and start the server:
+5. **Run Migrations, Populate Database and Start the Server**
+   - Navigate to the codepop_backend directory that contains the manage.py file
+   - Run the following script, this will clean the database and populate it with data to be used 
      ```bash
-     python manage.py migrate
+     ./clean_database.sh
+     ```
+   - Run the following command to start the server:
+     ```bash
      python manage.py runserver <YOUR IP ADDRESS:8000>
      ```
    - **Note:** Each time you run the server, you will need to provide your IP address. This is necessary for the Android emulator to access the backend. you can find your ip address by using the ipconfig command in the terminal
@@ -83,6 +87,18 @@ Once everything has been installed you should be able to run the code using the 
 ## Troubleshooting
 If you encounter any issues while setting up or running the application, feel free to reach out to Wesley for help!
 
+### Pulling Down Changes To The Backend
+The backend database can get into a not so happy state when you pull new changes down from the repo where it doesn't see migrations to be made and as of such won't create needed tables in the database.
+
+This can be solved as follows.
+
+1. Navagate to the codepop_backend directory that contains the manage.py file
+2. run the following command 
+```bash
+./clean_database.sh
+```
+3. WARNING THIS WILL CLEAR ALL THE DATA OUT OF YOUR DATABASE, if you have data that you don't want to lost don't run this command. 
+4. It should also be noted that this will not leave you with a blank database, it will populate it with our basic starting values.
 ## Running Backend Tests
 
 To run the backend tests for the project, follow these steps:
@@ -121,3 +137,44 @@ Finally, you can run your tests using the following command:
 python manage.py test
 ```
 This command will discover and run all tests defined in your project. It will provide output indicating which tests passed and which failed.
+
+## Basic Data Populated Into The Database
+These are the values that will appear in the database when you run the clean_database.sh file
+
+### Users
+| Username | Password | Email               | First Name | Last Name | Role |
+|----------|----------|---------------------|------------|-----------|----- |
+| super    | password | supertest@test.com  | Lemonjello | Smith     |Super |
+| test     | password | test@test.com       | Orangejello| Smith     |User  |
+| test2    | password | test@testing.com    | Bob        | Bobsford  |User  |
+
+
+### Drinks
+
+| Name                   | Syrups Used                                    | Soda Used  | Add-Ins                 | Price | User Created | Rating |
+|------------------------|------------------------------------------------|------------|-------------------------|-------|--------------|--------|
+| Coke Float              | Vanilla                                        | Coke       | Cream                   | 5.99  | False        | N/A    |
+| Seasonal Depression     | Cinnamon, Chocolate, Pumpkin Spice, Cucumber   | Rootbeer   | Candy Sprinkles          | 4.99  | False        | 0.0    |
+| I've Heard It Both Ways | Pineapple, Bubble Gum, Cotton Candy            | Dr. Pepper | Lime Wedge              | 2.50  | False        | N/A    |
+| Fall Girlie             | Pumpkin Spice, Salted Caramel                  | Dr. Pepper | Whip, Candy Sprinkles    | 2.50  | False        | N/A    |
+| Red Rizz                | Peach, Cranberry                              | Big Red    | Peach Puree             | 2.50  | False        | N/A    |
+| #Lemons                 | Huckleberry                                   | Lemonade   | None                    | 2.50  | False        | N/A    |
+
+### Preferences
+
+| User       | Preferences                 |
+|------------|-----------------------------|
+| user1      | mango, strawberry, mtn. dew |
+| user2      | peach, pumpkin_spice, dr. pepper |
+| super_user | pear, cherry, cupcake, rootbeer |
+
+### Inventory
+The inventory is populated with all of the Syrups, Soda's, add ins and physical items described in the low level design doc
+
+Each one of them has been given a random quatity between 50 and 100 that is currently left in the inventory 
+
+They have also been given a random empty threshold between 1 and 10
+
+This randomization is subject to change as we go further but for testing purposes it's good enough for right now. 
+
+
