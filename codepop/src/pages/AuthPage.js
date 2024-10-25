@@ -12,8 +12,8 @@ const AuthPage = ({ navigation }) => {
   const [message, setMessage] = useState('');
 
   const handleRegister = async () => {
-    // Registration logic...
-    console.log("Go To Registration Page...")
+    // Registration logic... Go to CreateAccountPage
+    navigation.navigate('CreateAccount');
   };
 
   const handleLogin = async () => {
