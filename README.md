@@ -82,3 +82,42 @@ Once everything has been installed you should be able to run the code using the 
     ```
 ## Troubleshooting
 If you encounter any issues while setting up or running the application, feel free to reach out to Wesley for help!
+
+## Running Backend Tests
+
+To run the backend tests for the project, follow these steps:
+
+1. **Navigate to the Backend Directory**
+
+Open your terminal or command prompt and navigate to the `codepop_backend` directory:
+
+```bash
+cd codepop_backend
+```
+
+2. **Make Migrations**
+
+Before running the tests, you need to ensure that all database migrations are up-to-date. Run the following command:
+
+```bash
+python manage.py makemigrations
+```
+
+This command will create new migration files based on the changes in your models.
+
+3. **Apply Migrations**
+
+Next, apply the migrations to the database by running:
+```bash
+python manage.py migrate
+```
+This command will apply all unapplied migrations to your database, ensuring it's in sync with your models.
+
+4. **Run Tests**
+
+Finally, you can run your tests using the following command:
+
+```bash
+python manage.py test
+```
+This command will discover and run all tests defined in your project. It will provide output indicating which tests passed and which failed.

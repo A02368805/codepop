@@ -3,6 +3,7 @@ from rest_framework.authtoken.views import obtain_auth_token
 from .views import CreateUserAPIView, LogoutUserAPIView, CustomAuthToken
 from .views import UserPreferenceLookup, PreferencesOperations
 from .views import DrinkOperations, UserDrinksLookup
+from .views import InventoryListAPIView, InventoryReportAPIView, InventoryUpdateAPIView
 
 #this ensures that the url calls the right function from the views for each type of request
 preferences_list = PreferencesOperations.as_view({
@@ -51,4 +52,9 @@ urlpatterns = [
 
     # Retrieve Drinks by UserID
     path('users/<int:user_id>/drinks/', UserDrinksLookup.as_view(), name='user_preferences_list'),
+
+
+    path('inventory/', InventoryListAPIView.as_view(), name='inventory_list'),
+    path('inventory/report/', InventoryReportAPIView.as_view(), name='inventory_report'),
+    path('inventory/<int:pk>/', InventoryUpdateAPIView.as_view(), name='inventory_update'),
 ]

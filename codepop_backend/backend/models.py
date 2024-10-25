@@ -29,3 +29,25 @@ class Drink(models.Model):
 
     def __str__(self):
         return self.Name
+    
+class Inventory(models.Model):
+    ITEM_TYPES = [
+        ('Soda', 'Soda'),
+        ('Syrup', 'Syrup'),
+        ('Add In', 'Add In'),
+        ('Physical', 'Physical'),
+    ]
+
+    InventoryID = models.AutoField(primary_key=True)
+    ItemName = models.CharField(max_length=100)
+    ItemType = models.CharField(max_length=50, choices=ITEM_TYPES)
+    Quantity = models.PositiveIntegerField()
+    ThresholdLevel = models.PositiveIntegerField()
+    LastUpdated = models.DateTimeField(auto_now=True)
+
+    def is_out_of_stock(self):
+        """Check if the item is out of stock (Quantity <= 0)."""
+        return self.Quantity <= 0
+
+    def __str__(self):
+        return f"{self.ItemName} - {self.ItemType} (Qty: {self.Quantity})"

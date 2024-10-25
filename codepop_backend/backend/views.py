@@ -1,15 +1,17 @@
 from django.contrib.auth import get_user_model
 from django.shortcuts import get_object_or_404
+from django.db.models import F
+from django.db import models
 from django.contrib.auth.models import User
-from rest_framework.generics import CreateAPIView, ListAPIView, ListCreateAPIView, RetrieveUpdateDestroyAPIView
+from rest_framework.generics import CreateAPIView, ListAPIView, ListCreateAPIView, RetrieveUpdateDestroyAPIView, RetrieveUpdateAPIView
 from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 from rest_framework.authtoken.views import ObtainAuthToken
 from rest_framework.authtoken.models import Token
 from rest_framework import status, viewsets
 from rest_framework.views import APIView
-from .models import Preference, Drink
-from .serializers import CreateUserSerializer, PreferenceSerializer,    DrinkSerializer
+from .models import Preference, Drink, Inventory
+from .serializers import CreateUserSerializer, PreferenceSerializer, DrinkSerializer, InventorySerializer
 from rest_framework.permissions import IsAuthenticated
 
 #Custom login to so that it get's a token but also the user's first name and the user id
@@ -119,3 +121,76 @@ class UserDrinksLookup(ListAPIView):
         # Check if the user exists first, and raise a 404 if not
         user = get_object_or_404(User, pk=user_id)
         return Drink.objects.filter(Favorite=user_id)
+
+
+class InventoryListAPIView(ListAPIView):
+    """List all items that are not out of stock."""
+    queryset = Inventory.objects.filter(Quantity__gt=0)
+    serializer_class = InventorySerializer
+
+class InventoryReportAPIView(APIView):
+    """Generate an inventory report."""
+    def get(self, request):
+        inventory = Inventory.objects.all()
+        report_data = {
+            'inventory_items': [
+                {
+                    'InventoryID': item.InventoryID,
+                    'ItemName': item.ItemName,
+                    'Quantity': item.Quantity,
+                    'ThresholdLevel': item.ThresholdLevel,
+                }
+                for item in inventory
+            ],
+            'total_items': inventory.count(),
+            'out_of_stock': inventory.filter(Quantity=0).count(),
+            'below_threshold': inventory.filter(Quantity__lte=models.F('ThresholdLevel')).count(),
+        }
+        return Response(report_data, status=status.HTTP_200_OK)
+
+class InventoryUpdateAPIView(RetrieveUpdateAPIView):
+    """Update inventory based on what was ordered, with warnings for empty or low stock."""
+    queryset = Inventory.objects.all()
+    serializer_class = InventorySerializer
+
+    def patch(self, request, *args, **kwargs):
+        item = self.get_object()  # Retrieve the specific item based on ID
+        used_quantity = request.data.get('used_quantity')
+
+        # Validate the used quantity
+        if used_quantity is None or int(used_quantity) <= 0:
+            return Response(
+                {"detail": "Invalid used quantity."}, 
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        # Check if the item is already out of stock
+        if item.Quantity == 0:
+            return Response(
+                {"detail": f"'{item.ItemName}' is already out of stock."}, 
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        # Check if the order quantity exceeds available stock
+        if item.Quantity < int(used_quantity):
+            return Response(
+                {"detail": f"Not enough stock available for '{item.ItemName}'."}, 
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        # Subtract the used quantity from the current stock
+        item.Quantity -= int(used_quantity)
+        item.save()
+
+        # Generate a warning if stock falls below the threshold level
+        warning = None
+        if item.Quantity <= item.ThresholdLevel:
+            warning = f"'{item.ItemName}' stock is below the threshold level."
+
+        # Prepare the response data
+        response_data = self.get_serializer(item).data
+        if warning:
+            response_data['warning'] = warning
+
+        return Response(response_data, status=status.HTTP_200_OK)
+    
