@@ -3,7 +3,7 @@ from django.contrib.auth.models import User
 from rest_framework.test import APIClient
 from rest_framework import status
 from rest_framework.authtoken.models import Token  # Import for token authentication
-from .models import Preference, Drink, Inventory
+from .models import Preference, Drink, Inventory, Order
 
 class PreferenceTests(TestCase):
     def setUp(self):
@@ -418,3 +418,227 @@ class InventoryTests(TestCase):
         # Verify the quantity is updated correctly
         coke.refresh_from_db()  # Refresh the object from the database
         self.assertEqual(coke.Quantity, initial_quantity - 2)  # Check if 2 is subtracted
+
+class OrderTests(TestCase):
+    def setUp(self):
+        # Create two test users
+        self.user1 = User.objects.create_user(username='user1', password='password123')
+        self.user2 = User.objects.create_user(username='user2', password='password123')
+
+        # Create tokens for both users
+        self.token1 = Token.objects.create(user=self.user1)
+        self.token2 = Token.objects.create(user=self.user2)
+
+        # Create sample drinks
+        self.drink1 = Drink.objects.create(Name="Cola Vanilla", SodaUsed=["Cola"], SyrupsUsed=["Vanilla"], User_Created=False, Price=1.99)
+        self.drink2 = Drink.objects.create(Name="Lemonade Mint", SodaUsed=["Lemonade"], AddIns=["Mint"], User_Created=False, Price=2.50)
+
+        # Set up the API client
+        self.client = APIClient()
+
+    def authenticate(self, token):
+        """Helper method to set up token authentication"""
+        self.client.credentials(HTTP_AUTHORIZATION='Token ' + token)
+
+    def test_create_order(self):
+        """Test creating a new order for user1"""
+        self.authenticate(self.token1.key)
+
+        data = {
+            "UserID": self.user1.id,
+            "Drinks": [self.drink1.DrinkID, self.drink2.DrinkID],  # Include drink IDs
+            "OrderStatus": "pending",
+            "PaymentStatus": "pending",
+        }
+
+        response = self.client.post('/backend/orders/', data, format='json')
+
+        # Check that the response status code is 201 Created
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+
+        # Verify that the order was created
+        self.assertEqual(Order.objects.count(), 1)
+        order = Order.objects.first()
+        self.assertEqual(order.UserID, self.user1)
+        self.assertEqual(list(order.Drinks.values_list('DrinkID', flat=True)), [self.drink1.DrinkID, self.drink2.DrinkID])
+
+    def test_get_all_orders(self):
+        """Test retrieving a list of all orders."""
+        self.authenticate(self.token1.key)  # Authenticate the user
+
+        # Create two orders for user1
+        order1 = Order.objects.create(UserID=self.user1, OrderStatus="pending", PaymentStatus="pending")
+        order2 = Order.objects.create(UserID=self.user1, OrderStatus="completed", PaymentStatus="paid")
+        
+        # Assign drinks to the orders
+        order1.Drinks.set([self.drink1])  # Assign drink1 to order1
+        order2.Drinks.set([self.drink2])  # Assign drink2 to order2
+
+        # Make a GET request to retrieve all orders
+        response = self.client.get('/backend/orders/')
+
+        # Check that the response status code is 200 OK
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        # Verify that the number of orders returned matches the number created
+        self.assertEqual(len(response.data), 2)  # Should return both orders
+
+        # Verify the content of the returned data
+        order_ids = [order['OrderID'] for order in response.data]
+        self.assertIn(order1.OrderID, order_ids)  # Check if order1 is in the response
+        self.assertIn(order2.OrderID, order_ids)  # Check if order2 is in the response
+
+    def test_get_order(self):
+        """Test retrieving an order"""
+        self.authenticate(self.token1.key)
+
+        # Create an order first
+        order = Order.objects.create(UserID=self.user1, OrderStatus="pending", PaymentStatus="pending")
+        order.Drinks.add(self.drink1)
+
+        response = self.client.get(f'/backend/orders/{order.OrderID}/')
+
+        # Check that the response status code is 200 OK
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        # Verify the returned order data
+        self.assertEqual(response.data['OrderID'], order.OrderID)
+        self.assertEqual(response.data['UserID'], self.user1.id)
+
+    def test_get_orders_for_user(self):
+        """Test retrieving orders for a specific user"""
+        self.authenticate(self.token1.key)
+
+        # Create two orders for user1 and assign drinks
+        order1 = Order.objects.create(UserID=self.user1, OrderStatus="pending", PaymentStatus="pending")
+        order1.Drinks.set([self.drink1, self.drink2])  # Assign drinks to the order
+
+        order2 = Order.objects.create(UserID=self.user1, OrderStatus="completed", PaymentStatus="paid")
+        order2.Drinks.set([self.drink1])  # Assign only one drink to this order
+
+        response = self.client.get(f'/backend/users/{self.user1.id}/orders/')
+
+        # Check that the response status code is 200 OK
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        # Verify the number of orders returned
+        self.assertEqual(len(response.data), 2)
+
+        # Verify the content of the returned data (optional but helpful)
+        order_ids = [order['OrderID'] for order in response.data]
+        self.assertIn(order1.OrderID, order_ids)
+        self.assertIn(order2.OrderID, order_ids)
+
+
+    def test_delete_order(self):
+        """Test deleting an order"""
+        self.authenticate(self.token1.key)
+
+        # Create an order first
+        order = Order.objects.create(UserID=self.user1, OrderStatus="pending", PaymentStatus="pending")
+        order.Drinks.add(self.drink1)
+
+        response = self.client.delete(f'/backend/orders/{order.OrderID}/')
+
+        # Check that the response status code is 204 No Content
+        self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
+
+        # Verify that the order has been deleted from the database
+        self.assertEqual(Order.objects.filter(OrderID=order.OrderID).count(), 0)
+
+    def test_create_order_without_auth(self):
+        """Test creating an order without authentication"""
+        data = {
+            "UserID": self.user1.id,
+            "Drinks": [self.drink1.DrinkID],
+            "OrderStatus": "pending",
+            "PaymentStatus": "pending",
+        }
+
+        response = self.client.post('/backend/orders/', data, format='json')
+
+        # Expect a 401 Unauthorized response
+        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
+
+    def test_create_order_with_invalid_drink(self):
+        """Test creating an order with a non-existent drink ID."""
+        self.authenticate(self.token1.key)
+
+        data = {
+            "UserID": self.user1.id,
+            "Drinks": [999],  # Invalid drink ID
+            "OrderStatus": "pending",
+            "PaymentStatus": "pending",
+        }
+
+        response = self.client.post('/backend/orders/', data, format='json')
+
+        # Expect a 400 Bad Request response
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+        # Adjust the error message assertion based on the actual API response
+        self.assertIn("invalid pk", str(response.data).lower())
+        self.assertIn("does not exist", str(response.data).lower())
+
+    def test_create_order_and_add_drink(self):
+        """Test creating an order with one drink, then adding another drink."""
+        self.authenticate(self.token1.key)
+
+        # Create an initial order with one drink
+        initial_data = {
+            "UserID": self.user1.id,
+            "Drinks": [self.drink1.DrinkID],  # Assuming drink1 exists
+            "OrderStatus": "pending",
+            "PaymentStatus": "pending",
+        }
+        
+        response = self.client.post('/backend/orders/', initial_data, format='json')
+
+        # Check if the order was created successfully
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        order_id = response.data['OrderID']  # Assuming the order response contains an 'OrderID'
+
+        # Now add another drink to the created order
+        add_drink_data = {
+            "AddDrinks": [self.drink2.DrinkID]  # Assuming drink2 exists
+        }
+        
+        # Use the appropriate endpoint to add drinks with PATCH
+        response = self.client.patch(f'/backend/orders/{order_id}/', add_drink_data, format='json')  # Updated to PATCH
+
+        # Check if the drink was added successfully
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertIn(self.drink2.DrinkID, response.data['Drinks'])  # Check if drink2 is now in the order
+
+
+    def test_add_two_drinks_and_delete_one(self):
+        """Test adding two drinks to an order, then deleting one of the drinks."""
+        self.authenticate(self.token1.key)
+
+        # Create an order with two drinks
+        initial_data = {
+            "UserID": self.user1.id,
+            "Drinks": [self.drink1.DrinkID, self.drink2.DrinkID],  # Use "AddDrinks" to match the view
+            "OrderStatus": "pending",
+            "PaymentStatus": "pending",
+        }
+        
+        response = self.client.post('/backend/orders/', initial_data, format='json')
+        
+        # Check if the order was created successfully
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        order_id = response.data['OrderID']  # Assuming the order response contains an 'id'
+
+        # Now delete one of the drinks from the order
+        delete_drink_data = {
+            "RemoveDrinks": [self.drink1.DrinkID]  # Use "RemoveDrinks" to match the view
+        }
+        
+        response = self.client.patch(f'/backend/orders/{order_id}/', delete_drink_data, format='json')
+        
+        # Check if drink1 was removed successfully
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertNotIn(self.drink1.DrinkID, response.data['Drinks'])  # Ensure drink1 is no longer in the order
+        self.assertIn(self.drink2.DrinkID, response.data['Drinks'])  # Ensure drink2 is still in the order
+
+    
