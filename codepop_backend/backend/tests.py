@@ -3,7 +3,9 @@ from django.contrib.auth.models import User
 from rest_framework.test import APIClient
 from rest_framework import status
 from rest_framework.authtoken.models import Token  # Import for token authentication
-from .models import Preference, Drink, Inventory
+from .models import Preference, Drink, Inventory, Notification
+from django.utils import timezone
+from datetime import timedelta
 
 class PreferenceTests(TestCase):
     def setUp(self):
@@ -269,7 +271,6 @@ class DrinkTests(TestCase):
         self.assertIn("Lemonade Mint", drink_names)
         self.assertIn("Custom Cherry Soda", drink_names)
 
-
 class InventoryTests(TestCase):
     def setUp(self):
         # Create two test users
@@ -418,3 +419,151 @@ class InventoryTests(TestCase):
         # Verify the quantity is updated correctly
         coke.refresh_from_db()  # Refresh the object from the database
         self.assertEqual(coke.Quantity, initial_quantity - 2)  # Check if 2 is subtracted
+
+class NotificationTests(TestCase):
+    def setUp(self):
+        # Create test users and tokens
+        self.user1 = User.objects.create_user(username='user1', password='password123')
+        self.user2 = User.objects.create_user(username='user2', password='password123')
+        self.token1 = Token.objects.create(user=self.user1)
+        self.token2 = Token.objects.create(user=self.user2)
+        self.client = APIClient()
+
+        # Create sample notifications for each user
+        self.notification1 = Notification.objects.create(
+            UserID=self.user1,
+            Message="Test notification for user1",
+            Timestamp=timezone.now() - timedelta(days=2),
+            Type="info"
+        )
+        self.notification2 = Notification.objects.create(
+            UserID=self.user1,
+            Message="Another notification for user1",
+            Timestamp=timezone.now() - timedelta(hours=5),
+            Type="alert"
+        )
+        self.notification3 = Notification.objects.create(
+            UserID=self.user2,
+            Message="Notification for user2",
+            Timestamp=timezone.now() - timedelta(hours=1),
+            Type="reminder"
+        )
+
+    def authenticate(self, token):
+        """Helper function to set the token for authentication."""
+        self.client.credentials(HTTP_AUTHORIZATION='Token ' + token)
+
+    def test_list_notifications(self):
+        """Test that authenticated users can list their notifications."""
+        self.authenticate(self.token1.key)
+        response = self.client.get('/backend/notifications/')
+
+        # Check if the response is 200 OK and contains only user1's notifications
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(len(response.data), 2)  # Only 2 notifications for user1
+        for notification in response.data:
+            self.assertEqual(notification['UserID'], self.user1.id)
+
+    def test_retrieve_notification(self):
+        """Test retrieving a specific notification by its ID."""
+        self.authenticate(self.token1.key)
+        response = self.client.get(f'/backend/notifications/{self.notification1.NotificationID}/')
+
+        # Check if the response is 200 OK and data matches notification1
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data['Message'], "Test notification for user1")
+        self.assertEqual(response.data['UserID'], self.user1.id)
+
+    def test_create_notification(self):
+        """Test creating a new notification."""
+        self.authenticate(self.token1.key)
+        data = {
+            "UserID": self.user1.id,
+            "Message": "New notification for user1",
+            "Timestamp": timezone.now().isoformat(),
+            "Type": "alert"
+        }
+        response = self.client.post('/backend/notifications/', data, format='json')
+
+        # Check if the response is 201 Created and the notification is created correctly
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        self.assertEqual(Notification.objects.count(), 4)
+        new_notification = Notification.objects.get(Message="New notification for user1")
+        self.assertEqual(new_notification.UserID, self.user1)
+
+    def test_update_notification(self):
+        """Test updating an existing notification."""
+        self.authenticate(self.token1.key)
+        data = {"Message": "Updated message for notification1", "Type": "info"}
+        response = self.client.put(f'/backend/notifications/{self.notification1.NotificationID}/', data, format='json')
+
+        # Check if the response is 200 OK and the message is updated
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.notification1.refresh_from_db()
+        self.assertEqual(self.notification1.Message, "Updated message for notification1")
+
+    def test_delete_notification(self):
+        """Test deleting a notification."""
+        self.authenticate(self.token1.key)
+        response = self.client.delete(f'/backend/notifications/{self.notification1.NotificationID}/')
+
+        # Check if the response is 204 No Content and notification1 is deleted
+        self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
+        self.assertEqual(Notification.objects.filter(NotificationID=self.notification1.NotificationID).count(), 0)
+
+    def test_filter_notifications_by_time_range(self):
+        """Test filtering notifications by a specific time range."""
+        self.authenticate(self.token1.key)
+        start = (timezone.now() - timedelta(days=1)).isoformat()  # 1 day ago
+        end = timezone.now().isoformat()  # Current time
+
+        response = self.client.get(f'/backend/notifications/filter_by_time/?start={start}&end={end}')
+        
+        # Check if the response is 200 OK and only includes notifications within the range
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(len(response.data), 1)  # Only one notification for user1 within this time range
+        self.assertEqual(response.data[0]['Message'], "Another notification for user1")
+
+    def test_create_notification_without_auth(self):
+        """Test creating a notification without authentication (should fail)."""
+        data = {
+            "UserID": self.user1.id,
+            "Message": "Unauthenticated notification",
+            "Timestamp": timezone.now().isoformat(),
+            "Type": "alert"
+        }
+        response = self.client.post('/backend/notifications/', data, format='json')
+        
+        # Check if the response is 401 Unauthorized
+        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
+
+    def test_access_notification_of_another_user(self):
+        """Test that a user cannot access another user's notification."""
+        self.authenticate(self.token1.key)
+        response = self.client.get(f'/backend/notifications/{self.notification3.NotificationID}/')
+
+        # Check if the response is 404 Not Found (user1 should not access user2's notification)
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+
+    def test_sort_notifications_by_user(self):
+        """Test that only the notifications for a specific user are returned."""
+        # Authenticate and request notifications for user1
+        self.authenticate(self.token1.key)
+        response = self.client.get(f'/backend/users/{self.user1.id}/notifications/')
+
+        # Check that the response status code is 200 OK
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        
+        # Verify that only notifications for user1 are returned
+        self.assertEqual(len(response.data), 2)
+        for notification in response.data:
+            self.assertEqual(notification['UserID'], self.user1.id)
+
+        # Repeat for user2 to verify isolation of notifications per user
+        self.authenticate(self.token2.key)
+        response = self.client.get(f'/backend/users/{self.user2.id}/notifications/')
+        
+        # Check response and count for user2
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(len(response.data), 1)  # Only one notification for user2
+        self.assertEqual(response.data[0]['UserID'], self.user2.id)

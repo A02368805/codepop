@@ -1,6 +1,6 @@
 from django.contrib.auth import get_user_model
 from rest_framework import serializers
-from .models import Preference, Drink, Inventory
+from .models import Preference, Drink, Inventory, Notification
 
 
 class CreateUserSerializer(serializers.ModelSerializer):
@@ -67,3 +67,8 @@ class InventorySerializer(serializers.ModelSerializer):
             'InventoryID', 'ItemName', 'ItemType', 
             'Quantity', 'ThresholdLevel', 'LastUpdated'
         ]
+
+class NotificationSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Notification
+        fields = '__all__'

@@ -51,3 +51,13 @@ class Inventory(models.Model):
 
     def __str__(self):
         return f"{self.ItemName} - {self.ItemType} (Qty: {self.Quantity})"
+
+class Notification(models.Model):
+    NotificationID = models.AutoField(primary_key=True)
+    UserID = models.ForeignKey(User, on_delete=models.CASCADE, related_name='notifications')
+    Message = models.CharField(max_length=500)  # Adjust max_length as needed
+    Timestamp = models.DateTimeField(auto_now_add=True)  # Sets timestamp to the creation date/time
+    Type = models.CharField(max_length=50)  # Adjust max_length as needed
+
+    def __str__(self):
+        return f"Notification for {self.UserID.username}: {self.Message[:50]}"

@@ -10,9 +10,11 @@ from rest_framework.authtoken.views import ObtainAuthToken
 from rest_framework.authtoken.models import Token
 from rest_framework import status, viewsets
 from rest_framework.views import APIView
-from .models import Preference, Drink, Inventory
-from .serializers import CreateUserSerializer, PreferenceSerializer, DrinkSerializer, InventorySerializer
+from .models import Preference, Drink, Inventory, Notification
+from .serializers import CreateUserSerializer, PreferenceSerializer, DrinkSerializer, InventorySerializer, NotificationSerializer
 from rest_framework.permissions import IsAuthenticated
+from rest_framework.decorators import action
+from django.utils.dateparse import parse_datetime
 
 #Custom login to so that it get's a token but also the user's first name and the user id
 class CustomAuthToken(ObtainAuthToken):
@@ -194,3 +196,53 @@ class InventoryUpdateAPIView(RetrieveUpdateAPIView):
 
         return Response(response_data, status=status.HTTP_200_OK)
     
+class NotificationOperations(viewsets.ModelViewSet):
+    queryset = Notification.objects.all()
+    serializer_class = NotificationSerializer
+
+    def create(self, request, *args, **kwargs):
+        # Custom logic for creating a drink can go here
+        return super().create(request, *args, **kwargs)
+
+    def update(self, request, *args, **kwargs):
+        # Custom logic for updating a drink can go here
+        return super().update(request, *args, **kwargs)
+
+    def destroy(self, request, *args, **kwargs):
+        # Custom logic for deleting a drink can go here
+        return super().destroy(request, *args, **kwargs)
+    
+    def filter_by_time(self, request):
+        """
+        Custom endpoint to filter notifications within a specific time range.
+        Accepts 'start' and 'end' parameters in ISO 8601 format.
+        """
+        start = request.query_params.get('start')
+        end = request.query_params.get('end')
+
+        # Parse start and end times
+        start_time = parse_datetime(start) if start else None
+        end_time = parse_datetime(end) if end else None
+
+        # Validate parameters
+        if not start_time or not end_time:
+            return Response(
+                {"error": "Both 'start' and 'end' parameters are required in ISO 8601 format."},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        # Filter notifications by time range
+        notifications = Notification.objects.filter(Timestamp__range=(start_time, end_time))
+        serializer = self.get_serializer(notifications, many=True)
+        return Response(serializer.data)
+    
+class UserNotificationLookup(ListAPIView):
+    serializer_class = NotificationSerializer
+    permission_classes = []
+
+    # Override get_queryset to filter preferences by the provided UserID
+    def get_queryset(self):
+        user_id = self.kwargs['user_id']  # Retrieve the 'user_id' from the URL
+        # Check if the user exists first, and raise a 404 if not
+        user = get_object_or_404(User, pk=user_id)
+        return Notification.objects.filter(userID=user_id)

@@ -4,6 +4,7 @@ from .views import CreateUserAPIView, LogoutUserAPIView, CustomAuthToken
 from .views import UserPreferenceLookup, PreferencesOperations
 from .views import DrinkOperations, UserDrinksLookup
 from .views import InventoryListAPIView, InventoryReportAPIView, InventoryUpdateAPIView
+from .views import NotificationOperations, UserNotificationLookup
 
 #this ensures that the url calls the right function from the views for each type of request
 preferences_list = PreferencesOperations.as_view({
@@ -28,6 +29,18 @@ drink_detail = DrinkOperations.as_view({
     'delete': 'destroy'
 })
 
+notification_list = NotificationOperations.as_view({
+    'get': 'list',
+    'post': 'create'
+})
+
+notification_detail = NotificationOperations.as_view({
+    'get': 'retrieve',
+    'put': 'update',
+    'delete': 'destroy'
+})
+
+notification_filter_by_time = NotificationOperations.as_view({'get': 'filter_by_time'})
 
 
 urlpatterns = [
@@ -51,10 +64,22 @@ urlpatterns = [
     path('drinks/<int:pk>/', drink_detail, name='drink operations'),
 
     # Retrieve Drinks by UserID
-    path('users/<int:user_id>/drinks/', UserDrinksLookup.as_view(), name='user_preferences_list'),
+    path('users/<int:user_id>/drinks/', UserDrinksLookup.as_view(), name='user drink list'),
 
-
+    #inventory related URLs
     path('inventory/', InventoryListAPIView.as_view(), name='inventory_list'),
     path('inventory/report/', InventoryReportAPIView.as_view(), name='inventory_report'),
     path('inventory/<int:pk>/', InventoryUpdateAPIView.as_view(), name='inventory_update'),
+
+    # Notification related URLs
+    path('notifications/', notification_list, name='notification list and create'),
+    path('notifications/<int:pk>/', notification_detail, name='notification operations'),
+
+    # Retrieve notifications by UserID
+    path('users/<int:user_id>/notifications/', UserNotificationLookup.as_view(), name='user notifications list'),
+    
+     # Custom time-based notification filter
+     # the get request sent in this format /notifications/filter_by_time/?start=2023-10-21T12:00:00Z&end=2023-10-21T18:00:00Z
+     # the date should be in ISO 8601 format
+    path('notifications/filter_by_time/', notification_filter_by_time, name='notification filter by time'),
 ]
