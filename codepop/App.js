@@ -7,6 +7,8 @@ import CartPage from './src/pages/CartPage';
 import CreateDrinkPage from './src/pages/CreateDrinkPage';
 import PreferencesPage from './src/pages/PreferencesPage';
 import GeneralHomePage from './src/pages/GeneralHomePage';
+import CompletePage from './src/pages/CompletePage';
+import CheckoutForm from './src/pages/CheckoutForm';
 
 const Stack = createNativeStackNavigator();
 
@@ -43,6 +45,16 @@ const App = () => {
           name="GeneralHome"
           component={GeneralHomePage}
           options={{ title: 'General Home' }}
+        />
+        <Stack.Screen
+          name="Complete"
+          component={CompletePage}
+          options={{ title: 'Complete' }}
+        />
+        <Stack.Screen
+          name="Checkout"
+          component={CheckoutForm}
+          options={{ title: 'Checkout Form' }}
         />
       </Stack.Navigator>
     </NavigationContainer>
