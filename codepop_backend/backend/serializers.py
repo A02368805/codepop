@@ -1,6 +1,6 @@
 from django.contrib.auth import get_user_model
 from rest_framework import serializers
-from .models import Preference, Drink, Inventory, Order
+from .models import Preference, Drink, Inventory, Order, Notification
 
 
 class CreateUserSerializer(serializers.ModelSerializer):
@@ -60,6 +60,29 @@ class DrinkSerializer(serializers.ModelSerializer):
         model = Drink
         fields = '__all__'
 
+    def validate_Size(self, value):
+        value = value.lower()
+
+        allowed_size = ['16oz', '24oz','32oz']
+
+        if value not in allowed_size:
+            raise serializers.ValidationError(f"{value} is not a valid drink size. Allowed sizes are: {allowed_size}")
+        
+        return value
+    
+    def validate_Ice(self, value):
+        value = value.lower()
+
+        if value == "no ice":
+            value = 'none'
+
+        allowed_ice = ['none', 'light', 'regular', 'extra']
+
+        if value not in allowed_ice:
+            raise serializers.ValidationError(f"{value} is not a valid ice amount. Allowed amounts are: {allowed_ice}")
+
+        return value
+
 class InventorySerializer(serializers.ModelSerializer):
     class Meta:
         model = Inventory
@@ -68,6 +91,10 @@ class InventorySerializer(serializers.ModelSerializer):
             'Quantity', 'ThresholdLevel', 'LastUpdated'
         ]
 
+class NotificationSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Notification
+        fields = '__all__'
 
 class OrderSerializer(serializers.ModelSerializer):
     Drinks = serializers.PrimaryKeyRelatedField(many=True, queryset=Drink.objects.all())

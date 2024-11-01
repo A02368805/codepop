@@ -5,11 +5,65 @@ Follow these instructions to set up the CodePop project on your machine.
 ## Backend Setup
 
 1. **Install Dependencies**
-   - Navigate to the base directory of your project and run the following command:
+   - Navigate to the base directory of your project and run the following command to create the virtual enviroment for the backend
+      ```bash
+      python -m venv codepop_virtual_enviroment  
+      ``` 
+   - This will create a folder in the root directory titled codepop_virtual_enviroment
+   - This command activates the virtual enviroment(Note this must be run in either git bash or in a bash shell, i.e. mac terminal):
      ```bash
-     pip install -r requirements.txt
+     #WINDOWS command using git bash
+     source codepop_virtual_enviroment/Scripts/activate
+     #Mac and Linux version
+     source codepop_virtual_enviroment/bin/activate
      ```
+    - run the following command once the virtual enviroment has been activated to install dependencies
+      ```bash
+      python -m pip install -r requirements.txt
+      ```
+   - Run the following command to confirm you have the proper dependencies installed 
+      ```bash
+      python -m pip list
+      ```
+   - your output should look like the following
+      ```bash
+      Package             Version
+      ------------------- -----------
+      asgiref             3.8.1
+      Django              5.1.2
+      django-cors-headers 4.4.0
+      djangorestframework 3.15.2
+      joblib              1.4.2
+      numpy               2.1.2
+      pandas              2.2.3
+      pip                 22.2.1
+      psycopg2            2.9.9
+      python-dateutil     2.9.0.post0
+      pytz                2024.2
+      scikit-learn        1.5.2
+      scipy               1.14.1
+      setuptools          63.2.0
+      six                 1.16.0
+      sqlparse            0.5.1
+      threadpoolctl       3.5.0
+      typing_extensions   4.12.2
+      tzdata              2024.2
+      ```
+    - to deactivate the virtual enviroment run the following command
+      ```bash
+      deactivate
+      ```
+    - if you need to add a package to the virtual enviroment simply use the following command
+      ```bash
+      python -m pip install <name of package>
+      ```
+    - then update the requirements.txt file by doing the following (while you are in the root directory of this project)
+      ```bash
+      python -m pip freeze > requirements.txt
+      ```
+    - also please update what the expected output for the python -m pip list when you add new packages
 
+    - git ignores the virtual enviroment directory but not the requirements.txt file. This is because the requirements.txt will be used by all developers to ensure proper dependancies are installed. So be sure to push your requirements.txt file when you make changes
 2. **Download and Install PostgreSQL**
    - Download PostgreSQL from the following link:
      [PostgreSQL Downloads](https://www.enterprisedb.com/downloads/postgres-postgresql-downloads)
@@ -56,7 +110,7 @@ Follow these instructions to set up the CodePop project on your machine.
      [Android Studio Downloads](https://developer.android.com/studio)
 
 3. **Start the React Native App**
-   - Navigate to the `codepop` directory and edit the base URL in `app.js` to match your IP address and port.
+   - Navigate to the `codepop` directory and edit the base URL in `ip_address.js` to match your IP address and port.
    - Install dependancies by running the following command:
       ```bash
       npm install

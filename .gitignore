@@ -6,4 +6,6 @@
 **/migrations/*
 !**/migrations/__init__.py
 
+codepop_virtual_enviroment
+
 .idea

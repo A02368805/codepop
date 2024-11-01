@@ -1,6 +1,7 @@
 from django.db import models
 from django.contrib.auth.models import User
 from django.contrib.postgres.fields import ArrayField
+from django.utils import timezone
 
 class Preference(models.Model):
     # Primary key will be automatically created as 'id' unless you specify otherwise
@@ -24,6 +25,8 @@ class Drink(models.Model):
     AddIns = ArrayField(models.CharField(max_length=255), blank=True, null=True)
     Rating = models.FloatField(null=True, blank=True)
     Price = models.FloatField()
+    Size = models.CharField(default="m")
+    Ice = models.CharField(default="normal")
     User_Created = models.BooleanField()
     Favorite = models.ForeignKey('auth.User', on_delete=models.CASCADE, null=True, blank=True)
 
@@ -51,6 +54,17 @@ class Inventory(models.Model):
 
     def __str__(self):
         return f"{self.ItemName} - {self.ItemType} (Qty: {self.Quantity})"
+
+class Notification(models.Model):
+    NotificationID = models.AutoField(primary_key=True)
+    UserID = models.ForeignKey(User, on_delete=models.CASCADE, related_name='notifications')
+    Message = models.CharField(max_length=500)  # Adjust max_length as needed
+    Timestamp = models.DateTimeField(default=timezone.now)  # Sets timestamp to the creation date/time
+    Type = models.CharField(max_length=50)  # Adjust max_length as needed
+    Global = models.BooleanField(default=False)
+
+    def __str__(self):
+        return f"Notification for {self.UserID.username}: {self.Message[:50]} at time {self.Timestamp}"
 
 class Order(models.Model):
     ORDER_STATUS_CHOICES = [

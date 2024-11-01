@@ -4,8 +4,8 @@ from .views import CreateUserAPIView, LogoutUserAPIView, CustomAuthToken
 from .views import UserPreferenceLookup, PreferencesOperations
 from .views import DrinkOperations, UserDrinksLookup
 from .views import InventoryListAPIView, InventoryReportAPIView, InventoryUpdateAPIView
+from .views import NotificationOperations, UserNotificationLookup
 from .views import OrderOperations, UserOrdersLookup
-
 
 #this ensures that the url calls the right function from the views for each type of request
 preferences_list = PreferencesOperations.as_view({
@@ -29,6 +29,19 @@ drink_detail = DrinkOperations.as_view({
     'put': 'update',
     'delete': 'destroy'
 })
+
+notification_list = NotificationOperations.as_view({
+    'get': 'list',
+    'post': 'create'
+})
+
+notification_detail = NotificationOperations.as_view({
+    'get': 'retrieve',
+    'put': 'update',
+    'delete': 'destroy'
+})
+
+notification_filter_by_time = NotificationOperations.as_view({'get': 'filter_by_time'})
 
 order_list = OrderOperations.as_view({
     'get': 'list',
@@ -85,6 +98,9 @@ urlpatterns = [
     path('drinks/<int:pk>/', drink_detail, name='drink operations'),
 
     # Retrieve Drinks by UserID
+    path('users/<int:user_id>/drinks/', UserDrinksLookup.as_view(), name='user drink list'),
+
+    #inventory related URLs
     # Endpoint to list all drinks created by a specific user identified by their user ID.
     # - GET: Retrieve a list of drinks for the specified user.
     path('users/<int:user_id>/drinks/', UserDrinksLookup.as_view(), name='user_preferences_list'),
@@ -104,6 +120,19 @@ urlpatterns = [
     # - PATCH: Update the quantity of the specific inventory item.
     # - DELETE: Remove the specific inventory item from the database.
     path('inventory/<int:pk>/', InventoryUpdateAPIView.as_view(), name='inventory_update'),
+
+    # Notification related URLs
+    path('notifications/', notification_list, name='notification list and create'),
+    path('notifications/<int:pk>/', notification_detail, name='notification operations'),
+
+    # Retrieve notifications by UserID
+    path('users/<int:user_id>/notifications/', UserNotificationLookup.as_view(), name='user notifications list'),
+    
+     # Custom time-based notification filter
+     # The request should have a start and end time specified in the params as follows
+     # /backend/notifications/filter_by_time/?start=<start time in ISO 8601 format>&end=<end time in ISO 8601 format>
+     # the date should be in ISO 8601 format
+    path('notifications/filter_by_time/', notification_filter_by_time, name='notification filter by time'),
 
     #Order URLs
 
