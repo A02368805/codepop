@@ -1,6 +1,6 @@
 from django.contrib.auth import get_user_model
 from rest_framework import serializers
-from .models import Preference
+from .models import Preference, Drink, Inventory, Order, Notification
 
 
 class CreateUserSerializer(serializers.ModelSerializer):
@@ -53,4 +53,67 @@ class PreferenceSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError(f"{value} is not a valid preference. Allowed preferences are: {allowed_preferences}.")
 
         # Return the lowercase value for saving
+        return value
+    
+class DrinkSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Drink
+        fields = '__all__'
+
+    def validate_Size(self, value):
+        value = value.lower()
+
+        allowed_size = ['16oz', '24oz','32oz']
+
+        if value not in allowed_size:
+            raise serializers.ValidationError(f"{value} is not a valid drink size. Allowed sizes are: {allowed_size}")
+        
+        return value
+    
+    def validate_Ice(self, value):
+        value = value.lower()
+
+        if value == "no ice":
+            value = 'none'
+
+        allowed_ice = ['none', 'light', 'regular', 'extra']
+
+        if value not in allowed_ice:
+            raise serializers.ValidationError(f"{value} is not a valid ice amount. Allowed amounts are: {allowed_ice}")
+
+        return value
+
+class InventorySerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Inventory
+        fields = [
+            'InventoryID', 'ItemName', 'ItemType', 
+            'Quantity', 'ThresholdLevel', 'LastUpdated'
+        ]
+
+class NotificationSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Notification
+        fields = '__all__'
+
+class OrderSerializer(serializers.ModelSerializer):
+    Drinks = serializers.PrimaryKeyRelatedField(many=True, queryset=Drink.objects.all())
+
+    class Meta:
+        model = Order
+        fields = [
+            'OrderID', 'UserID', 'Drinks', 
+            'OrderStatus', 'PaymentStatus', 
+            'PickupTime', 'CreationTime'
+        ]
+
+    def create(self, validated_data):
+            drinks = validated_data.pop('Drinks')
+            order = Order.objects.create(**validated_data)  # Create the order without drinks
+            order.Drinks.set(drinks)  # Set the ManyToMany relationship
+            return order
+
+    def validate_Drinks(self, value):
+        if not value:
+            raise serializers.ValidationError("At least one drink must be included in the order.")
         return value

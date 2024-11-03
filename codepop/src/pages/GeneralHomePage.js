@@ -1,11 +1,10 @@
-import React, { useEffect, useState } from 'react';
-import { View, Text, Button, StyleSheet, Dimensions, TouchableOpacity, Alert } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { useNavigation, useFocusEffect } from '@react-navigation/native';
-import NavBar from '../components/NavBar';
+import { useFocusEffect, useNavigation } from '@react-navigation/native';
+import React, { useEffect, useState } from 'react';
+import { Alert, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { BASE_URL } from '../../ip_address';
-
-const { width: screenWidth } = Dimensions.get('window');
+import NavBar from '../components/NavBar';
+import SeasonalCarousel from '../components/SeasonalCarousel';
 
 const GeneralHomePage = () => {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
@@ -33,6 +32,22 @@ const GeneralHomePage = () => {
       checkLoginStatus();
     }, [])  // The empty array ensures this only runs when the screen is focused
   );
+
+  useEffect(() => {
+    // Retrieve the username from AsyncStorage when the component mounts
+    const checkUserLogin = async () => {
+      try {
+        const storedName = await AsyncStorage.getItem('first_name');
+        if (storedName) {
+          setName(storedName); // If a username is found, set it in the state
+        }
+      } catch (error) {
+        console.error('Error retrieving username:', error);
+      }
+    };
+
+    checkUserLogin(); // Call the function when the component mounts
+  }, []);
 
   // Logout function
   const handleLogout = async () => {
@@ -77,52 +92,82 @@ const GeneralHomePage = () => {
   }
 
   return (
-    <View style={styles.container}>
+    <ScrollView style={styles.container} contentContainerStyle={styles.contentContainer}>
       {/* If logged in, display the username and Logout button, otherwise display Login button */}
-      <View style={styles.buttonContainer}>
-        <TouchableOpacity onPress={generateDrinks} style={styles.mediumButton}>
-          <Text style={styles.buttonText}>Generate Drinks</Text>
-        </TouchableOpacity>
+      {isLoggedIn ? (
+        <>
+          {/* Conditionally render the "Hello <username>" if username exists */}
+          {name ? <Text style={styles.greeting}>Hello {name}!</Text> : null}
 
-        {isLoggedIn ? (
-          <>
+          {/* The main title */}
+          <Text style={styles.title}>Welcome to the CodePop App!</Text>
+          <SeasonalCarousel style={styles.carousel}/>
+          <View style={styles.buttonContainer}>
+            <TouchableOpacity onPress={generateDrinks} style={styles.mediumButton}>
+              <Text style={styles.buttonText}>Generate Drinks</Text>
+            </TouchableOpacity>
             <TouchableOpacity onPress={handleLogout} style={styles.mediumButton}>
               <Text style={styles.buttonText}>Logout</Text>
             </TouchableOpacity>
-          </>
-        ) : (
-          <TouchableOpacity onPress={goToLoginPage} style={styles.mediumButton}>
-            <Text style={styles.buttonText}>Login</Text>
-          </TouchableOpacity>
-        )}
-      </View>
+          </View>
+        </>
+      ) : (
+        <>
+          <SeasonalCarousel style={styles.carousel}/>
+          <View style={styles.buttonContainer}>
+            <TouchableOpacity onPress={generateDrinks} style={styles.mediumButton}>
+            <Text style={styles.buttonText}>Generate Drinks</Text>
+            </TouchableOpacity>
+            <TouchableOpacity onPress={goToLoginPage} style={styles.mediumButton}>
+              <Text style={styles.buttonText}>Login</Text>
+            </TouchableOpacity>
+          </View>
+        </>
+      )}
       <NavBar />
-    </View>
+    </ScrollView>
   );
 };
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    padding: 0,
+    backgroundColor: '#c0ffe7',
+  },
+  contentContainer: {
+    flexGrow: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    padding: 0,
   },
   mediumButton: {
-    margin: 20,
+    margin: 10,
     padding: 15,
-    backgroundColor: '#8df1d3',
+    backgroundColor: '#D30C7B',
     borderRadius: 10,
     alignItems: 'center',
+    elevation: 3,
+    shadowColor: '#000',
+    shadowOffset: { width: 2, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 3,
   },
   buttonText: {
     fontSize: 16,
+    color: 'white',
   },
   greeting: {
-    fontSize: 22,
+    fontSize: 32,
     fontWeight: 'bold',
     marginBottom: 10,
   },
+  carousel: {
+    margin: 0,
+    padding: 0,
+  },
+  title: {
+    fontSize: 22,
+  }
 });
 
 export default GeneralHomePage;

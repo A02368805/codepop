@@ -1,9 +1,9 @@
-import React, { useState } from 'react';
-import { TouchableOpacity } from 'react-native';
-import { View, TextInput, Button, Text, StyleSheet } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { Alert } from 'react-native';
-import {BASE_URL} from '../../ip_address'
+import * as Font from 'expo-font';
+import React, { useEffect, useState } from 'react';
+import { Alert, Image, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { BASE_URL } from '../../ip_address';
+
 
 const AuthPage = ({ navigation }) => {
   const [username, setUsername] = useState('');
@@ -11,9 +11,19 @@ const AuthPage = ({ navigation }) => {
   const [token, setToken] = useState(null);
   const [message, setMessage] = useState('');
 
+  useEffect(() => {
+    const loadFonts = async () => {
+        await Font.loadAsync({
+            'CherryBombOne': require('./../../assets/fonts/CherryBombOne-Regular.ttf'), // Adjust path as necessary
+        });
+    };
+
+    loadFonts();
+  }, []);
+
   const handleRegister = async () => {
-    // Registration logic...
-    console.log("Go To Registration Page...")
+    // Registration logic... Go to CreateAccountPage
+    navigation.navigate('CreateAccount');
   };
 
   const handleLogin = async () => {
@@ -37,7 +47,7 @@ const AuthPage = ({ navigation }) => {
           await AsyncStorage.setItem('first_name', data.first_name);
         
           Alert.alert('Login successful!');
-          navigation.navigate('Home'); // Navigate to Home screen on success
+          navigation.navigate('GeneralHome'); // Navigate to Home screen on success
       } else {
           Alert.alert('Invalid credentials, please try again.');
       }
@@ -49,6 +59,11 @@ const AuthPage = ({ navigation }) => {
 
   return (
     <View style={styles.container}>
+      <Image
+        source={require('../../assets/robot-with-soda.png')}
+        style={styles.image}
+      />
+      <Text style={styles.title}>CodePop</Text>
       <TextInput
         placeholder="Username"
         value={username}
@@ -82,12 +97,20 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     padding: 20,
+    backgroundColor: '#C6C8EE',
+  },
+  title: {
+    fontFamily: 'CherryBombOne',
+    fontSize: 52,
+    paddingBottom: 30,
   },
   input: {
     marginBottom: 10,
     borderWidth: 1,
     padding: 5,
     width: '100%',
+    borderRadius: 10,
+    backgroundColor: '#FFA686',
   },
   buttonContainer: {
     flexDirection: 'row',
@@ -98,10 +121,20 @@ const styles = StyleSheet.create({
     backgroundColor: '#8df1d3',
     borderRadius: 10,
     alignItems: 'center',
+    elevation: 3,
+    shadowColor: '#000',
+    shadowOffset: { width: 2, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 3,
   },
   buttonText: {
     fontSize: 16,
-  }
+  },
+  image: {
+    width: 150,
+    height: 150,
+    borderRadius: 10,
+  },
 });
 
 export default AuthPage;

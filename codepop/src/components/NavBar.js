@@ -1,4 +1,12 @@
 // src/components/NavBar.js
+/*
+colors:
+D30C7B - dark pink
+8DF1D3 - teal
+C6C8EE - purple
+F92758 - light pink
+FFA686 - peach
+ */
 
 import React from 'react';
 import { View, TouchableOpacity, Text, StyleSheet } from 'react-native';
@@ -10,7 +18,7 @@ const NavBar = () => {
 
   return (
     <View style={styles.navbar}>
-      <TouchableOpacity onPress={() => navigation.navigate('Home')}>
+      <TouchableOpacity onPress={() => navigation.navigate('GeneralHome')}>
         <Icon name="home-outline" size={24} color="#000" />
         {/* <Text style={styles.navItem}>Home</Text> */}
       </TouchableOpacity>
@@ -46,7 +54,6 @@ const styles = StyleSheet.create({
     left: 0,
   },
   navItem: {
-    // color: '#ff',
     fontSize: 18,
   },
 });

@@ -1,28 +1,29 @@
 from django.contrib.auth import get_user_model
 from django.shortcuts import get_object_or_404
+from django.db.models import F
+from django.db import models
+from django.utils import timezone
 from django.contrib.auth.models import User
-from rest_framework.generics import CreateAPIView, ListAPIView, ListCreateAPIView, RetrieveUpdateDestroyAPIView
+from rest_framework.generics import CreateAPIView, ListAPIView, ListCreateAPIView, RetrieveUpdateDestroyAPIView, RetrieveUpdateAPIView
 from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 from rest_framework.authtoken.views import ObtainAuthToken
 from rest_framework.authtoken.models import Token
-from rest_framework import status
+from rest_framework import status, viewsets
 from rest_framework.views import APIView
-from .models import Preference
-from .serializers import CreateUserSerializer, PreferenceSerializer
+from .models import Preference, Drink, Inventory, Notification, Order
+from .serializers import CreateUserSerializer, PreferenceSerializer, DrinkSerializer, InventorySerializer, NotificationSerializer, OrderSerializer
 from rest_framework.permissions import IsAuthenticated
 import stripe
 from django.conf import settings
 from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
-
-from django.views import View #maybe delete these three?
-from django.utils.decorators import method_decorator
-import json
+from rest_framework.decorators import action
+from django.utils.dateparse import parse_datetime
 
 stripe.api_key = settings.STRIPE_SECRET_KEY
 
-#Custom login to so that it gets a token but also the user's first name and the user id
+#Custom login to so that it get's a token but also the user's first name and the user id
 class CustomAuthToken(ObtainAuthToken):
     def post(self, request, *args, **kwargs):
         serializer = self.serializer_class(data=request.data, context={'request': request})
@@ -63,19 +64,23 @@ class LogoutUserAPIView(APIView):
         request.user.auth_token.delete()
         return Response({"detail": "Successfully logged out."}, status=status.HTTP_200_OK)
     
-# List all preferences or create a new preference
-class PreferenceListCreateAPIView(ListCreateAPIView):
+class PreferencesOperations(viewsets.ModelViewSet):
     queryset = Preference.objects.all()
     serializer_class = PreferenceSerializer
 
-# Retrieve, update, or delete a specific preference by ID
-class PreferenceRetrieveUpdateDestroyAPIView(RetrieveUpdateDestroyAPIView):
-    queryset = Preference.objects.all()
-    serializer_class = PreferenceSerializer
-    lookup_field = 'pk'  # 'pk' refers to the primary key, which is PreferenceID
-    
-# List all preferences for a specific user
-class UserPreferenceListAPIView(ListAPIView):
+    def create(self, request, *args, **kwargs):
+        # Custom logic for creating a drink can go here
+        return super().create(request, *args, **kwargs)
+
+    def update(self, request, *args, **kwargs):
+        # Custom logic for updating a drink can go here
+        return super().update(request, *args, **kwargs)
+
+    def destroy(self, request, *args, **kwargs):
+        # Custom logic for deleting a drink can go here
+        return super().destroy(request, *args, **kwargs)
+
+class UserPreferenceLookup(ListAPIView):
     serializer_class = PreferenceSerializer
 
     # Override get_queryset to filter preferences by the provided UserID
@@ -84,6 +89,249 @@ class UserPreferenceListAPIView(ListAPIView):
         # Check if the user exists first, and raise a 404 if not
         user = get_object_or_404(User, pk=user_id)
         return Preference.objects.filter(UserID=user_id)
+    
+class DrinkOperations(viewsets.ModelViewSet):
+    queryset = Drink.objects.all()
+    serializer_class = DrinkSerializer
+
+    def get_queryset(self):
+        # Modify the basic GET request behavior so it only returns drinks not user created
+        if(self.action == 'update' or self.action == 'retrieve' or self.action == 'destroy'):
+            return Drink.objects.all()
+        return Drink.objects.filter(User_Created=False)
+
+    def get_permissions(self):
+        """
+        Instantiates and returns the list of permissions that this view requires.
+        Only authenticated users can create, update, or delete a drink.
+        """
+        if self.action in ['create', 'update', 'destroy']:
+            # Require authentication for create, update, and destroy actions
+            return [IsAuthenticated()]
+        return super().get_permissions()
+
+    def create(self, request, *args, **kwargs):
+        # Custom logic for creating a drink
+        return super().create(request, *args, **kwargs)
+
+    def update(self, request, *args, **kwargs):
+        # Custom logic for updating a drink
+        return super().update(request, *args, **kwargs)
+
+    def destroy(self, request, *args, **kwargs):
+        # Custom logic for deleting a drink
+        return super().destroy(request, *args, **kwargs)
+
+class UserDrinksLookup(ListAPIView):
+    serializer_class = DrinkSerializer
+    permission_classes = [IsAuthenticated]
+
+    # Override get_queryset to filter preferences by the provided UserID
+    def get_queryset(self):
+        user_id = self.kwargs['user_id']  # Retrieve the 'user_id' from the URL
+        # Check if the user exists first, and raise a 404 if not
+        user = get_object_or_404(User, pk=user_id)
+        return Drink.objects.filter(Favorite=user_id)
+
+
+class InventoryListAPIView(ListAPIView):
+    """List all items that are not out of stock."""
+    queryset = Inventory.objects.filter(Quantity__gt=0)
+    serializer_class = InventorySerializer
+
+class InventoryReportAPIView(APIView):
+    """Generate an inventory report."""
+    def get(self, request):
+        inventory = Inventory.objects.all()
+        report_data = {
+            'inventory_items': [
+                {
+                    'InventoryID': item.InventoryID,
+                    'ItemName': item.ItemName,
+                    'Quantity': item.Quantity,
+                    'ThresholdLevel': item.ThresholdLevel,
+                }
+                for item in inventory
+            ],
+            'total_items': inventory.count(),
+            'out_of_stock': inventory.filter(Quantity=0).count(),
+            'below_threshold': inventory.filter(Quantity__lte=models.F('ThresholdLevel')).count(),
+        }
+        return Response(report_data, status=status.HTTP_200_OK)
+
+class InventoryUpdateAPIView(RetrieveUpdateAPIView):
+    """Update inventory based on what was ordered, with warnings for empty or low stock."""
+    queryset = Inventory.objects.all()
+    serializer_class = InventorySerializer
+
+    def patch(self, request, *args, **kwargs):
+        item = self.get_object()  # Retrieve the specific item based on ID
+        used_quantity = request.data.get('used_quantity')
+
+        # Validate the used quantity
+        if used_quantity is None or int(used_quantity) <= 0:
+            return Response(
+                {"detail": "Invalid used quantity."}, 
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        # Check if the item is already out of stock
+        if item.Quantity == 0:
+            return Response(
+                {"detail": f"'{item.ItemName}' is already out of stock."}, 
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        # Check if the order quantity exceeds available stock
+        if item.Quantity < int(used_quantity):
+            return Response(
+                {"detail": f"Not enough stock available for '{item.ItemName}'."}, 
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        # Subtract the used quantity from the current stock
+        item.Quantity -= int(used_quantity)
+        item.save()
+
+        # Generate a warning if stock falls below the threshold level
+        warning = None
+        if item.Quantity <= item.ThresholdLevel:
+            warning = f"'{item.ItemName}' stock is below the threshold level."
+
+        # Prepare the response data
+        response_data = self.get_serializer(item).data
+        if warning:
+            response_data['warning'] = warning
+
+        return Response(response_data, status=status.HTTP_200_OK)
+
+class NotificationOperations(viewsets.ModelViewSet):
+    queryset = Notification.objects.all()
+    serializer_class = NotificationSerializer
+    permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        user_id = self.request.user.id
+        user = get_object_or_404(User, pk=user_id)
+        # Filter notifications that are either global or specific to the user
+        return Notification.objects.filter(models.Q(Global=True) | models.Q(UserID=user_id))
+
+    def create(self, request, *args, **kwargs):
+        # Custom logic for creating a notification can go here
+        return super().create(request, *args, **kwargs)
+
+    def update(self, request, *args, **kwargs):
+        # Custom logic for updating a notification can go here
+        return super().update(request, *args, **kwargs)
+
+    def destroy(self, request, *args, **kwargs):
+        # Custom logic for deleting a notification can go here
+        return super().destroy(request, *args, **kwargs)
+    
+    def filter_by_time(self, request):
+        """
+        Custom endpoint to filter notifications within a specific time range for the authenticated user.
+        Accepts 'start' and 'end' parameters in ISO 8601 format.
+        """
+        start = request.query_params.get('start')
+        end = request.query_params.get('end')
+
+        # Parse start and end times
+        start_time = parse_datetime(start) if start else None
+        end_time = parse_datetime(end) if end else None
+
+        # Check and convert to timezone-aware if necessary
+        if start_time and timezone.is_naive(start_time):
+            start_time = timezone.make_aware(start_time)
+        if end_time and timezone.is_naive(end_time):
+            end_time = timezone.make_aware(end_time)
+
+        # Validate parameters
+        if not start_time or not end_time:
+            return Response(
+                {"error": "Both 'start' and 'end' parameters are required in ISO 8601 format."},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        # Filter notifications by time range and for the authenticated user
+        user = request.user
+        notifications = Notification.objects.filter(
+            Timestamp__range=(start_time, end_time),
+            UserID=user
+        )
+
+        # Include global notifications if they fall within the time range
+        global_notifications = Notification.objects.filter(
+            Timestamp__range=(start_time, end_time),
+            Global=True
+        )
+        notifications = notifications | global_notifications
+
+        # Serialize and return the notifications
+        serializer = self.get_serializer(notifications.distinct(), many=True)
+        return Response(serializer.data)
+    
+class UserNotificationLookup(ListAPIView):
+    serializer_class = NotificationSerializer
+    permission_classes = [IsAuthenticated]
+
+    # Override get_queryset to filter preferences by the provided UserID
+    def get_queryset(self):
+        user_id = self.kwargs['user_id']  # Retrieve the 'user_id' from the URL
+        # Check if the user exists first, and raise a 404 if not
+        user = get_object_or_404(User, pk=user_id)
+        return Notification.objects.filter(UserID=user_id)
+
+class OrderOperations(viewsets.ModelViewSet):
+    queryset = Order.objects.all()
+    serializer_class = OrderSerializer
+
+    def patch(self, request, *args, **kwargs):
+        order = self.get_object()
+        drinks_to_add = request.data.get("AddDrinks", [])
+        drinks_to_remove = request.data.get("RemoveDrinks", [])
+        
+        # Adding drinks
+        if drinks_to_add:
+            order.add_drinks(drinks_to_add)
+
+        # Removing drinks
+        if drinks_to_remove:
+            order.remove_drinks(drinks_to_remove)
+        
+        serializer = self.get_serializer(order)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+        
+    def get_permissions(self):
+        """Only authenticated users can create, update, or delete orders."""
+        if self.action in ['create', 'update', 'destroy']:
+            return [IsAuthenticated()]
+        return super().get_permissions()
+
+    def create(self, request, *args, **kwargs):
+        return super().create(request, *args, **kwargs)
+
+    def update(self, request, *args, **kwargs):
+        return super().update(request, *args, **kwargs)
+
+    def destroy(self, request, *args, **kwargs):
+        return super().destroy(request, *args, **kwargs)
+
+class UserOrdersLookup(ListCreateAPIView):
+    serializer_class = OrderSerializer
+    permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        """Filter orders based on the user ID from the URL."""
+        user_id = self.kwargs['user_id']
+        user = get_object_or_404(User, pk=user_id)
+        return Order.objects.filter(UserID=user)
+
+    def perform_create(self, serializer):
+        """Associate the new order with the correct user."""
+        user_id = self.kwargs['user_id']
+        user = get_object_or_404(User, pk=user_id)
+        serializer.save(UserID=user)
 
 @method_decorator(csrf_exempt, name='dispatch')
 class StripePaymentIntentView(View):

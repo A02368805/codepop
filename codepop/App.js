@@ -1,50 +1,86 @@
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
-import React from 'react';
+import * as Font from 'expo-font';
+import React, { useEffect } from 'react';
 import AuthPage from './src/pages/AuthPage';
-import HomePage from './src/pages/HomePage';
 import CartPage from './src/pages/CartPage';
+import CreateAccountPage from './src/pages/CreateAccountPage';
 import CreateDrinkPage from './src/pages/CreateDrinkPage';
-import PreferencesPage from './src/pages/PreferencesPage';
 import GeneralHomePage from './src/pages/GeneralHomePage';
 import CompletePage from './src/pages/CompletePage';
 import CheckoutForm from './src/pages/CheckoutForm';
+import PreferencesPage from './src/pages/PreferencesPage';
 
 const Stack = createNativeStackNavigator();
+const title = 'CodePop' 
 
 const App = () => {
+  useEffect(() => {
+    const loadFonts = async () => {
+        await Font.loadAsync({
+            'CherryBombOne': require('./assets/fonts/CherryBombOne-Regular.ttf'), // Adjust path as necessary
+        });
+    };
+
+    loadFonts();
+  }, []);
+
   return (
     <NavigationContainer>
       <Stack.Navigator initialRouteName="GeneralHome">
         <Stack.Screen 
           name="Auth" 
           component={AuthPage} 
-          options={{ title: 'Login/Register' }} 
+          options={{ 
+            title: title, 
+            headerTitleStyle: {
+              // fontFamily: 'CherryBombOne',
+          },}}
         />
-        <Stack.Screen 
-          name="Home" 
-          component={HomePage} 
-          options={{ title: 'Home' }} 
+        <Stack.Screen
+          name="CreateAccount"
+          component={CreateAccountPage}
+          options={{ 
+            title: title,
+            headerTitleStyle: {
+              // fontFamily: 'CherryBombOne',
+          },}}
         />
         <Stack.Screen
           name="Cart"
           component={CartPage}
-          options={{ title: 'Cart' }}
+          options={{ 
+            title: title, 
+            headerTitleStyle: {
+              // fontFamily: 'CherryBombOne',
+          },}}        
         />
         <Stack.Screen
           name="CreateDrink"
           component={CreateDrinkPage}
-          options={{ title: 'Create Drink' }}
+          options={{ 
+            title: title, 
+            headerTitleStyle: {
+              // fontFamily: 'CherryBombOne',
+          },}}        
         />
         <Stack.Screen
           name="Preferences"
           component={PreferencesPage}
-          options={{ title: 'Preferences' }}
+          options={{ 
+            title: title, 
+            headerTitleStyle: {
+              // fontFamily: 'CherryBombOne',
+            },}}        
         />
         <Stack.Screen
           name="GeneralHome"
           component={GeneralHomePage}
-          options={{ title: 'General Home' }}
+          options={{ 
+            title: title, 
+            headerTitleStyle: {
+              // fontFamily: 'CherryBombOne',
+          },}}
         />
         <Stack.Screen
           name="Complete"
