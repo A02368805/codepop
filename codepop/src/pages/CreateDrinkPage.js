@@ -1,47 +1,131 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, TextInput } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, TextInput, ScrollView } from 'react-native';
 import NavBar from '../components/NavBar';
 import DropDown from '../components/DropDown';
 import { useNavigation } from '@react-navigation/native';
 import { sodaOptions, syrupOptions, juiceOptions } from '../components/Ingredients';
+import {BASE_URL} from '../../ip_address'
+import AsyncStorage from '@react-native-async-storage/async-storage';
+
+// to do:
+// create drink gif
+// generate drink from AI
 
 const CreateDrinkPage = () => {
   const navigation = useNavigation();
   const [searchText, setSearchText] = useState('');
-  const [selectedSize, setSize] = useState(null);
-  const [selectedIce, setIce] = useState(null);
   const [openDropdown, setOpenDropdown] = useState({
     sodas: false,
     syrups: false,
     juices: false,
   });
 
+  // variables to add to drink object
+  const [SodaUsed, setSoda] = useState([]);
+  const [SyrupsUsed, setSyrups] = useState([]);
+  const [AddIns, setAddIns] = useState([]);
+  const [selectedSize, setSize] = useState(null);
+  const [selectedIce, setIce] = useState(null);
+  
+
+  const addToCart = async () => {
+    try {
+      const token = await AsyncStorage.getItem('userToken');
+  
+      const response = await fetch(`${BASE_URL}/backend/drinks/`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Token ${token}`,
+        },
+        body: JSON.stringify({ 
+          Name: "Drink in User Cart",  // Example name for the drink
+          SodaUsed: SodaUsed,  // Default value if SodaUsed is null
+          SyrupsUsed: SyrupsUsed,
+          AddIns: AddIns,
+          Price: 2.00,
+          User_Created: true,    // Assuming the user is creating the drink
+          Size: selectedSize,
+          Ice: selectedIce,
+        })
+      });
+  
+      if (!response.ok) {
+        throw new Error(`Failed to add drink. Status: ${response.status}`);
+      }
+      // add drink item (the drinks ID) to the checkout list from App.js
+      try{
+        // gets list of out of storage on your phone
+        cartList = await AsyncStorage.getItem("checkoutList");
+        const currentList = cartList ? JSON.parse(cartList) : [];
+        // takes the response (what we get after we create a drink) and extracts the drinkID
+        const data = await response.json();
+        const drinkID = data.DrinkID;
+        // add the drinkID to the checkoutList
+        const updatedList = [...currentList, drinkID]
+        // Saves the checkoutlist back into the storage on the phone
+        await AsyncStorage.setItem('checkoutList', JSON.stringify(updatedList));
+      }catch (error){
+        console.log(error)
+      }
+
+      navigation.navigate('Cart');
+    } catch (error) {
+      console.error('Error adding drink to cart:', error);
+    }
+  };  
+  
+
+  const handleSizeSelection = (size) => {
+    setSize(size);
+  };
+  
+  const handleIceSelection = (ice) => {
+    setIce(ice);
+  };
+
+  const handleSodaSelection = (soda) => {
+    setSoda((prevSodas) => {
+      if (prevSodas.includes(soda)) {
+        // If soda is already selected, remove it
+        return prevSodas.filter((item) => item !== soda);
+      } else {
+        // Otherwise, add the soda to the list
+        return [...prevSodas, soda];
+      }
+    });
+  };
+  
+  
+  const handleSyrupSelection = (syrup) => {
+    setSyrups((prevSyrups) => {
+      if (prevSyrups.includes(syrup)) {
+        // If soda is already selected, remove it
+        return prevSyrups.filter((item) => item !== syrup);
+      } else {
+        // Otherwise, add the soda to the list
+        return [...prevSyrups, syrup];
+      }
+    });
+  };
+
+  const handleAddInSelection = (addIn) => {
+    setAddIns((prevAdd) => {
+      if (prevAdd.includes(addIn)) {
+        // If soda is already selected, remove it
+        return prevAdd.filter((item) => item !== addIn);
+      } else {
+        // Otherwise, add the soda to the list
+        return [...prevAdd, addIn];
+      }
+    });
+  };
+  
+  // search and list stiff
   const filterOptions = (options = []) => {
     return options.filter((option) =>
       option.label.toLowerCase().includes(searchText.toLowerCase())
     );
-  };
-
-  const addItemToDrinkObject = () => {
-    // Your logic here
-  };
-
-  const addToCart = (selectedOption) => {
-    console.log(selectedOption, ' added to drink object');
-  };
-
-  const generateDrinks = () => {
-    console.log('generating drinks...');
-  };
-
-  const saveDrink = async () => {
-    console.log('Generating drinks...');
-    await createDrinkObject(); // Replace with your actual function for saving to the database
-  };
-
-  const handleSaveDrinks = async () => {
-    await saveDrink(); // Wait for the drink to be generated
-    navigation.navigate('Cart'); // Then navigate to the cart page
   };
 
   const handleSearch = (text) => {
@@ -52,18 +136,16 @@ const CreateDrinkPage = () => {
       juices: !!text,
     });
   };
-
-  const handleSizeSelection = (size) => {
-    setSize(size);
-  };
   
-  const handleIceSelection = (ice) => {
-    setIce(ice);
+  // function for generate drink button which generates a drink with AI
+  const GenerateAI = () => {
+    // logic to generate an AI drink
   };
 
   return (
     <View style={styles.wholePage}>
 
+      <ScrollView style={styles.padding}>
       <View style={styles.rowContainer}>
         {/* Size buttons on the left */}
         <View style={styles.buttonContainerLeft}>
@@ -83,11 +165,14 @@ const CreateDrinkPage = () => {
           ))}
         </View>
 
-        {/* Drink graphic in the center */}
+        
         <View style={styles.graphicContainer}>
+          {/* Drink graphic in the center */}
           <Text style={styles.drinkGraphicText}>Drink GIF goes here</Text>
+          {/* {gifUrl && <Image source={{ uri: gifUrl }} style={styles.gifImage} />} */}
+
           {/* Button to generate drinks */}
-          <TouchableOpacity onPress={handleSaveDrinks} style={styles.button}>
+          <TouchableOpacity onPress={GenerateAI} style={styles.button}>
             <Text style={styles.buttonText}>Generate Drink</Text>
           </TouchableOpacity>
         </View>
@@ -109,11 +194,6 @@ const CreateDrinkPage = () => {
         </View>
       </View>
 
-      {/* Button to generate drinks */}
-      {/* <TouchableOpacity onPress={handleSaveDrinks} style={styles.button}>
-        <Text style={styles.buttonText}>Generate Drinks</Text>
-      </TouchableOpacity> */}
-
       {/* Button to add to cart */}
       <TouchableOpacity onPress={addToCart} style={styles.button}>
         <Text style={styles.buttonText}>Add to Cart</Text>
@@ -128,29 +208,31 @@ const CreateDrinkPage = () => {
       />
 
       {/* Dropdowns */}
-      <DropDown 
-        title="Sodas" 
-        options={filterOptions(sodaOptions)} 
-        onSelect={addItemToDrinkObject} 
-        isOpen={openDropdown.sodas}
-        setOpen={() => setOpenDropdown(prev => ({ ...prev, sodas: !prev.sodas }))}
-      />
-      <DropDown 
-        title="Syrups" 
-        options={filterOptions(syrupOptions)} 
-        onSelect={addItemToDrinkObject} 
-        isOpen={openDropdown.syrups}
-        setOpen={() => setOpenDropdown(prev => ({ ...prev, syrups: !prev.syrups }))}
-      />
-      <DropDown 
-        title="Juices" 
-        options={filterOptions(juiceOptions)} 
-        onSelect={addItemToDrinkObject} 
-        isOpen={openDropdown.juices}
-        setOpen={() => setOpenDropdown(prev => ({ ...prev, juices: !prev.juices }))}
-      />
-
-      <NavBar />
+      <View style={styles.navBarSpace}>
+        <DropDown 
+          title="Sodas" 
+          options={filterOptions(sodaOptions)} 
+          onSelect={handleSodaSelection} 
+          isOpen={openDropdown.sodas}
+          setOpen={() => setOpenDropdown(prev => ({ ...prev, sodas: !prev.sodas }))}
+        />
+        <DropDown 
+          title="Syrups" 
+          options={filterOptions(syrupOptions)} 
+          onSelect={handleSyrupSelection} 
+          isOpen={openDropdown.syrups}
+          setOpen={() => setOpenDropdown(prev => ({ ...prev, syrups: !prev.syrups }))}
+        />
+        <DropDown 
+          title="Juices" 
+          options={filterOptions(juiceOptions)} 
+          onSelect={handleAddInSelection} 
+          isOpen={openDropdown.juices}
+          setOpen={() => setOpenDropdown(prev => ({ ...prev, juices: !prev.juices }))}
+        />
+      </View>
+      </ScrollView>
+      <NavBar/>
     </View>
   );
 };
@@ -159,7 +241,13 @@ const styles = StyleSheet.create({
   wholePage: {
     flex: 1,
     backgroundColor: '#FFA686',
+    // padding: 10,
+  },
+  padding: {
     padding: 10,
+  },
+  navBarSpace: {
+    marginBottom: 80,
   },
   rowContainer: {
     flexDirection: 'row',
@@ -213,7 +301,7 @@ const styles = StyleSheet.create({
     height: 60,
     borderRadius: 30,
     borderWidth: 2,
-    borderColor: '#ddd',
+    borderColor: '#D30C7B',
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: '#F92758',
@@ -229,7 +317,7 @@ const styles = StyleSheet.create({
   searchInput: {
     height: 40,
     borderColor: '#ddd',
-    borderWidth: 1,
+    borderWidth: 3,
     paddingHorizontal: 10,
     width: '80%',
     marginVertical: 15,

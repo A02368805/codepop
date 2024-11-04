@@ -22,17 +22,20 @@ const NavBar = () => {
         <Icon name="home-outline" size={24} color="#000" />
         {/* <Text style={styles.navItem}>Home</Text> */}
       </TouchableOpacity>
+
       <TouchableOpacity onPress={() => navigation.navigate('CreateDrink')}>
         <Icon name="cafe-outline" size={24} color="#000" />
         {/* <Text style={styles.navItem}>Create Drink</Text> */}
       </TouchableOpacity>
+
       <TouchableOpacity onPress={() => navigation.navigate('Cart')}>
         <Icon name="cart-outline" size={24} color="#000" />
         {/* <Text style={styles.navItem}>Cart</Text> */}
       </TouchableOpacity>
-      <TouchableOpacity onPress={() => navigation.navigate('GeneralHome')}>
-        <Icon name="home" size={24} color="#000" />
-        {/* <Text style={styles.navItem}>Cart</Text> */}
+      
+      <TouchableOpacity onPress={() => navigation.navigate('ComplaintsPage')}>
+        <Icon name="chatbubbles-outline" size={24} color="#000" />
+        {/* <Text style={styles.navItem}>Home</Text> */}
       </TouchableOpacity>
 
       {/* Add more navigation items as needed */}
@@ -52,6 +55,8 @@ const styles = StyleSheet.create({
     position: 'absolute', 
     bottom: 0,
     left: 0,
+    marginTop: 10,
+    alignSelf: 'center',
   },
   navItem: {
     fontSize: 18,

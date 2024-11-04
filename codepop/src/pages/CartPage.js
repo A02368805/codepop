@@ -1,50 +1,237 @@
-import React, { useState, useEffect } from "react";
-import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import React, { useEffect, useState } from 'react';
+import { View, Text, StyleSheet, TouchableOpacity, FlatList, ScrollView } from 'react-native';
 import NavBar from '../components/NavBar';
+import Icon from 'react-native-vector-icons/Ionicons';
+import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { useStripe, StripeProvider } from '@stripe/stripe-react-native';
 import { useNavigation, NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
+import {BASE_URL} from '../../ip_address'
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import axios from 'axios';
+
+// to do:
+// fetch drinks function may not properly update checkoutlist?
+// be able to edit the drinks
+  // take you back to a pre-populated create drink page and deletes the current drink object to that the drink can be updated
 
 const CartPage = () => {
-    const navigation = useNavigation();
+  const navigation = useNavigation();
+  const [drinks, setDrinks] = useState([]);
+  const [totalPrice, setTotalPrice] = useState(0);
 
-    const goToCheckout = () => {
-        navigation.navigate('Checkout');
-      };
+  useFocusEffect(React.useCallback(() => {
+    fetchDrinks();
+  }, []));
 
-    return (
-        <StripeProvider publishableKey="pk_test_51QEDP7HwEWxwIyaLoeRGprLwnn6Fj7jZljzxglWudPSTSe6sMyFPAjHZsnMOy1HuwZhUYT9JGZbOsxhXxkFTJp9700JSZTZKIz">
-              <View style={styles.container}>
-                    <View style={styles.buttonContainer}>
-                        <TouchableOpacity onPress={goToCheckout} style={styles.mediumButton}>
-                            <Text style={styles.buttonText}>Checkout</Text>
-                        </TouchableOpacity>
-                    </View>
-                    <NavBar />
-              </View>
-        </StripeProvider>
-      );
+
+  const fetchDrinks = async () => {
+    try {
+      const cartList = await AsyncStorage.getItem('checkoutList');
+      const currentList = cartList ? JSON.parse(cartList) : [];
+      const token = await AsyncStorage.getItem('userToken');
+  
+      const fetchedDrinks = []; // Temporary array to collect drinks
+  
+      for (let i = 0; i < currentList.length; i++) {
+        const response = await fetch(`${BASE_URL}/backend/drinks/${currentList[i]}/`, {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Token ${token}`,
+          },
+        });
+        const data = await response.json();
+        if (data != null) {
+          fetchedDrinks.push(data); // Add each drink to the temporary array
+        }
+      }
+  
+      setDrinks(fetchedDrinks); // Update state once after all drinks are collected
+      calculateTotalPrice(fetchedDrinks); // Calculate total price after fetching drinks
+  
+      // console.log(fetchedDrinks); // Check the drinks list in the console
+  
+    } catch (error) {
+      console.error('Failed to get drinks: ', error);
+    }
+  };
+  
+  
+
+  const calculatePrice = (drink) => {
+    // $2 base price + $0.30 per ingredient
+    return 2 + (drink.SyrupsUsed.length + drink.AddIns.length) * 0.3;
+  };
+
+  const calculateTotalPrice = (drinksList) => {
+    let total = 0; // Initialize total here
+
+    for (let i = 0; i < drinksList.length; i++) {
+      total += calculatePrice(drinksList[i]);      
+    }
+    setTotalPrice(total); // Update the total price state
+  };
+
+  const removeDrink = async (drinkId) => {
+    try {
+      const cartList = await AsyncStorage.getItem('checkoutList');
+      const currentList = cartList ? JSON.parse(cartList) : [];
+      const token = await AsyncStorage.getItem('userToken');
+  
+      // Delete the drink from the backend database
+      await fetch(`${BASE_URL}/backend/drinks/${drinkId}/`, {
+        method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Token ${token}`,
+        },
+      });
+  
+      // Update the local state to remove the drink from the cart page
+      const updatedDrinks = drinks.filter(data => data.DrinkID !== drinkId);
+      setDrinks(updatedDrinks);
+  
+      // Update the AsyncStorage to remove the drink ID from the checkout list
+      const updatedList = currentList.filter(item => item !== drinkId);
+      await AsyncStorage.setItem("checkoutList", JSON.stringify(updatedList));
+  
+      // Recalculate the total price with the updated drinks list
+      calculateTotalPrice(updatedDrinks);
+  
+      console.log('Drink removed and total price recalculated successfully');
+    } catch (error) {
+      console.error('Error removing drink:', error);
+    }
+  };
+  
+  
+
+  const renderDrinkItem = (drink) => (
+    <View style={styles.drinkContainer}>
+      <Text style={styles.drinkText}>Size Drink: {drink.SodaUsed} with ice amount</Text>
+      <Text style={styles.ingredientsText}>
+        Ingredients: {drink.SyrupsUsed ? drink.SyrupsUsed.join(', ') : ''} {drink.AddIns ? drink.AddIns.join(', ') : ''}
+      </Text>
+      <Text style={styles.priceText}>Price: ${calculatePrice(drink).toFixed(2)}</Text>
+  
+      <View style={styles.buttonRow}>
+        <TouchableOpacity onPress={() => navigation.navigate('CreateDrink', { editDrink: drink })} style={styles.button}>
+          <Icon name="create-outline" size={24} color="#000" />
+        </TouchableOpacity>
+  
+        <TouchableOpacity onPress={() => removeDrink(drink.DrinkID)} style={styles.button}>
+          <Icon name="close-circle-outline" size={24} color="#000" />
+        </TouchableOpacity>
+      </View>
+    </View>
+  );
+
+  const goToCheckout = () => {
+    navigation.navigate('Checkout');
+  };
+  
+
+  return (
+    <StripeProvider publishableKey="pk_test_51QEDP7HwEWxwIyaLoeRGprLwnn6Fj7jZljzxglWudPSTSe6sMyFPAjHZsnMOy1HuwZhUYT9JGZbOsxhXxkFTJp9700JSZTZKIz">
+        <View style={styles.container}>
+        <Text style={styles.headerText}>Your Drinks</Text>
+
+        <FlatList style={styles.padding}
+          data={drinks}
+          keyExtractor={(item) => item.DrinkID.toString()}
+          renderItem={({ item }) => renderDrinkItem(item)}
+          contentContainerStyle={styles.listContainer}
+        />
+        <View style={styles.padding}>
+          <Text style={styles.totalText}>Cart Total: ${totalPrice.toFixed(2)}</Text>
+
+          <TouchableOpacity onPress={goToCheckout} style={styles.payButton}>
+            <Icon name="card-outline" size={24} color="#fff" />
+            <Text style={styles.payButtonText}>Pay Now</Text>
+          </TouchableOpacity>
+        </View>
+
+        <NavBar />
+        </View>
+    </StripeProvider>
+  );
 };
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: 0,
+    backgroundColor: '#FFA686',
   },
-  mediumButton: {
-    margin: 20,
-    padding: 15,
-    backgroundColor: '#8df1d3',
-    borderRadius: 10,
-    alignItems: 'center',
+  padding: {
+    padding: 16,
   },
-  buttonText: {
+  headerText: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    color: '#000',
+    marginBottom: 10,
+    textAlign: 'center',
+    padding: 16,
+  },
+  drinkContainer: {
+    backgroundColor: '#C8E6C9',
+    padding: 16,
+    marginVertical: 8,
+    borderRadius: 8,
+    elevation: 2,
+  },
+  drinkText: {
+    fontSize: 18,
+    fontWeight: 'bold',
+  },
+  ingredientsText: {
     fontSize: 16,
+    marginTop: 5,
+  },
+  priceText: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    marginTop: 5,
+  },
+  buttonRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginTop: 10,
+  },
+  button: {
+    padding: 10,
+  },
+  totalText: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    textAlign: 'center',
+    marginVertical: 20,
+    padding: 10,                // Adds space inside the border
+    borderWidth: 2,             // Thickness of the border
+    borderColor: '#F92758',     // Color of the border
+    borderRadius: 10,           // Rounds the corners
+    backgroundColor: '#F92758', // Optional: background color to make it stand out
+    color: '#fff',            // Text color to match or contrast with border
+  },
+  payButton: {
+    backgroundColor: '#D30C7B',
+    paddingVertical: 10,
+    paddingHorizontal: 15,
+    marginBottom: 80,
+    borderRadius: 8,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  payButtonText: {
+    color: '#fff',
+    fontSize: 16,
+    marginLeft: 8,
+  },
+  listContainer: {
+    paddingBottom: 20,
   },
 });
 
-
 export default CartPage;
-

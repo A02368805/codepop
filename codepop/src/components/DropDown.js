@@ -6,10 +6,6 @@ const DropDown = ({ title, options = [], onSelect, isOpen, setOpen}) => {
   // const [isOpen, setIsOpen] = useState(false);
   const [selectedItems, setSelectedItems] = useState({});
 
-  const toggleDropdown = () => {
-    setIsOpen(!isOpen);
-  };
-
   const toggleItemSelection = (item) => {
     setSelectedItems((prevSelectedItems) => ({
       ...prevSelectedItems,
@@ -57,11 +53,11 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    borderColor: '#8DF1D3',
-    backgroundColor: '#E8F5E9',
+    borderColor: '#6FD9BB',
+    backgroundColor: '#C8E6C9',
     padding: 18,
     width: '100%',
-    borderWidth: 1,
+    borderWidth: 2,
   },
   collapsibleText: {
     color: '#444',
@@ -73,33 +69,41 @@ const styles = StyleSheet.create({
   },
   content: {
     padding: 18,
-    backgroundColor: '#F92758',
+    backgroundColor: '#FF6685',
   },
   buttonContainer: {
     flexDirection: 'row',
     flexWrap: 'wrap',
+    justifyContent: 'center',
   },
   circularButton: {
     width: 60,
     height: 60,
     borderRadius: 30,
-    borderWidth: 2,
+    borderWidth: 1,
     borderColor: '#ddd',
     alignItems: 'center',
     justifyContent: 'center',
     margin: 5,
-    backgroundColor: '#fff',
+    backgroundColor: '#FFA686',
+    shadowColor: '#000',
+    shadowOffset: { width: 3, height: 3 },
+    shadowOpacity: 0.4,
+    shadowRadius: 3,
+    elevation: 5, // For Android
   },
   circularButtonSelected: {
     borderColor: '#8DF1D3',
-    backgroundColor: '#E8F5E9',
+    backgroundColor: '#8DF1D3',
+    shadowColor: '#8DF1D3',
+    shadowOffset: { width: 1, height: 1 },
+    shadowOpacity: 0.6,
+    shadowRadius: 2,
   },
   buttonText: {
     color: '#444',
-    fontSize: 12,
-  },
-  carat: {
-    marginLeft: 10,
+    fontSize: 10,
+    fontWeight: 'bold',
   },
 });
 

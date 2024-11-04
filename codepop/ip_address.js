@@ -1,3 +1,3 @@
-const BASE_URL = 'http://144.39.45.182:8000'; // Your backend URL
+const BASE_URL = 'http://192.168.17.142:8000'; // Your backend URL
 
 export { BASE_URL };
