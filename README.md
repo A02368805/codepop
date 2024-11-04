@@ -30,9 +30,12 @@ Follow these instructions to set up the CodePop project on your machine.
       Package             Version
       ------------------- -----------
       asgiref             3.8.1
+      certifi             2024.8.30
+      charset-normalizer  3.4.0
       Django              5.1.2
       django-cors-headers 4.4.0
       djangorestframework 3.15.2
+      idna                3.10
       joblib              1.4.2
       numpy               2.1.2
       pandas              2.2.3
@@ -40,14 +43,17 @@ Follow these instructions to set up the CodePop project on your machine.
       psycopg2            2.9.9
       python-dateutil     2.9.0.post0
       pytz                2024.2
+      requests            2.32.3
       scikit-learn        1.5.2
       scipy               1.14.1
       setuptools          63.2.0
       six                 1.16.0
       sqlparse            0.5.1
+      stripe              11.2.0
       threadpoolctl       3.5.0
       typing_extensions   4.12.2
       tzdata              2024.2
+      urllib3             2.2.3
       ```
     - to deactivate the virtual enviroment run the following command
       ```bash
