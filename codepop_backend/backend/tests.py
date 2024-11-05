@@ -822,7 +822,6 @@ class OrderTests(TestCase):
         self.assertNotIn(self.drink1.DrinkID, response.data['Drinks'])  # Ensure drink1 is no longer in the order
         self.assertIn(self.drink2.DrinkID, response.data['Drinks'])  # Ensure drink2 is still in the order
 
-<<<<<<< codepop_backend/backend/tests.py
 # Some Inner-method comments follow this format:
 # Input: expected output
 class AITests(TestCase):
@@ -1016,6 +1015,3 @@ class AITests(TestCase):
 
         # TODO: All syrups and add-ins
         # Literally everything (TODO: add-ins)
-=======
-    
->>>>>>> codepop_backend/backend/tests.py
