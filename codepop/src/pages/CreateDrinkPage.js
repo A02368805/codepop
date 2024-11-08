@@ -11,6 +11,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 // create drink gif
 // generate drink from AI
 
+
 const CreateDrinkPage = () => {
   const navigation = useNavigation();
   const [searchText, setSearchText] = useState('');
@@ -140,6 +141,8 @@ const CreateDrinkPage = () => {
   // function for generate drink button which generates a drink with AI
   const GenerateAI = () => {
     // logic to generate an AI drink
+    // get request from a backend veiw which should return a json object
+    // backend endpoint should be like /backend/AI
   };
 
   return (

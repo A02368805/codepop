@@ -5,15 +5,13 @@ import Icon from 'react-native-vector-icons/Ionicons';
 import { useNavigation, useFocusEffect, NavigationContainer } from '@react-navigation/native';
 import { useStripe, StripeProvider } from '@stripe/stripe-react-native';
 import CheckoutForm from './CheckoutForm';
-import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import {BASE_URL} from '../../ip_address'
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import axios from 'axios';
 
 // to do:
-// fetch drinks function may not properly update checkoutlist?
 // be able to edit the drinks
   // take you back to a pre-populated create drink page and deletes the current drink object to that the drink can be updated
+// add ice ammount and drink size to cart object
 
 const CartPage = () => {
   const navigation = useNavigation();
@@ -113,14 +111,14 @@ const CartPage = () => {
 
   const renderDrinkItem = (drink) => (
     <View style={styles.drinkContainer}>
-      <Text style={styles.drinkText}>Size Drink: {drink.SodaUsed} with ice amount</Text>
+      <Text style={styles.drinkText}>{drink.Size} Drink: {drink.SodaUsed} with {drink.Ice} Ice</Text>
       <Text style={styles.ingredientsText}>
         Ingredients: {drink.SyrupsUsed ? drink.SyrupsUsed.join(', ') : ''} {drink.AddIns ? drink.AddIns.join(', ') : ''}
       </Text>
       <Text style={styles.priceText}>Price: ${calculatePrice(drink).toFixed(2)}</Text>
   
       <View style={styles.buttonRow}>
-        <TouchableOpacity onPress={() => navigation.navigate('CreateDrink', { editDrink: drink })} style={styles.button}>
+        <TouchableOpacity onPress={() => navigation.navigate('UpdateDrink', { editDrink: drink })} style={styles.button}>
           <Icon name="create-outline" size={24} color="#000" />
         </TouchableOpacity>
   
@@ -146,7 +144,19 @@ const CartPage = () => {
           keyExtractor={(item) => item.DrinkID.toString()}
           renderItem={({ item }) => renderDrinkItem(item)}
           contentContainerStyle={styles.listContainer}
-        />
+        /> 
+        {/* {drinks.length === 0 ? 
+          <Text style={styles.emptyCartText}>Your cart is empty.</Text>
+           : 
+            <FlatList
+              style={styles.padding}
+              data={drinks}
+              keyExtractor={(item) => item.DrinkID.toString()}
+              renderItem={renderDrinkItem}
+              contentContainerStyle={styles.listContainer}
+            />
+          } */}
+
         <View style={styles.padding}>
           <Text style={styles.totalText}>Cart Total: ${totalPrice.toFixed(2)}</Text>
 
@@ -197,6 +207,12 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: 'bold',
     marginTop: 5,
+  },
+  emptyCartText: {
+    fontSize: 18,
+    textAlign: 'center',
+    color: '#000',
+    marginTop: 20,
   },
   buttonRow: {
     flexDirection: 'row',
