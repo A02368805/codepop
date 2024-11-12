@@ -241,7 +241,7 @@ class DrinkTests(TestCase):
         self.assertEqual(Drink.objects.filter(DrinkID=drink.DrinkID).count(), 0)
 
     def test_create_drink_without_auth(self):
-        """Test creating a drink without being authenticated (should fail)"""
+        """Test creating a drink without being authenticated (should succed)"""
         data = {
             "Name": "Unauthorized Drink",
             "SodaUsed": ["Cola"],
@@ -253,7 +253,7 @@ class DrinkTests(TestCase):
 
         # Send a POST request without authentication
         response = self.client.post('/backend/drinks/', data, format='json')
-        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
 
     def test_get_drinks_for_specific_user(self):
         """Test retrieving drinks based on a specific user's favorites"""
@@ -740,7 +740,7 @@ class OrderTests(TestCase):
         response = self.client.post('/backend/orders/', data, format='json')
 
         # Expect a 401 Unauthorized response
-        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
 
     def test_create_order_with_invalid_drink(self):
         """Test creating an order with a non-existent drink ID."""

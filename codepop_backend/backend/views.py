@@ -215,6 +215,7 @@ class InventoryUpdateAPIView(RetrieveUpdateAPIView):
 class NotificationOperations(viewsets.ModelViewSet):
     queryset = Notification.objects.all()
     serializer_class = NotificationSerializer
+    permission_classes = [IsAuthenticated]
 
     def get_queryset(self):
         user_id = self.request.user.id
