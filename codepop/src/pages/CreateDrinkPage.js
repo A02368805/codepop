@@ -27,13 +27,6 @@ const CreateDrinkPage = () => {
   const [AddIns, setAddIns] = useState([]);
   const [selectedSize, setSize] = useState(null);
   const [selectedIce, setIce] = useState(null);
-  
-  // useFocusEffect(React.useCallback(() => {
-  //   if(route.params?.fromGenerateButton){
-  //     console.log("Generating drinks activated from home page button")
-  //     GenerateAI();
-  //   }
-  // }), [route.params?.fromGenerateButton]);
 
   useFocusEffect(
     React.useCallback(() => {
