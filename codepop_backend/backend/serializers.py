@@ -1,6 +1,6 @@
 from django.contrib.auth import get_user_model
 from rest_framework import serializers
-from .models import Preference, Drink, Inventory, Order, Notification
+from .models import Preference, Drink, Inventory, Order, Notification, Revenue
 
 
 class CreateUserSerializer(serializers.ModelSerializer):
@@ -117,3 +117,18 @@ class OrderSerializer(serializers.ModelSerializer):
         if not value:
             raise serializers.ValidationError("At least one drink must be included in the order.")
         return value
+
+class RevenueSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Revenue
+        fields = ['RevenueID', 'OrderID', 'TotalAmount', 'SaleDate']
+
+    def create(self, validated_data):
+        """Override the create method to ensure total amount calculation when a revenue instance is created."""
+        revenue_instance = Revenue(**validated_data)
+        # Ensure TotalAmount is calculated if not provided in the request data
+        if 'TotalAmount' not in validated_data or not validated_data['TotalAmount']:
+            revenue_instance.calculate_total_amount()
+        revenue_instance.save()
+        return revenue_instance
+

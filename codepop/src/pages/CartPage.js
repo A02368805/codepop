@@ -5,15 +5,13 @@ import Icon from 'react-native-vector-icons/Ionicons';
 import { useNavigation, useFocusEffect, NavigationContainer } from '@react-navigation/native';
 import { useStripe, StripeProvider } from '@stripe/stripe-react-native';
 import CheckoutForm from './CheckoutForm';
-import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import {BASE_URL} from '../../ip_address'
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import axios from 'axios';
 
 // to do:
-// fetch drinks function may not properly update checkoutlist?
 // be able to edit the drinks
   // take you back to a pre-populated create drink page and deletes the current drink object to that the drink can be updated
+// add ice ammount and drink size to cart object
 
 const CartPage = () => {
   const navigation = useNavigation();
@@ -35,8 +33,23 @@ const CartPage = () => {
       const currentList = cartList ? JSON.parse(cartList) : [];
       const token = await AsyncStorage.getItem('userToken');
   
-      const fetchedDrinks = []; // Temporary array to collect drinks
+      // const fetchedDrinks = []; // Temporary array to collect drinks
   
+      // for (let i = 0; i < currentList.length; i++) {
+      //   const response = await fetch(`${BASE_URL}/backend/drinks/${currentList[i]}/`, {
+      //     method: 'GET',
+      //     headers: {
+      //       'Content-Type': 'application/json',
+      //       'Authorization': `Token ${token}`,
+      //     },
+      //   });
+      //   const data = await response.json();
+      //   if (data != null) {
+      //     fetchedDrinks.push(data); // Add each drink to the temporary array
+      //   }
+      // }
+
+      const fetchedDrinks = [];
       for (let i = 0; i < currentList.length; i++) {
         const response = await fetch(`${BASE_URL}/backend/drinks/${currentList[i]}/`, {
           method: 'GET',
@@ -45,10 +58,11 @@ const CartPage = () => {
           },
         });
         const data = await response.json();
-        if (data != null) {
+        if (data != null && data.Size && data.SodaUsed && data.Ice) {
           fetchedDrinks.push(data); // Add each drink to the temporary array
         }
       }
+
   
       setDrinks(fetchedDrinks); // Update state once after all drinks are collected
       calculateTotalPrice(fetchedDrinks); // Calculate total price after fetching drinks
@@ -64,8 +78,12 @@ const CartPage = () => {
 
   const calculatePrice = (drink) => {
     // $2 base price + $0.30 per ingredient
-    return 2 + (drink.SyrupsUsed.length + drink.AddIns.length) * 0.3;
+    const syrupsCount = Array.isArray(drink.SyrupsUsed) ? drink.SyrupsUsed.length : 0;
+    const addInsCount = Array.isArray(drink.AddIns) ? drink.AddIns.length : 0;
+
+    return 2 + (syrupsCount + addInsCount) * 0.3;
   };
+
 
   const calculateTotalPrice = (drinksList) => {
     let total = 0; // Initialize total here
@@ -111,14 +129,14 @@ const CartPage = () => {
 
   const renderDrinkItem = (drink) => (
     <View style={styles.drinkContainer}>
-      <Text style={styles.drinkText}>Size Drink: {drink.SodaUsed} with ice amount</Text>
+      <Text style={styles.drinkText}>{drink.Size} Drink: {drink.SodaUsed} with {drink.Ice} Ice</Text>
       <Text style={styles.ingredientsText}>
         Ingredients: {drink.SyrupsUsed ? drink.SyrupsUsed.join(', ') : ''} {drink.AddIns ? drink.AddIns.join(', ') : ''}
       </Text>
       <Text style={styles.priceText}>Price: ${calculatePrice(drink).toFixed(2)}</Text>
   
       <View style={styles.buttonRow}>
-        <TouchableOpacity onPress={() => navigation.navigate('CreateDrink', { editDrink: drink })} style={styles.button}>
+        <TouchableOpacity onPress={() => navigation.navigate('UpdateDrink', { drink })} style={styles.button}>
           <Icon name="create-outline" size={24} color="#000" />
         </TouchableOpacity>
   
@@ -139,13 +157,28 @@ const CartPage = () => {
         <View style={styles.container}>
         <Text style={styles.headerText}>Your Drinks</Text>
 
-        <FlatList style={styles.padding}
+        {/* <FlatList style={styles.padding}
           data={drinks}
           keyExtractor={(item) => item.DrinkID.toString()}
           renderItem={({ item }) => renderDrinkItem(item)}
           contentContainerStyle={styles.listContainer}
-        />
+        />  */}
+        {Array.isArray(drinks) && drinks.length === 0 ? (
+          <Text style={styles.emptyCartText}>Your cart is empty</Text>
+          
+        ) : (
+          <FlatList
+            style={styles.padding}
+            data={drinks}
+            keyExtractor={(item) => item.DrinkID ? item.DrinkID.toString() : Math.random().toString()}
+            renderItem={({ item }) => renderDrinkItem(item)}
+            contentContainerStyle={styles.listContainer}
+          />
+        )}
+
+
         <View style={styles.padding}>
+
           <Text style={styles.totalText}>Cart Total: ${totalPrice.toFixed(2)}</Text>
 
           <TouchableOpacity onPress={openPaymentSheet} style={styles.payButton}>
@@ -195,6 +228,12 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: 'bold',
     marginTop: 5,
+  },
+  emptyCartText: {
+    fontSize: 18,
+    textAlign: 'center',
+    color: '#000',
+    marginTop: 20,
   },
   buttonRow: {
     flexDirection: 'row',

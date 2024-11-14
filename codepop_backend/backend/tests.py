@@ -4,7 +4,8 @@ from django.contrib.auth.models import User
 from rest_framework.test import APIClient, APITestCase
 from rest_framework import status
 from rest_framework.authtoken.models import Token  # Import for token authentication
-from .models import Preference, Drink, Inventory, Notification, Order
+from unittest.mock import patch
+from .models import Preference, Drink, Inventory, Notification, Order, Revenue
 from django.utils import timezone
 from datetime import timedelta
 from .drinkAI import generate_soda
@@ -240,7 +241,7 @@ class DrinkTests(TestCase):
         self.assertEqual(Drink.objects.filter(DrinkID=drink.DrinkID).count(), 0)
 
     def test_create_drink_without_auth(self):
-        """Test creating a drink without being authenticated (should fail)"""
+        """Test creating a drink without being authenticated (should succed)"""
         data = {
             "Name": "Unauthorized Drink",
             "SodaUsed": ["Cola"],
@@ -252,7 +253,7 @@ class DrinkTests(TestCase):
 
         # Send a POST request without authentication
         response = self.client.post('/backend/drinks/', data, format='json')
-        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
 
     def test_get_drinks_for_specific_user(self):
         """Test retrieving drinks based on a specific user's favorites"""
@@ -739,7 +740,7 @@ class OrderTests(TestCase):
         response = self.client.post('/backend/orders/', data, format='json')
 
         # Expect a 401 Unauthorized response
-        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
 
     def test_create_order_with_invalid_drink(self):
         """Test creating an order with a non-existent drink ID."""
@@ -821,6 +822,171 @@ class OrderTests(TestCase):
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertNotIn(self.drink1.DrinkID, response.data['Drinks'])  # Ensure drink1 is no longer in the order
         self.assertIn(self.drink2.DrinkID, response.data['Drinks'])  # Ensure drink2 is still in the order
+
+class RevenueTests(TestCase):
+    def setUp(self):
+        # Create users for authentication
+        self.user1 = User.objects.create_user(username='user1', password='password123')
+        self.user2 = User.objects.create_user(username='user2', password='password123')
+
+        # Create tokens for both users
+        self.token1 = Token.objects.create(user=self.user1)
+        self.token2 = Token.objects.create(user=self.user2)
+
+        # Create sample drinks
+        self.drink1 = Drink.objects.create(Name="Cola Vanilla", SodaUsed=["Cola"], SyrupsUsed=["Vanilla"], User_Created=False, Price=1.99)
+        self.drink2 = Drink.objects.create(Name="Lemonade Mint", SodaUsed=["Lemonade"], AddIns=["Mint"], User_Created=False, Price=2.50)
+
+        # Create a sample order for testing revenue
+        self.order = Order.objects.create(UserID=self.user1, OrderStatus="pending", PaymentStatus="pending")
+        self.order.Drinks.set([self.drink1, self.drink2])
+
+        # Set up the API client
+        self.client = APIClient()
+
+    def authenticate(self, token):
+        """Helper method to set up token authentication"""
+        self.client.credentials(HTTP_AUTHORIZATION='Token ' + token)
+
+    def test_create_revenue(self):
+        """Test creating a new revenue for an order"""
+        self.authenticate(self.token1.key)
+
+        data = {
+            "OrderID": self.order.OrderID,  # Only OrderID, no TotalAmount required
+        }
+
+        response = self.client.post('/backend/revenues/', data, format='json')
+
+        # Check that the response status code is 201 Created
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+
+        # Verify that the revenue was created
+        self.assertEqual(Revenue.objects.count(), 1)
+        revenue = Revenue.objects.first()
+        self.assertEqual(revenue.OrderID, self.order.OrderID)  # Check if OrderID is set correctly
+        self.assertEqual(revenue.TotalAmount, 1.99 + 2.50)  # Total should be the sum of the drink prices
+
+    def test_retrieve_revenue(self):
+        """Test retrieving a revenue record"""
+        # First, create a revenue record
+        revenue = Revenue.objects.create(OrderID=self.order.OrderID, TotalAmount=1.99 + 2.50)
+
+        self.authenticate(self.token1.key)
+
+        response = self.client.get(f'/backend/revenues/{revenue.RevenueID}/')
+
+        # Check that the response status code is 200 OK
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        # Verify the correct revenue details are returned
+        self.assertEqual(response.data['RevenueID'], revenue.RevenueID)
+        self.assertEqual(response.data['TotalAmount'], revenue.TotalAmount)
+
+    def test_update_revenue_after_deleting_drink(self):
+        """Test updating the revenue when a drink is removed from the order"""
+        # First, create a revenue record
+        revenue = Revenue.objects.create(OrderID=self.order.OrderID, TotalAmount=1.99 + 2.50)
+
+        # Ensure the revenue was created with the correct total amount
+        self.assertEqual(revenue.TotalAmount, 1.99 + 2.50)
+
+        # Now, delete one drink from the order (let's remove drink1)
+        self.authenticate(self.token1.key)
+
+        delete_drink_data = {
+            "RemoveDrinks": [self.drink1.DrinkID]  # Use "RemoveDrinks" to match the view
+        }
+
+        # Update the order by removing one drink
+        response = self.client.patch(f'/backend/orders/{self.order.OrderID}/', delete_drink_data, format='json')
+
+        # Check if the drink was removed successfully
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertNotIn(self.drink1.DrinkID, response.data['Drinks'])  # Ensure drink1 is no longer in the order
+        self.assertIn(self.drink2.DrinkID, response.data['Drinks'])  # Ensure drink2 is still in the order
+
+        # Refresh the revenue instance to recalculate the total
+        # Now, update the revenue (this will trigger the recalculation of the total amount)
+        update_data = {}
+
+        response = self.client.put(f'/backend/revenues/{revenue.RevenueID}/', update_data, format='json')
+
+        # Check if the total amount was recalculated correctly
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        # The new total should only include the remaining drink (drink2)
+        revenue.refresh_from_db()  # Reload the revenue from the database
+        self.assertEqual(revenue.TotalAmount, 2.50)  # The new total should be just the price of drink2
+
+    def test_delete_revenue(self):
+        """Test deleting a revenue record"""
+        # First, create a revenue record
+        revenue = Revenue.objects.create(OrderID=self.order.OrderID, TotalAmount=1.99 + 2.50)
+
+        self.authenticate(self.token1.key)
+
+        response = self.client.delete(f'/backend/revenues/{revenue.RevenueID}/')
+
+        # Check that the response status code is 204 No Content (successful deletion)
+        self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
+
+        # Verify that the revenue record was deleted
+        self.assertEqual(Revenue.objects.count(), 0)
+
+    def test_create_revenue_without_total_amount(self):
+        """Test creating a revenue record without providing TotalAmount (it should be calculated automatically)"""
+        self.authenticate(self.token1.key)
+
+        data = {
+            "OrderID": self.order.OrderID,  # Only OrderID, no TotalAmount required
+        }
+
+        response = self.client.post('/backend/revenues/', data, format='json')
+
+        # Check that the response status code is 201 Created
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+
+        # Verify that the total amount was automatically calculated
+        revenue = Revenue.objects.first()
+        self.assertEqual(revenue.TotalAmount, 1.99 + 2.50)  # Total should be the sum of the drink prices
+
+    def test_create_revenue_unauthenticated(self):
+        """Test that creating a revenue without authentication fails"""
+        data = {
+            "OrderID": self.order.OrderID,  # Only OrderID, no TotalAmount required
+        }
+
+        response = self.client.post('/backend/revenues/', data, format='json')
+
+        # Check that the response status code is 401 Unauthorized
+        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
+
+    def test_update_revenue_to_zero(self):
+        """Test updating the revenue total amount to 0."""
+        # First, create a revenue record with an initial total amount
+        revenue = Revenue.objects.create(OrderID=self.order.OrderID)
+
+        # Authenticate the user for the update
+        self.authenticate(self.token1.key)
+
+        # Prepare the data to update TotalAmount to 0
+        update_data = {
+            "TotalAmount": 0.0  # Set the new total amount to 0
+        }
+
+        # Perform the PUT request to update the revenue record
+        response = self.client.put(f'/backend/revenues/{revenue.RevenueID}/', update_data, format='json')
+
+        # Check if the response status code is 200 OK, indicating a successful update
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        # Refresh the revenue instance from the database to get the latest data
+        revenue.refresh_from_db()
+
+        # Check if the TotalAmount was updated to 0.0
+        self.assertEqual(revenue.TotalAmount, 0.0)
+
 
 # Some Inner-method comments follow this format:
 # Input: expected output

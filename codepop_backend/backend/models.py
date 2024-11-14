@@ -104,3 +104,33 @@ class Order(models.Model):
         
     def __str__(self):
         return f"Order {self.OrderID} by User {self.UserID.username}"
+
+class Revenue(models.Model):
+    RevenueID = models.AutoField(primary_key=True)
+    OrderID = models.IntegerField(default=1)
+    TotalAmount = models.FloatField(default=0.0)
+    SaleDate = models.DateTimeField(default=timezone.now)
+
+    def calculate_total_amount(self):
+        """Calculate the total revenue for the order by summing the price of each drink."""
+        try:
+            order = Order.objects.get(OrderID=self.OrderID)
+            total = sum(drink.Price for drink in order.Drinks.all())
+            self.TotalAmount = total
+            return total
+        except Order.DoesNotExist:
+            self.TotalAmount = 0  # Handle the case where the order doesn't exist
+            return 0
+
+    def save(self, *args, **kwargs):
+        """Override the save method to automatically calculate the total amount unless explicitly set to 0."""
+        if self.TotalAmount is None:  # Only calculate if TotalAmount is not set
+            self.calculate_total_amount()
+        super(Revenue, self).save(*args, **kwargs)
+
+    def __str__(self):
+        """Return a human-readable string representation of the revenue."""
+        try:
+            return f"Revenue {self.RevenueID} for Order {self.OrderID}: ${self.TotalAmount:.2f}"
+        except Order.DoesNotExist:
+            return f"Revenue {self.RevenueID} for unknown Order {self.OrderID}: ${self.TotalAmount:.2f}"
