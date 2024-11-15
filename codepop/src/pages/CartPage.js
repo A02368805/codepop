@@ -30,22 +30,9 @@ const CartPage = () => {
       const cartList = await AsyncStorage.getItem('checkoutList');
       const currentList = cartList ? JSON.parse(cartList) : [];
       const token = await AsyncStorage.getItem('userToken');
-  
-      // const fetchedDrinks = []; // Temporary array to collect drinks
-  
-      // for (let i = 0; i < currentList.length; i++) {
-      //   const response = await fetch(`${BASE_URL}/backend/drinks/${currentList[i]}/`, {
-      //     method: 'GET',
-      //     headers: {
-      //       'Content-Type': 'application/json',
-      //       'Authorization': `Token ${token}`,
-      //     },
-      //   });
-      //   const data = await response.json();
-      //   if (data != null) {
-      //     fetchedDrinks.push(data); // Add each drink to the temporary array
-      //   }
-      // }
+
+      // Save drinks to a separate AsyncStorage list before removing - so the user can rate them on the post checkout page
+      // await AsyncStorage.setItem("purchasedDrinks", JSON.stringify(currentList));
 
       const fetchedDrinks = [];
       for (let i = 0; i < currentList.length; i++) {
@@ -60,12 +47,12 @@ const CartPage = () => {
           fetchedDrinks.push(data); // Add each drink to the temporary array
         }
       }
-
-  
+      
       setDrinks(fetchedDrinks); // Update state once after all drinks are collected
       calculateTotalPrice(fetchedDrinks); // Calculate total price after fetching drinks
-  
-      // console.log(fetchedDrinks); // Check the drinks list in the console
+
+      // Store the full drink objects in `purchasedDrinks` instead of IDs
+      await AsyncStorage.setItem("purchasedDrinks", JSON.stringify(fetchedDrinks));
   
     } catch (error) {
       console.error('Failed to get drinks: ', error);
@@ -113,6 +100,8 @@ const CartPage = () => {
       // Update the AsyncStorage to remove the drink ID from the checkout list
       const updatedList = currentList.filter(item => item !== drinkId);
       await AsyncStorage.setItem("checkoutList", JSON.stringify(updatedList));
+      // also update the rating list
+      await AsyncStorage.setItem("purchasedDrinks", JSON.stringify(updatedDrinks));
   
       // Recalculate the total price with the updated drinks list
       calculateTotalPrice(updatedDrinks);
@@ -127,7 +116,7 @@ const CartPage = () => {
 
   const renderDrinkItem = (drink) => (
     <View style={styles.drinkContainer}>
-      <Text style={styles.drinkText}>{drink.Size} Drink: {drink.SodaUsed} with {drink.Ice} Ice</Text>
+      <Text style={styles.drinkText}>{drink.Size} Drink: {drink.SodaUsed.join(', ')} with {drink.Ice} Ice</Text>
       <Text style={styles.ingredientsText}>
         Ingredients: {drink.SyrupsUsed ? drink.SyrupsUsed.join(', ') : ''} {drink.AddIns ? drink.AddIns.join(', ') : ''}
       </Text>
@@ -155,12 +144,6 @@ const CartPage = () => {
         <View style={styles.container}>
         <Text style={styles.headerText}>Your Drinks</Text>
 
-        {/* <FlatList style={styles.padding}
-          data={drinks}
-          keyExtractor={(item) => item.DrinkID.toString()}
-          renderItem={({ item }) => renderDrinkItem(item)}
-          contentContainerStyle={styles.listContainer}
-        />  */}
         {Array.isArray(drinks) && drinks.length === 0 ? (
           <Text style={styles.emptyCartText}>Your cart is empty</Text>
           

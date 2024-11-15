@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, TextInput, ScrollView } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, TextInput, ScrollView, Alert } from 'react-native';
 import NavBar from '../components/NavBar';
 import DropDown from '../components/DropDown';
 import { useNavigation } from '@react-navigation/native';
@@ -96,31 +96,38 @@ const UpdateDrink = ({route, navigation}) => {
 
   const updateDrink = async () => {
     try {
-      const token = await AsyncStorage.getItem('userToken');
-  
-      const response = await fetch(`${BASE_URL}/backend/drinks/${drink.DrinkID}/`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Token ${token}`,
-        },
-        body: JSON.stringify({
-          Name: "Updated Drink",
-          SodaUsed,
-          SyrupsUsed,
-          AddIns,
-          Price: 2.00, // Adjust price as needed
-          User_Created: true,
-          Size: selectedSize,
-          Ice: selectedIce,
-        }),
-      });
-  
-      if (!response.ok) {
-        throw new Error(`Failed to update drink. Status: ${response.status}`);
+      // Make sure the user has a soda selected
+      if(SodaUsed.length == 0){
+
+        Alert.alert("Dont forget to choose a Soda!")
+
+      }else{
+        const token = await AsyncStorage.getItem('userToken');
+    
+        const response = await fetch(`${BASE_URL}/backend/drinks/${drink.DrinkID}/`, {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Token ${token}`,
+          },
+          body: JSON.stringify({
+            Name: "Updated Drink",
+            SodaUsed,
+            SyrupsUsed,
+            AddIns,
+            Price: 2.00, // Adjust price as needed
+            User_Created: true,
+            Size: selectedSize,
+            Ice: selectedIce,
+          }),
+        });
+    
+        if (!response.ok) {
+          throw new Error(`Failed to update drink. Status: ${response.status}`);
+        }
+    
+        navigation.navigate('Cart');
       }
-  
-      navigation.navigate('Cart');
     } catch (error) {
       console.error('Error updating drink:', error);
     }

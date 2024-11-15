@@ -10,7 +10,6 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 
 // to do:
 // generate drink from AI
-// fix the ice/size error pop up so the user doesnt get the error message as well
 
 
 const CreateDrinkPage = () => {
@@ -33,9 +32,9 @@ const CreateDrinkPage = () => {
   const addToCart = async () => {
     try {
       // check if ice and size have been selected
-      if(selectedIce == null || selectedSize == null){
+      if(selectedIce == null || selectedSize == null || SodaUsed.length == 0){
 
-        Alert.alert("Dont forget to choose a Size and Ice Ammount!")
+        Alert.alert("Dont forget to choose a Soda, Size and, Ice Ammount!")
 
       }else{
         const token = await AsyncStorage.getItem('userToken');
