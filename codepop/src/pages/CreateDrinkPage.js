@@ -2,8 +2,8 @@ import React, { useState } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, TextInput, ScrollView, Alert } from 'react-native';
 import NavBar from '../components/NavBar';
 import DropDown from '../components/DropDown';
+import { useNavigation, useFocusEffect, useRoute } from '@react-navigation/native';
 import Gif from '../components/Gif';
-import { useNavigation } from '@react-navigation/native';
 import { sodaOptions, syrupOptions, juiceOptions } from '../components/Ingredients';
 import {BASE_URL} from '../../ip_address'
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -13,6 +13,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 
 
 const CreateDrinkPage = () => {
+  const route = useRoute();
   const navigation = useNavigation();
   const [searchText, setSearchText] = useState('');
   const [openDropdown, setOpenDropdown] = useState({
@@ -27,7 +28,15 @@ const CreateDrinkPage = () => {
   const [AddIns, setAddIns] = useState([]);
   const [selectedSize, setSize] = useState(null);
   const [selectedIce, setIce] = useState(null);
-  
+
+  useFocusEffect(
+    React.useCallback(() => {
+      if (route.params?.fromGenerateButton) {
+        console.log("Generating drinks activated from home page button");
+        GenerateAI();
+      }
+    }, [route.params?.fromGenerateButton])
+  );
 
   const addToCart = async () => {
     try {
@@ -145,10 +154,35 @@ const CreateDrinkPage = () => {
   };
   
   // function for generate drink button which generates a drink with AI
-  const GenerateAI = () => {
-    // logic to generate an AI drink
-    // get request from a backend veiw which should return a json object
-    // backend endpoint should be like /backend/AI
+  const GenerateAI = async () => {
+    try {
+      const user_id = await AsyncStorage.getItem('userId');
+      let url = `${BASE_URL}/backend/generate/`;
+
+      if (user_id) {
+        url = `${BASE_URL}/backend/generate/${user_id}/`;
+      }
+
+      const response = await fetch(url, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+        }
+      });
+
+      if (!response.ok) {
+        throw new Error(`Error when trying to generate AI drink. Status: ${response.status}`);
+      }
+
+      drinkDict = await response.json();
+      // To frontend people:
+      // drinkDict is missing DrinkID, Name, Rating, and Price
+      // (also technically "Favorite" but I don't think we need to worry about that here)
+      console.log(drinkDict);
+    }
+    catch (error) {
+      console.error('Error when trying to generate AI drink:', error);
+    }
   };
 
   // reactive gif stuff

@@ -180,10 +180,10 @@ def generate_soda(user_preferences):
     syrupPrefs = []
     sodaPrefs = []
     for item in user_preferences:
-        if item in validSyrups:
-            syrupPrefs.append(item)
-        elif item in validSodas:
-            sodaPrefs.append(item)
+        if item.lower() in validSyrups:
+            syrupPrefs.append(item.lower())
+        elif item.lower() in validSodas:
+            sodaPrefs.append(item.lower())
 
     if len(syrupPrefs) == 0: # if user has no syrup prefs we can send the popular flavors instead
         return drink # empty
