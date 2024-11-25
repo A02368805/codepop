@@ -15,6 +15,16 @@ class Command(BaseCommand):
             first_name='Lemonjello',
             last_name='Smith'
         )
+
+        staff_user = User.objects.create_user(
+            username='staff',
+            email='staff@codepop.com',
+            password= 'password',
+            first_name = 'Orlando',
+            is_staff = True,
+            is_superuser = False
+        )
+
         user1 = User.objects.create_user(
             username='test',
             email='test@test.com',

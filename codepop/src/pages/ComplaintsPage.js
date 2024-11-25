@@ -2,38 +2,99 @@ import React, { useState, useRef, useEffect } from 'react';
 import { View, Text, StyleSheet, Image, TextInput, TouchableOpacity, ScrollView } from 'react-native';
 import NavBar from '../components/NavBar';
 import Icon from 'react-native-vector-icons/Ionicons';
+import { useNavigation } from '@react-navigation/native';
+import { BASE_URL } from '../../ip_address';  // Ensure BASE_URL is your server's base URL
+import { registerRootComponent } from 'expo';
 
-// to do
-    // connect AI chatbot
-
-const ComplaintPage = () => {
+const ComplaintsPage = () => {
     const [searchText, setSearchText] = useState('');
     const [messages, setMessages] = useState([{ text: "Hi! I'm Bob. How can I help you?", isBot: true }]);
     const scrollViewRef = useRef();
+    const [refund_phase, setRefundPhase] = useState("none");
+    const [wrong_drink_phase, setWrongDrinkPhase] = useState("none");
+    const [order_num, setOrderNum] = useState("none");
+    const [drink_nums, setDrinkNums] = useState("none");
+    const navigation = useNavigation();
 
     // Function to handle message submission
-    const complaintAI = () => {
+    const complaintAI = async () => {
         if (searchText.trim() === '') return;
 
+        const userRequest = searchText;
+    
         // Add the user's message
         setMessages((prevMessages) => [
             ...prevMessages,
             { text: searchText, isBot: false }
         ]);
-
+    
         // Clear the input field
         setSearchText('');
+    
+        try {
+            // Make a POST request to the chatbot endpoint
+            const response = await fetch(`${BASE_URL}/backend/chatbot/`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    message: userRequest,
+                    refund_phase: refund_phase,
+                    wrong_drink_phase: wrong_drink_phase,
+                    order_num: order_num,
+                    drink_nums: drink_nums
+                })
+            });
+    
+            if (response.ok) {
+                const data = await response.json();
+                const botResponse = data.responses;
+                const response_refund_phase = data.refund_phase;
+                const response_wrong_drink_phase = data.wrong_drink_phase;
+                setOrderNum(data.order_num);
+                setDrinkNums(data.drink_nums);
 
-        // Simulate a bot response
-        // todo: add in chatbotAI logic
-        setTimeout(() => {
+                if(response_refund_phase === "none" && response_wrong_drink_phase === "none"){
+                    setRefundPhase(null);
+                    setWrongDrinkPhase(null);
+                    // Update messages with bot's response
+                    setMessages((prevMessages) => [
+                        ...prevMessages,
+                        { text: botResponse, isBot: true }
+                    ]);
+                } else if (response_wrong_drink_phase === "4"){
+                    //I will need to go to the post order page with it processing the newly remade order
+                    // Update messages with bot's response
+                    setMessages((prevMessages) => [
+                        ...prevMessages,
+                        { text: botResponse, isBot: true }
+                    ]);
+                    setTimeout(() => {
+                        navigation.navigate("PostCheckout");
+                      }, 2000); // 2000 milliseconds = 2 seconds
+                    
+                } else {
+                    setRefundPhase(response_refund_phase);
+                    setWrongDrinkPhase(response_wrong_drink_phase);
+                    // Update messages with bot's response
+                    setMessages((prevMessages) => [
+                        ...prevMessages,
+                        { text: botResponse, isBot: true }
+                    ]);
+                }
+            } else {
+                throw new Error("Failed to fetch response from chatbot");
+            }
+        } catch (error) {
+            console.error('Error in chatbot response:', error);
             setMessages((prevMessages) => [
                 ...prevMessages,
-                { text: "I'll review your complaint shortly.", isBot: true }
+                { text: "I'm having trouble understanding right now. Please try again later.", isBot: true }
             ]);
-        }, 500);
+        }
     };
-
+    
     // Scroll to the bottom of the chat whenever messages update
     useEffect(() => {
         if (scrollViewRef.current) {
@@ -87,6 +148,8 @@ const ComplaintPage = () => {
             <NavBar />
         </View>
     );
+
+    
 };
 
 const styles = StyleSheet.create({
@@ -160,4 +223,6 @@ const styles = StyleSheet.create({
     },
 });
 
-export default ComplaintPage;
+export default ComplaintsPage;
+
+

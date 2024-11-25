@@ -1,17 +1,19 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, TextInput, ScrollView } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, TextInput, ScrollView, Alert } from 'react-native';
 import NavBar from '../components/NavBar';
 import DropDown from '../components/DropDown';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useFocusEffect, useRoute } from '@react-navigation/native';
+import Gif from '../components/Gif';
 import { sodaOptions, syrupOptions, juiceOptions } from '../components/Ingredients';
 import {BASE_URL} from '../../ip_address'
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 // to do:
-// create drink gif
 // generate drink from AI
 
+
 const CreateDrinkPage = () => {
+  const route = useRoute();
   const navigation = useNavigation();
   const [searchText, setSearchText] = useState('');
   const [openDropdown, setOpenDropdown] = useState({
@@ -26,50 +28,64 @@ const CreateDrinkPage = () => {
   const [AddIns, setAddIns] = useState([]);
   const [selectedSize, setSize] = useState(null);
   const [selectedIce, setIce] = useState(null);
-  
+
+  useFocusEffect(
+    React.useCallback(() => {
+      if (route.params?.fromGenerateButton) {
+        console.log("Generating drinks activated from home page button");
+        GenerateAI();
+      }
+    }, [route.params?.fromGenerateButton])
+  );
 
   const addToCart = async () => {
     try {
-      const token = await AsyncStorage.getItem('userToken');
-  
-      const response = await fetch(`${BASE_URL}/backend/drinks/`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Token ${token}`,
-        },
-        body: JSON.stringify({ 
-          Name: "Drink in User Cart",  // Example name for the drink
-          SodaUsed: SodaUsed,  // Default value if SodaUsed is null
-          SyrupsUsed: SyrupsUsed,
-          AddIns: AddIns,
-          Price: 2.00,
-          User_Created: true,    // Assuming the user is creating the drink
-          Size: selectedSize,
-          Ice: selectedIce,
-        })
-      });
-  
-      if (!response.ok) {
-        throw new Error(`Failed to add drink. Status: ${response.status}`);
-      }
-      // add drink item (the drinks ID) to the checkout list from App.js
-      try{
-        // gets list of out of storage on your phone
-        cartList = await AsyncStorage.getItem("checkoutList");
-        const currentList = cartList ? JSON.parse(cartList) : [];
-        // takes the response (what we get after we create a drink) and extracts the drinkID
-        const data = await response.json();
-        const drinkID = data.DrinkID;
-        // add the drinkID to the checkoutList
-        const updatedList = [...currentList, drinkID]
-        // Saves the checkoutlist back into the storage on the phone
-        await AsyncStorage.setItem('checkoutList', JSON.stringify(updatedList));
-      }catch (error){
-        console.log(error)
-      }
+      // check if ice and size have been selected
+      if(selectedIce == null || selectedSize == null || SodaUsed.length == 0){
 
-      navigation.navigate('Cart');
+        Alert.alert("Dont forget to choose a Soda, Size and, Ice Ammount!")
+
+      }else{
+        const token = await AsyncStorage.getItem('userToken');
+    
+        const response = await fetch(`${BASE_URL}/backend/drinks/`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ 
+            Name: "Drink in User Cart",  // Example name for the drink
+            SodaUsed: SodaUsed,  // Default value if SodaUsed is null
+            SyrupsUsed: SyrupsUsed,
+            AddIns: AddIns,
+            Price: 2.00,
+            User_Created: true,    // Assuming the user is creating the drink
+            Size: selectedSize,
+            Ice: selectedIce,
+          })
+        });
+    
+        if (!response.ok) {
+          throw new Error(`Failed to add drink. Status: ${response.status}`);
+        }
+        // add drink item (the drinks ID) to the checkout list from App.js
+        try{
+          // gets list of out of storage on your phone
+          cartList = await AsyncStorage.getItem("checkoutList");
+          const currentList = cartList ? JSON.parse(cartList) : [];
+          // takes the response (what we get after we create a drink) and extracts the drinkID
+          const data = await response.json();
+          const drinkID = data.DrinkID;
+          // add the drinkID to the checkoutList
+          const updatedList = [...currentList, drinkID]
+          // Saves the checkoutlist back into the storage on the phone
+          await AsyncStorage.setItem('checkoutList', JSON.stringify(updatedList));
+        }catch (error){
+          console.log(error)
+        }
+
+        navigation.navigate('Cart');
+      }
     } catch (error) {
       console.error('Error adding drink to cart:', error);
     }
@@ -138,9 +154,70 @@ const CreateDrinkPage = () => {
   };
   
   // function for generate drink button which generates a drink with AI
-  const GenerateAI = () => {
-    // logic to generate an AI drink
+  const GenerateAI = async () => {
+    try {
+      const user_id = await AsyncStorage.getItem('userId');
+      let url = `${BASE_URL}/backend/generate/`;
+
+      if (user_id) {
+        url = `${BASE_URL}/backend/generate/${user_id}/`;
+      }
+
+      const response = await fetch(url, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+        }
+      });
+
+      if (!response.ok) {
+        throw new Error(`Error when trying to generate AI drink. Status: ${response.status}`);
+      }
+
+      drinkDict = await response.json();
+      // To frontend people:
+      // drinkDict is missing DrinkID, Name, Rating, and Price
+      // (also technically "Favorite" but I don't think we need to worry about that here)
+      console.log(drinkDict);
+    }
+    catch (error) {
+      console.error('Error when trying to generate AI drink:', error);
+    }
   };
+
+  // reactive gif stuff
+  const getLayers = (soda, syrups, addins) => {
+    const layers = [];
+    const totalItems = soda.length + syrups.length + addins.length;
+  
+    soda.forEach((sodaName) => {
+      const sodaOption = sodaOptions.find((opt) => opt.label === sodaName);
+      if (sodaOption) {
+        layers.push({ color: sodaOption.color, height: 100 / totalItems });
+      } else {
+      }
+    });
+  
+    syrups.forEach((syrupName) => {
+      const syrupOption = syrupOptions.find((opt) => opt.label === syrupName);
+      if (syrupOption) {
+        layers.push({ color: syrupOption.color, height: 100 / totalItems });
+      } else {
+      }
+    });
+  
+    addins.forEach((addinName) => {
+      const addInOption = syrupOptions.find((opt) => opt.label === addinName); // Assuming AddIns use syrupOptions
+      if (addInOption) {
+        layers.push({ color: addInOption.color, height: 100 / totalItems });
+      } else {
+      }
+    });
+    return layers;
+  };  
+  
+  const layers = getLayers(SodaUsed, SyrupsUsed, AddIns);
+  
 
   return (
     <View style={styles.wholePage}>
@@ -167,9 +244,9 @@ const CreateDrinkPage = () => {
 
         
         <View style={styles.graphicContainer}>
+          <View style={styles.straw}></View>
           {/* Drink graphic in the center */}
-          <Text style={styles.drinkGraphicText}>Drink GIF goes here</Text>
-          {/* {gifUrl && <Image source={{ uri: gifUrl }} style={styles.gifImage} />} */}
+          <Gif layers={layers}/>
 
           {/* Button to generate drinks */}
           <TouchableOpacity onPress={GenerateAI} style={styles.button}>
@@ -323,6 +400,17 @@ const styles = StyleSheet.create({
     marginVertical: 15,
     borderRadius: 5,
     alignSelf: 'center', // Center the search input
+  },
+  straw: {
+    position: 'absolute',
+    top: 10, // Position the straw above the cup
+    left: '50%',
+    width: 10,
+    height: 240,
+    backgroundColor: 'F92758',  // Straw color
+    borderRadius: 5,
+    transform: [{ translateX: -5 }],  // Center the straw horizontally
+    zIndex: 1, // Ensure straw appears on top of the drink container
   },
 });
 

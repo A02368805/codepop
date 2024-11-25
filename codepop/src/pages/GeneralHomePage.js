@@ -67,6 +67,7 @@ const GeneralHomePage = () => {
         await AsyncStorage.removeItem('userToken');
         await AsyncStorage.removeItem('userId');
         await AsyncStorage.removeItem('first_name');
+        await AsyncStorage.removeItem('userRole');
         
         setIsLoggedIn(false);
         setName(null);
@@ -88,7 +89,8 @@ const GeneralHomePage = () => {
 
   // Generate drinks button press
   const generateDrinks = () => {
-    console.log('generating drinks...')
+    console.log('generating drinks...');
+    navigation.navigate('CreateDrink', {fromGenerateButton: true} );
   }
 
   return (

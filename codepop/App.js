@@ -16,6 +16,7 @@ import GeneralHomePage from './src/pages/GeneralHomePage';
 import CompletePage from './src/pages/CompletePage';
 import CheckoutForm from './src/pages/CheckoutForm';
 import PreferencesPage from './src/pages/PreferencesPage';
+import PostCheckout from './src/pages/PostCheckout';
 
 const Stack = createNativeStackNavigator();
 const title = 'CodePop' 
@@ -117,17 +118,17 @@ const App = () => {
         />
         <Stack.Screen
           name="UpdateDrink"
-          component={PaymentPage}
+          component={UpdateDrink}
           options={{ title: 'UpdateDrink' }}
         />
         <Stack.Screen
           name="ManagerDash"
-          component={PaymentPage}
+          component={ManagerDash}
           options={{ title: 'ManagerDash' }}
         />
         <Stack.Screen
           name="AdminDash"
-          component={PaymentPage}
+          component={AdminDash}
           options={{ title: 'AdminDash' }}
         />
         <Stack.Screen
@@ -139,6 +140,11 @@ const App = () => {
           name="Checkout"
           component={CheckoutForm}
           options={{ title: 'Checkout Form' }}
+        />
+        <Stack.Screen
+          name="PostCheckout"
+          component={PostCheckout}
+          options={{ title: 'PostCheckout' }}
         />
       </Stack.Navigator>
     </NavigationContainer>

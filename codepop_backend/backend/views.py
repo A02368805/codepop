@@ -11,8 +11,8 @@ from rest_framework.authtoken.views import ObtainAuthToken
 from rest_framework.authtoken.models import Token
 from rest_framework import status, viewsets
 from rest_framework.views import APIView
-from .models import Preference, Drink, Inventory, Notification, Order
-from .serializers import CreateUserSerializer, PreferenceSerializer, DrinkSerializer, InventorySerializer, NotificationSerializer, OrderSerializer
+from .models import Preference, Drink, Inventory, Notification, Order, Revenue
+from .serializers import CreateUserSerializer, PreferenceSerializer, DrinkSerializer, InventorySerializer, NotificationSerializer, OrderSerializer, RevenueSerializer
 from rest_framework.permissions import IsAuthenticated
 import stripe
 from django.conf import settings
@@ -23,9 +23,10 @@ from django.utils.decorators import method_decorator
 import json
 from rest_framework.decorators import action
 from django.utils.dateparse import parse_datetime
+from .drinkAI import generate_soda
 
 stripe.api_key = settings.STRIPE_SECRET_KEY
-
+    
 #Custom login to so that it get's a token but also the user's first name and the user id
 class CustomAuthToken(ObtainAuthToken):
     def post(self, request, *args, **kwargs):
@@ -37,6 +38,8 @@ class CustomAuthToken(ObtainAuthToken):
             'token': token.key,
             'user_id': user.pk,
             'first_name': user.first_name,
+            'is_admin' : user.is_superuser,
+            'is_manager' : user.is_staff,
             
         })
 
@@ -70,6 +73,7 @@ class LogoutUserAPIView(APIView):
 class PreferencesOperations(viewsets.ModelViewSet):
     queryset = Preference.objects.all()
     serializer_class = PreferenceSerializer
+    permission_classes = [IsAuthenticated]
 
     def create(self, request, *args, **kwargs):
         # Custom logic for creating a drink can go here
@@ -85,6 +89,7 @@ class PreferencesOperations(viewsets.ModelViewSet):
 
 class UserPreferenceLookup(ListAPIView):
     serializer_class = PreferenceSerializer
+    permission_classes = [IsAuthenticated]
 
     # Override get_queryset to filter preferences by the provided UserID
     def get_queryset(self):
@@ -110,7 +115,7 @@ class DrinkOperations(viewsets.ModelViewSet):
         """
         if self.action in ['create', 'update', 'destroy']:
             # Require authentication for create, update, and destroy actions
-            return [IsAuthenticated()]
+            return [AllowAny()]
         return super().get_permissions()
 
     def create(self, request, *args, **kwargs):
@@ -118,8 +123,20 @@ class DrinkOperations(viewsets.ModelViewSet):
         return super().create(request, *args, **kwargs)
 
     def update(self, request, *args, **kwargs):
-        # Custom logic for updating a drink
-        return super().update(request, *args, **kwargs)
+        drink = self.get_object()
+        favorite_to_add = request.data.get("addFavorite", [])
+        favorite_to_remove = request.data.get("removeFavorite", [])
+        
+        # Adding drinks
+        if favorite_to_add:
+            drink.addFavorite(favorite_to_add)
+
+        # Removing drinks
+        if favorite_to_remove:
+            drink.removeFavorite(favorite_to_remove_to_remove)
+        
+        serializer = self.get_serializer(drink)
+        return Response(serializer.data, status=status.HTTP_200_OK)
 
     def destroy(self, request, *args, **kwargs):
         # Custom logic for deleting a drink
@@ -288,6 +305,7 @@ class UserNotificationLookup(ListAPIView):
 class OrderOperations(viewsets.ModelViewSet):
     queryset = Order.objects.all()
     serializer_class = OrderSerializer
+    permission_classes = [AllowAny]
 
     def patch(self, request, *args, **kwargs):
         order = self.get_object()
@@ -305,11 +323,11 @@ class OrderOperations(viewsets.ModelViewSet):
         serializer = self.get_serializer(order)
         return Response(serializer.data, status=status.HTTP_200_OK)
         
-    def get_permissions(self):
-        """Only authenticated users can create, update, or delete orders."""
-        if self.action in ['create', 'update', 'destroy']:
-            return [IsAuthenticated()]
-        return super().get_permissions()
+    # def get_permissions(self):
+    #     """Only authenticated users can create, update, or delete orders."""
+    #     if self.action in ['create', 'update', 'destroy']:
+    #         return [IsAuthenticated()]
+    #     return super().get_permissions()
 
     def create(self, request, *args, **kwargs):
         return super().create(request, *args, **kwargs)
@@ -338,6 +356,7 @@ class UserOrdersLookup(ListCreateAPIView):
 
 @method_decorator(csrf_exempt, name='dispatch')
 class StripePaymentIntentView(View):
+
     def post(self, request, *args, **kwargs):
         try:
             data = json.loads(request.body)
@@ -371,3 +390,92 @@ class StripePaymentIntentView(View):
             })
         except Exception as e:
             return JsonResponse({'error': str(e)}, status=400)
+
+
+class GenerateAIDrink(APIView):
+    permission_classes = [AllowAny]
+
+    def get(self, request, user_id=None):
+        try:
+            if user_id:
+                # Generate drink for account user
+                response_data = self.generate_account_user(user_id)
+            else:
+                # Generate drink for general user
+                response_data = self.generate_general_user()
+            return Response(response_data)
+        except Exception as e:
+            return Response({'error': str(e)}, status=400)
+    
+    def generate_account_user(self, user_id):
+        """Generate AI drink for a registered user using their preferences."""
+        user = get_object_or_404(User, pk=user_id)
+        preferences = Preference.objects.filter(UserID=user)
+        preferences_list = []
+
+        if preferences.exists():
+            for pref in preferences:
+                preferences_list.append(pref.Preference)
+        else:
+            preferences_list = ["mango", "peach", "vanilla", "salted caramel", "orange", "lavender", "peppermint", "blue raspberry"]
+        print("User") # Test code
+        return self.generate_response_data(preferences_list, user_created=True)
+
+    def generate_general_user(self):
+        """Generate AI drink for a general user with hardcoded preferences."""
+        preferences = ["mango", "peach", "vanilla", "salted caramel", "orange", "lavender", "peppermint", "blue raspberry"]
+        print("General") # Test code
+        return self.generate_response_data(preferences, user_created=False)
+
+    def generate_response_data(self, preferences, user_created):
+        """Helper function to generate response data."""
+        result = generate_soda(preferences)
+        return {
+            'SyrupsUsed': result["syrups"],
+            'SodaUsed': result["soda"][0],
+            'AddIns': result["addins"],
+            'Size': "24oz",
+            'Ice': "regular",
+            "UserCreated": user_created,
+        }
+
+
+class RevenueViewSet(viewsets.ModelViewSet):
+    """
+    A viewset for listing, retrieving, creating, and filtering revenue records.
+    """
+    queryset = Revenue.objects.all()
+    serializer_class = RevenueSerializer
+    permission_classes = [IsAuthenticated]
+
+    def get_permissions(self):
+        """Require authentication for creating, updating, and deleting revenues."""
+        if self.action in ['create', 'update', 'destroy']:
+            return [IsAuthenticated()]
+        return super().get_permissions()
+
+    def create(self, request, *args, **kwargs):
+        """
+        Custom create method to ensure the total amount is calculated if not provided.
+        """
+        return super().create(request, *args, **kwargs)
+
+    def update(self, request, *args, **kwargs):
+        """
+        Custom update method to ensure the total amount is recalculated when updating the revenue.
+        """
+        revenue_instance = self.get_object()  # Retrieve the specific revenue instance
+
+        # Check if 'TotalAmount' is provided in the request
+        if 'TotalAmount' in request.data:
+            # Update TotalAmount with the provided value
+            revenue_instance.TotalAmount = request.data['TotalAmount']
+        else:
+            # Calculate and set the total amount if it wasn't provided
+            revenue_instance.calculate_total_amount()
+
+        revenue_instance.save()
+
+        # Proceed with the standard update process
+        return super().update(request, *args, **kwargs)
+    

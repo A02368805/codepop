@@ -45,9 +45,21 @@ const AuthPage = ({ navigation }) => {
           await AsyncStorage.setItem('userToken', data.token);
           await AsyncStorage.setItem('userId', data.user_id.toString());  // Store user ID as string
           await AsyncStorage.setItem('first_name', data.first_name);
+           if(data.is_admin){
+            await AsyncStorage.setItem('userRole', 'admin');
+            Alert.alert('Login successful!');
+            navigation.navigate('AdminDash');
+          }else if(data.is_manager){
+            await AsyncStorage.setItem('userRole', 'manager');
+            Alert.alert('Login successful!');
+            navigation.navigate('ManagerDash');
+          } else{
+            await AsyncStorage.setItem('userRole', 'user');
+            Alert.alert('Login successful!');
+            navigation.navigate('GeneralHome');
+          }
         
-          Alert.alert('Login successful!');
-          navigation.navigate('GeneralHome'); // Navigate to Home screen on success
+           // Navigate to Home screen on success
       } else {
           Alert.alert('Invalid credentials, please try again.');
       }
