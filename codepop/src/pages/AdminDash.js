@@ -236,7 +236,7 @@ const AdminDash = () => {
                   <Text style={styles.editorText}>First Name:</Text><TextInput onChangeText={(text) => setUserInfo(prev => ({ ...prev, firstName: text }))} value={userInfo.firstName} style={styles.textBox}/>
                   <Text style={styles.editorText}>Last Name:</Text><TextInput onChangeText={(text) => setUserInfo(prev => ({ ...prev, lastName: text }))} value={userInfo.lastName} style={styles.textBox}/>
                   <Text style={styles.editorText}>Password:</Text><TextInput onChangeText={(text) => setUserInfo(prev => ({ ...prev, password: text }))} value={userInfo.password} placeholder={"Empty for security purposes"} style={styles.textBox}/>
-                  <Text style={styles.editorText}>Role: {"(Currently is"} {item.is_superuser ? "Admin)" : item.is_staff ? "Staff)" : "User)"}</Text>
+                  <Text style={styles.editorText}>Role: {"(Currently is " + userInfo.role + ")"}</Text>
                   <RNPickerSelect
                     style={styles.dropdown}
                     placeholder={placeholder}
@@ -401,7 +401,24 @@ const styles = StyleSheet.create({
     marginBottom: 20,
   },
   dropdown: {
-
+    inputIOS: {
+      height: 50,
+      paddingLeft: 10,
+      color: '#000',
+      backgroundColor: '#C7C7C7',
+      marginBottom: 15,
+    },
+    inputAndroid: {
+      height: 50,
+      paddingLeft: 10,
+      color: '#000',
+      backgroundColor: '#C7C7C7',
+      marginBottom: 15,
+    },
+    iconContainer: {
+      top: 15,
+      right: 12,
+    },
   },
 });
 
