@@ -5,6 +5,7 @@ import Icon from 'react-native-vector-icons/Ionicons';
 import { useNavigation } from '@react-navigation/native';
 import { BASE_URL } from '../../ip_address';  // Ensure BASE_URL is your server's base URL
 import { registerRootComponent } from 'expo';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const ComplaintsPage = () => {
     const [searchText, setSearchText] = useState('');
@@ -70,6 +71,31 @@ const ComplaintsPage = () => {
                         ...prevMessages,
                         { text: botResponse, isBot: true }
                     ]);
+
+                    const orderResponse = await fetch(`${BASE_URL}/backend/orders/${order_num}/`, {
+                        method: 'GET',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        }
+                    });
+
+                    if(orderResponse.ok){
+                        const drinksForPost = [];
+                        const orderData = await orderResponse.json();
+                         // Use Promise.all to wait for all drink data to resolve
+                        const drinkPromises = orderData.Drinks.map(drink => getDrinkData(drink));
+                        const resolvedDrinks = await Promise.all(drinkPromises); // Wait for all Promises to resolve
+
+                        // Add resolved drink data to drinksForPost
+                        drinksForPost.push(...resolvedDrinks);
+
+                        console.log("Backend complaints:", JSON.stringify(drinksForPost));
+
+                        await AsyncStorage.setItem("purchasedDrinks", JSON.stringify(drinksForPost));
+                        await AsyncStorage.setItem("orderNum", order_num.toString());
+                    }else{
+                        console.log("problem getting order data")
+                    }
                     setTimeout(() => {
                         navigation.navigate("PostCheckout");
                       }, 2000); // 2000 milliseconds = 2 seconds
@@ -94,6 +120,28 @@ const ComplaintsPage = () => {
             ]);
         }
     };
+
+    const getDrinkData = async (drinkID) => {
+        try {
+            const drinkData = await fetch(`${BASE_URL}/backend/drinks/${drinkID}/`, {
+                method: 'GET',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+            });
+    
+            if (!drinkData.ok) {
+                console.error(`Error fetching drink data: ${drinkData.status} ${drinkData.statusText}`);
+                return null;
+            }
+    
+            const jsonForm = await drinkData.json();
+            return jsonForm;
+        } catch (error) {
+            console.error("Error getting drink:", error);
+            return null;
+        }
+    }
     
     // Scroll to the bottom of the chat whenever messages update
     useEffect(() => {

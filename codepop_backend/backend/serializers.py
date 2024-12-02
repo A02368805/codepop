@@ -115,7 +115,8 @@ class OrderSerializer(serializers.ModelSerializer):
         fields = [
             'OrderID', 'UserID', 'Drinks', 
             'OrderStatus', 'PaymentStatus', 
-            'PickupTime', 'CreationTime'
+            'PickupTime', 'CreationTime','LockerCombo',
+            'StripeID'
         ]
 
     def create(self, validated_data):
@@ -132,7 +133,7 @@ class OrderSerializer(serializers.ModelSerializer):
 class RevenueSerializer(serializers.ModelSerializer):
     class Meta:
         model = Revenue
-        fields = ['RevenueID', 'OrderID', 'TotalAmount', 'SaleDate']
+        fields = ['RevenueID', 'OrderID', 'TotalAmount', 'SaleDate', 'Refunded']
 
     def create(self, validated_data):
         """Override the create method to ensure total amount calculation when a revenue instance is created."""

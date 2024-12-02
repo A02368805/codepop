@@ -6,6 +6,7 @@ import {BASE_URL} from '../../ip_address'
 import Icon from 'react-native-vector-icons/FontAwesome';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import GeoMap from '../components/map';
+import { BASE_URL } from '../../ip_address';
 
 // todo
 // add geolocation tracking map
@@ -42,7 +43,13 @@ const PostCheckout = () => {
     // Generate locker combo only when the component mounts
     handleLockerCombo();
   }, []); // Empty dependency array ensures it runs only once
-  
+
+  useEffect(() => {
+    if(lockerCombo !== ''){
+      updateLockerCombo();
+    }
+  }, [lockerCombo]);
+
   useEffect(() => {
     // Start countdown timer
     if (timeLeft > 0) {
@@ -52,8 +59,23 @@ const PostCheckout = () => {
   
       // Clear the interval when the timer reaches 0
       return () => clearInterval(timerId);
+    }else{
+      completeOrder();
     }
   }, [timeLeft]);
+
+  const completeOrder = async () => {
+    const orderNum = await AsyncStorage.getItem("orderNum");
+    await fetch(`${BASE_URL}/backend/orders/${orderNum}/`, {
+      method: 'PATCH',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        OrderStatus: 'completed',
+      }),
+    });
+  }
   
 
   const handleLockerCombo = () => {
@@ -64,6 +86,20 @@ const PostCheckout = () => {
       combo += digit.toString();
     }
     setLockerCombo(combo);
+  };
+
+  const updateLockerCombo = async () => {
+    const orderNum = await AsyncStorage.getItem("orderNum");
+    await fetch(`${BASE_URL}/backend/orders/${orderNum}/`, {
+      method: 'PATCH',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        LockerCombo: lockerCombo,
+      }),
+    });
+    console.log("Set Locker Combo To:", lockerCombo);
   };
 
   // Convert timeLeft to minutes and seconds format
