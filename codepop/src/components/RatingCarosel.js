@@ -6,7 +6,7 @@ import Carousel from 'react-native-reanimated-carousel';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { BASE_URL } from '../../ip_address';
 import Gif from './Gif';
-import { sodaOptions, syrupOptions, juiceOptions } from '../components/Ingredients';
+import { sodaOptions, syrupOptions, AddInOptions } from '../components/Ingredients';
 
 // I think its not adding ratings/favorites becasue the drink gets deleted from the backend after checkout so the URL doesnt exist anymore
 
@@ -47,7 +47,7 @@ const RatingCarosel = ({ purchasedDrinks }) => {
         });
       
         addins.forEach((addinName) => {
-          const addInOption = syrupOptions.find((opt) => opt.label === addinName); // Assuming AddIns use syrupOptions
+          const addInOption = AddInOptions.find((opt) => opt.label === addinName); 
           if (addInOption) {
             layers.push({ color: addInOption.color, height: 100 / totalItems });
           } else {

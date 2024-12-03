@@ -4,7 +4,7 @@ import { useNavigation } from '@react-navigation/native';
 import {BASE_URL} from '../../ip_address'
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import Gif from '../components/Gif';
-import { sodaOptions, syrupOptions, addIns } from '../components/Ingredients';
+import { sodaOptions, syrupOptions, AddInOptions } from '../components/Ingredients';
 import Modal from 'react-native-modal';
 
 const AIAlert = ({ isModalVisible, toggleModal, drinkDict }) => {
@@ -107,7 +107,7 @@ const AIAlert = ({ isModalVisible, toggleModal, drinkDict }) => {
     });
   
     addins.forEach((addinName) => {
-      const addInOption = syrupOptions.find((opt) => opt.label === addinName); // Assuming AddIns use syrupOptions
+      const addInOption = AddInOptions.find((opt) => opt.label === addinName); // Assuming AddIns use syrupOptions
       if (addInOption) {
         layers.push({ color: addInOption.color, height: 100 / totalItems });
       } else {

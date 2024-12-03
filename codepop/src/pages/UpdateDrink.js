@@ -3,7 +3,7 @@ import { View, Text, StyleSheet, TouchableOpacity, TextInput, ScrollView, Alert 
 import NavBar from '../components/NavBar';
 import DropDown from '../components/DropDown';
 import { useNavigation } from '@react-navigation/native';
-import { sodaOptions, syrupOptions, juiceOptions } from '../components/Ingredients';
+import { sodaOptions, syrupOptions, AddInOptions } from '../components/Ingredients';
 import Gif from '../components/Gif';
 import {BASE_URL} from '../../ip_address'
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -155,7 +155,7 @@ const UpdateDrink = ({route, navigation}) => {
     });
   
     addins.forEach((addinName) => {
-      const addInOption = syrupOptions.find((opt) => opt.label === addinName); // Assuming AddIns use syrupOptions
+      const addInOption = AddInOptions.find((opt) => opt.label === addinName); // Assuming AddIns use syrupOptions
       if (addInOption) {
         layers.push({ color: addInOption.color, height: 100 / totalItems });
       } else {
@@ -241,8 +241,8 @@ const UpdateDrink = ({route, navigation}) => {
         setOpen={() => setOpenDropdown(prev => ({ ...prev, syrups: !prev.syrups }))}
       />
       <DropDown 
-        title="Juices" 
-        options={filterOptions(juiceOptions, AddIns)} 
+        title="AddIns" 
+        options={filterOptions(AddInOptions, AddIns)} 
         onSelect={handleAddInSelection} 
         isOpen={openDropdown.juices}
         setOpen={() => setOpenDropdown(prev => ({ ...prev, juices: !prev.juices }))}

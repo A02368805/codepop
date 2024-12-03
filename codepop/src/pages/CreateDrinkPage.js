@@ -4,7 +4,7 @@ import NavBar from '../components/NavBar';
 import DropDown from '../components/DropDown';
 import { useNavigation, useFocusEffect, useRoute } from '@react-navigation/native';
 import Gif from '../components/Gif';
-import { sodaOptions, syrupOptions, juiceOptions } from '../components/Ingredients';
+import { sodaOptions, syrupOptions, AddInOptions } from '../components/Ingredients';
 import {BASE_URL} from '../../ip_address'
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import AIAlert from '../components/AIAlert';
@@ -22,7 +22,7 @@ const CreateDrinkPage = () => {
   const [openDropdown, setOpenDropdown] = useState({
     sodas: false,
     syrups: false,
-    juices: false,
+    addins: false,
   });
 
   // variables to add to drink object
@@ -152,7 +152,7 @@ const CreateDrinkPage = () => {
     setOpenDropdown({
       sodas: !!text,
       syrups: !!text,
-      juices: !!text,
+      addins: !!text,
     });
   };
   
@@ -210,7 +210,7 @@ const CreateDrinkPage = () => {
     });
   
     addins.forEach((addinName) => {
-      const addInOption = syrupOptions.find((opt) => opt.label === addinName); // Assuming AddIns use syrupOptions
+      const addInOption = AddInOptions.find((opt) => opt.label === addinName); // Assuming AddIns use syrupOptions
       if (addInOption) {
         layers.push({ color: addInOption.color, height: 100 / totalItems });
       } else {
@@ -313,11 +313,11 @@ const CreateDrinkPage = () => {
           setOpen={() => setOpenDropdown(prev => ({ ...prev, syrups: !prev.syrups }))}
         />
         <DropDown 
-          title="Juices" 
-          options={filterOptions(juiceOptions)} 
+          title="AddIns" 
+          options={filterOptions(AddInOptions)} 
           onSelect={handleAddInSelection} 
-          isOpen={openDropdown.juices}
-          setOpen={() => setOpenDropdown(prev => ({ ...prev, juices: !prev.juices }))}
+          isOpen={openDropdown.addins}
+          setOpen={() => setOpenDropdown(prev => ({ ...prev, addins: !prev.addins }))}
         />
       </View>
       </ScrollView>
