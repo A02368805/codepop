@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, Image, Button, TouchableOpacity, FlatList } from 'react-native';
+import { View, Text, StyleSheet, Image, Button, TouchableOpacity } from 'react-native';
 import NavBar from '../components/NavBar';
 import RatingCarosel from '../components/RatingCarosel';
 import Icon from 'react-native-vector-icons/FontAwesome';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import GeoMap from '../components/map';
+import * as Location from 'expo-location';
 
 // todo
 // add geolocation tracking map
@@ -21,6 +22,28 @@ const PostCheckout = () => {
   const [lockerCombo, setLockerCombo] = useState('');
   const [timeLeft, setTimeLeft] = useState(60);
   const [purchasedDrinks, setPurchasedDrinks] = useState([]);
+  const [location, setLocation] = useState(null);
+  const [errorMsg, setErrorMsg] = useState(null);
+  const [isNearby, setIsNearby] = useState(false);
+
+  const storeLocation = { //the store location is the Logan Cemetery because integrating this geolocator has been the death of me
+      latitude: 41.748978207108976,
+      longitude: -111.8076790945287
+    };
+
+  useEffect(() => {
+      (async () => {
+        let { status } = await Location.requestForegroundPermissionsAsync();
+        if (status !== 'granted') {
+          setErrorMsg('Permission to access location was denied');
+          return;
+        }
+
+        let currentLocation = await Location.getCurrentPositionAsync({});
+        setLocation(currentLocation);
+      })();
+    }, []);
+
 
   // get the list of drinks from the cartlist
   useEffect(() => {
@@ -73,6 +96,10 @@ const PostCheckout = () => {
   return (
     <View style={styles.container}>
       <View style={styles.padding}>
+
+        <View style={styles.section}>
+            <Text>{location ? JSON.stringify(location) : errorMsg}</Text>
+        </View>
         {/* Map Image Box */}
         <View style={[styles.section, styles.mapSection]}>
           {/* <GeoMap/> */}
@@ -199,6 +226,10 @@ const styles = StyleSheet.create({
   buttonText: {
     color: '#fff',
     fontSize: 16,
+  },
+  paragraph: {
+    fontSize: 18,
+    textAlign: 'center',
   }
 });
 
