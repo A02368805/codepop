@@ -7,6 +7,7 @@ import Gif from '../components/Gif';
 import { sodaOptions, syrupOptions, juiceOptions } from '../components/Ingredients';
 import {BASE_URL} from '../../ip_address'
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import AIAlert from '../components/AIAlert';
 
 // to do:
 // generate drink from AI
@@ -15,6 +16,8 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 const CreateDrinkPage = () => {
   const route = useRoute();
   const navigation = useNavigation();
+  const [drinkDict, setDrinkDict] = useState([]);
+  const [isModalVisible, setModalVisible] = useState(false);
   const [searchText, setSearchText] = useState('');
   const [openDropdown, setOpenDropdown] = useState({
     sodas: false,
@@ -153,7 +156,8 @@ const CreateDrinkPage = () => {
     });
   };
   
-  // function for generate drink button which generates a drink with AI
+  // function for generate drink button which generates a drink with AI   
+    
   const GenerateAI = async () => {
     try {
       const user_id = await AsyncStorage.getItem('userId');
@@ -174,11 +178,10 @@ const CreateDrinkPage = () => {
         throw new Error(`Error when trying to generate AI drink. Status: ${response.status}`);
       }
 
-      drinkDict = await response.json();
-      // To frontend people:
-      // drinkDict is missing DrinkID, Name, Rating, and Price
-      // (also technically "Favorite" but I don't think we need to worry about that here)
-      console.log(drinkDict);
+      const drink = await response.json();
+      setDrinkDict(drink)
+      setModalVisible(true)
+      console.log(drink);
     }
     catch (error) {
       console.error('Error when trying to generate AI drink:', error);
@@ -250,8 +253,17 @@ const CreateDrinkPage = () => {
 
           {/* Button to generate drinks */}
           <TouchableOpacity onPress={GenerateAI} style={styles.button}>
-            <Text style={styles.buttonText}>Generate Drink</Text>
+            <Text style={styles.buttonText}>Generate Drink With AI!</Text>
           </TouchableOpacity>
+
+          {/* AIAlert Modal */}
+        {drinkDict && (
+          <AIAlert
+            isModalVisible={isModalVisible}
+            toggleModal={() => setModalVisible(!isModalVisible)}
+            drinkDict={drinkDict}
+          />
+        )}
         </View>
 
         {/* Ice buttons on the right */}

@@ -20,6 +20,18 @@ class CreateUserSerializer(serializers.ModelSerializer):
         user.save()
         return user
 
+class GetUserSerializer(serializers.ModelSerializer):
+    username = serializers.CharField()
+    password = serializers.CharField(write_only=True,
+                                     style={'input_type': 'password'})
+
+    class Meta:
+        model = get_user_model()
+        fields = ('id', 'username', 'password', 'first_name', 'last_name', 'is_staff', 'is_superuser')
+        write_only_fields = ('password')
+        read_only_fields = ('is_staff', 'is_superuser', 'is_active',)
+
+
 class PreferenceSerializer(serializers.ModelSerializer):
     class Meta:
         model = Preference
@@ -103,7 +115,8 @@ class OrderSerializer(serializers.ModelSerializer):
         fields = [
             'OrderID', 'UserID', 'Drinks', 
             'OrderStatus', 'PaymentStatus', 
-            'PickupTime', 'CreationTime'
+            'PickupTime', 'CreationTime','LockerCombo',
+            'StripeID'
         ]
 
     def create(self, validated_data):
@@ -120,7 +133,7 @@ class OrderSerializer(serializers.ModelSerializer):
 class RevenueSerializer(serializers.ModelSerializer):
     class Meta:
         model = Revenue
-        fields = ['RevenueID', 'OrderID', 'TotalAmount', 'SaleDate']
+        fields = ['RevenueID', 'OrderID', 'TotalAmount', 'SaleDate', 'Refunded']
 
     def create(self, validated_data):
         """Override the create method to ensure total amount calculation when a revenue instance is created."""

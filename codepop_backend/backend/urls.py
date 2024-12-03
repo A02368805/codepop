@@ -10,6 +10,7 @@ from .views import OrderOperations, UserOrdersLookup
 from .customerAI import Chatbot
 from .views import GenerateAIDrink
 from .views import RevenueViewSet
+from .views import UserOperations
 
 #this ensures that the url calls the right function from the views for each type of request
 preferences_list = PreferencesOperations.as_view({
@@ -61,6 +62,12 @@ order_detail = OrderOperations.as_view({
 revenue_list = RevenueViewSet.as_view({'get': 'list', 'post': 'create'})
 
 revenue_details = RevenueViewSet.as_view({'get': 'retrieve', 'put': 'update', 'delete': 'destroy'})
+
+user_operations = UserOperations.as_view({
+    'get': 'get',
+    'post': 'edit',
+    'delete': 'delete',
+})
 
 
 urlpatterns = [
@@ -194,4 +201,12 @@ urlpatterns = [
     # - PUT: Update the specific revenue.
     # - DELETE: Remove the specific revenue from the database.
     path('revenues/<int:pk>/', revenue_details, name='revenue_detail'),
+
+    # Endpoint to do operations on user accounts for the Admin Dashboard
+    # - GET: Retrieve a list of all users
+    # - DELETE: Delete a user from the database
+    # - PUT: Edit a user and update info in the database
+    path('users/', user_operations, name='get_user_list'),
+    path('users/delete/<int:user_id>/', user_operations, name='delete_user'),
+    path('users/edit/<int:user_id>/', user_operations, name='edit_user'),
 ]

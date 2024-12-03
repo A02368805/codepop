@@ -4,9 +4,11 @@ import { View, StyleSheet, TouchableOpacity, FlatList, Text, Dimensions, Alert }
 import StarRating from './StarRating';
 import Carousel from 'react-native-reanimated-carousel';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import {BASE_URL} from '../../ip_address'
+import { BASE_URL } from '../../ip_address';
 import Gif from './Gif';
 import { sodaOptions, syrupOptions, juiceOptions } from '../components/Ingredients';
+
+// I think its not adding ratings/favorites becasue the drink gets deleted from the backend after checkout so the URL doesnt exist anymore
 
 const { width: windowWidth } = Dimensions.get('window');
 
@@ -59,21 +61,21 @@ const RatingCarosel = ({ purchasedDrinks }) => {
         try {
             console.log("DrinkID:", drink);
 
-        const token = await AsyncStorage.getItem('userToken');
-        const response = await fetch(`${BASE_URL}/backend/drinks/${drink.DrinkID}/`, {
-            method: 'PUT',
-            headers: {
-            'Content-Type': 'application/json',
-            // 'Authorization': `Token ${token}`,
-            },
-            body: JSON.stringify({ 
-                Rating: newRating 
-            }),
-        });
+            const token = await AsyncStorage.getItem('userToken');
+            const response = await fetch(`${BASE_URL}/backend/drinks/${drink.DrinkID}/`, {
+                method: 'PUT',
+                headers: {
+                'Content-Type': 'application/json',
+                // 'Authorization': `Token ${token}`,
+                },
+                body: JSON.stringify({ 
+                    Rating: newRating 
+                }),
+            });
 
-        if (!response.ok) {
-            throw new Error(`Failed to update rating. Status: ${response.status}`);
-        }
+            if (!response.ok) {
+                throw new Error(`Failed to update rating. Status: ${response.status}`);
+            }
         } catch (error) {
         console.error('Error updating rating:', error);
         }
@@ -82,6 +84,7 @@ const RatingCarosel = ({ purchasedDrinks }) => {
 
     // Function to add a drink to favorites
     const addToFavs = async (drink) => {
+        console.log("DrinkID:", drink);
         try {
             const userID = await AsyncStorage.getItem('userId');
             const token = await AsyncStorage.getItem('userToken');

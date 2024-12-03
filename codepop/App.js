@@ -88,7 +88,8 @@ const App = () => {
             title: title, 
             headerTitleStyle: {
               // fontFamily: 'CherryBombOne',
-          },}}        
+          },}}  
+                
         />
         <Stack.Screen
           name="ComplaintsPage"

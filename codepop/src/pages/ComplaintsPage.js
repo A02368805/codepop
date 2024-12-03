@@ -5,6 +5,7 @@ import Icon from 'react-native-vector-icons/Ionicons';
 import { useNavigation } from '@react-navigation/native';
 import { BASE_URL } from '../../ip_address';  // Ensure BASE_URL is your server's base URL
 import { registerRootComponent } from 'expo';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const ComplaintsPage = () => {
     const [searchText, setSearchText] = useState('');
@@ -14,6 +15,7 @@ const ComplaintsPage = () => {
     const [wrong_drink_phase, setWrongDrinkPhase] = useState("none");
     const [order_num, setOrderNum] = useState("none");
     const [drink_nums, setDrinkNums] = useState("none");
+    const [loading, setLoading] = useState(false);
     const navigation = useNavigation();
 
     // Function to handle message submission
@@ -30,7 +32,14 @@ const ComplaintsPage = () => {
     
         // Clear the input field
         setSearchText('');
-    
+
+        // Add a temporary "loading" message
+        setMessages((prevMessages) => [
+            ...prevMessages,
+            { text: "Bob is typing...", isBot: true, isLoading: true, showSpinner: true }
+        ]);
+        setLoading(true);
+
         try {
             // Make a POST request to the chatbot endpoint
             const response = await fetch(`${BASE_URL}/backend/chatbot/`, {
@@ -58,18 +67,46 @@ const ComplaintsPage = () => {
                 if(response_refund_phase === "none" && response_wrong_drink_phase === "none"){
                     setRefundPhase(null);
                     setWrongDrinkPhase(null);
-                    // Update messages with bot's response
-                    setMessages((prevMessages) => [
-                        ...prevMessages,
-                        { text: botResponse, isBot: true }
-                    ]);
+                    // Replace the "typing" message with the actual response
+                    setMessages((prevMessages) =>
+                        prevMessages.map((msg, index) =>
+                            msg.isLoading ? { text: botResponse, isBot: true } : msg
+                        )
+                    );
                 } else if (response_wrong_drink_phase === "4"){
                     //I will need to go to the post order page with it processing the newly remade order
                     // Update messages with bot's response
-                    setMessages((prevMessages) => [
-                        ...prevMessages,
-                        { text: botResponse, isBot: true }
-                    ]);
+                    // Replace the "typing" message with the actual response
+                    setMessages((prevMessages) =>
+                        prevMessages.map((msg, index) =>
+                            msg.isLoading ? { text: botResponse, isBot: true } : msg
+                        )
+                    );
+
+                    const orderResponse = await fetch(`${BASE_URL}/backend/orders/${order_num}/`, {
+                        method: 'GET',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        }
+                    });
+
+                    if(orderResponse.ok){
+                        const drinksForPost = [];
+                        const orderData = await orderResponse.json();
+                         // Use Promise.all to wait for all drink data to resolve
+                        const drinkPromises = orderData.Drinks.map(drink => getDrinkData(drink));
+                        const resolvedDrinks = await Promise.all(drinkPromises); // Wait for all Promises to resolve
+
+                        // Add resolved drink data to drinksForPost
+                        drinksForPost.push(...resolvedDrinks);
+
+                        console.log("Backend complaints:", JSON.stringify(drinksForPost));
+
+                        await AsyncStorage.setItem("purchasedDrinks", JSON.stringify(drinksForPost));
+                        await AsyncStorage.setItem("orderNum", order_num.toString());
+                    }else{
+                        console.log("problem getting order data")
+                    }
                     setTimeout(() => {
                         navigation.navigate("PostCheckout");
                       }, 2000); // 2000 milliseconds = 2 seconds
@@ -78,22 +115,50 @@ const ComplaintsPage = () => {
                     setRefundPhase(response_refund_phase);
                     setWrongDrinkPhase(response_wrong_drink_phase);
                     // Update messages with bot's response
-                    setMessages((prevMessages) => [
-                        ...prevMessages,
-                        { text: botResponse, isBot: true }
-                    ]);
+                    // Replace the "typing" message with the actual response
+                    setMessages((prevMessages) =>
+                        prevMessages.map((msg, index) =>
+                            msg.isLoading ? { text: botResponse, isBot: true } : msg
+                        )
+                    );
                 }
             } else {
                 throw new Error("Failed to fetch response from chatbot");
             }
         } catch (error) {
             console.error('Error in chatbot response:', error);
-            setMessages((prevMessages) => [
-                ...prevMessages,
-                { text: "I'm having trouble understanding right now. Please try again later.", isBot: true }
-            ]);
+            // Replace the "typing" message with an error message
+            setMessages((prevMessages) =>
+                prevMessages.map((msg, index) =>
+                    msg.isLoading ? { text: "I'm having trouble understanding right now. Please try again later.", isBot: true } : msg
+                )
+            );
+        }finally{
+            setLoading(false);
         }
     };
+
+    const getDrinkData = async (drinkID) => {
+        try {
+            const drinkData = await fetch(`${BASE_URL}/backend/drinks/${drinkID}/`, {
+                method: 'GET',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+            });
+    
+            if (!drinkData.ok) {
+                console.error(`Error fetching drink data: ${drinkData.status} ${drinkData.statusText}`);
+                return null;
+            }
+    
+            const jsonForm = await drinkData.json();
+            return jsonForm;
+        } catch (error) {
+            console.error("Error getting drink:", error);
+            return null;
+        }
+    }
     
     // Scroll to the bottom of the chat whenever messages update
     useEffect(() => {
@@ -104,6 +169,10 @@ const ComplaintsPage = () => {
 
     return (
         <View style={styles.container}>
+            <ScrollView 
+                style={styles.chatContainer} 
+                ref={scrollViewRef}
+            >
             <Text style={styles.title}>Complain to Bob</Text>
 
             <Image 
@@ -112,10 +181,7 @@ const ComplaintsPage = () => {
                 resizeMode="contain"
             />
 
-            <ScrollView 
-                style={styles.chatContainer} 
-                ref={scrollViewRef}
-            >
+            
                 {messages.map((message, index) => (
                     <View 
                         key={index} 

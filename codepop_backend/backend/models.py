@@ -71,7 +71,7 @@ class Notification(models.Model):
 
     def __str__(self):
         return f"Notification for {self.UserID.username}: {self.Message[:50]} at time {self.Timestamp}"
-
+    
 class Order(models.Model):
     ORDER_STATUS_CHOICES = [
         ('pending', 'Pending'),
@@ -94,6 +94,8 @@ class Order(models.Model):
     PaymentStatus = models.CharField(max_length=50, choices=PAYMENT_STATUS_CHOICES, default='pending')
     PickupTime = models.DateTimeField(null=True, blank=True)
     CreationTime = models.DateTimeField(auto_now_add=True)
+    LockerCombo = models.BigIntegerField(null=True)
+    StripeID = models.CharField()
     
     def add_drinks(self, drink_ids):
         # Assuming you have a ManyToMany field for drinks in your Order model
@@ -110,13 +112,14 @@ class Order(models.Model):
         self.save()
         
     def __str__(self):
-        return f"Order {self.OrderID} by User {self.UserID.username}"
+        return f"Order {self.OrderID} by User {self.UserID}"
 
 class Revenue(models.Model):
     RevenueID = models.AutoField(primary_key=True)
     OrderID = models.IntegerField(default=1)
     TotalAmount = models.FloatField(default=0.0)
     SaleDate = models.DateTimeField(default=timezone.now)
+    Refunded = models.BooleanField(default= False)
 
     def calculate_total_amount(self):
         """Calculate the total revenue for the order by summing the price of each drink."""

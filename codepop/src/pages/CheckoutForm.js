@@ -11,6 +11,7 @@ import { useNavigation } from '@react-navigation/native';
 export default function CheckoutForm(totalPrice) {
   const navigation = useNavigation();
   const [drinks, setDrinks] = useState([]);
+  const [stripeNum, setStripeNum] = useState(null);
 
   const { initPaymentSheet, presentPaymentSheet } = useStripe();
   const [loading, setLoading] = useState(false);
@@ -22,6 +23,7 @@ export default function CheckoutForm(totalPrice) {
       body: JSON.stringify({ amount: totalPrice }), // amount in cents
     });
     const { paymentIntent, ephemeralKey, customer } = await response.json();
+    setStripeNum(paymentIntent);
     return { paymentIntent, ephemeralKey, customer };
   };
 
@@ -44,25 +46,42 @@ export default function CheckoutForm(totalPrice) {
       const cartList = await AsyncStorage.getItem('checkoutList');
       const currentList = cartList ? JSON.parse(cartList) : [];
       const token = await AsyncStorage.getItem('userToken');
+      
+      const userId = await AsyncStorage.getItem('userId');
+      
+      console.log(currentList);
 
-      // loop through cart list
-      for (let i = 0; i < currentList.length; i++) {
-        // Delete the drink from the backend database
-        await fetch(`${BASE_URL}/backend/drinks/${currentList[i]}/`, {
-          method: 'DELETE',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Token ${token}`,
-          },
-        });
-        // Update the local state to remove the drink from the cart page
-        const updatedDrinks = drinks.filter(data => data.DrinkID !== drinkId);
-        setDrinks(updatedDrinks);
-    
-        // Update the AsyncStorage to remove the drink ID from the checkout list
-        const updatedList = currentList.filter(item => item !== currentList[i]);
-        await AsyncStorage.setItem("checkoutList", JSON.stringify(updatedList));
+      const response = await fetch(`${BASE_URL}/backend/orders/`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          UserID: userId,
+          Drinks: currentList,
+          OrderStatus: 'processing',
+          PaymentStatus: 'paid',
+          StripeID: stripeNum,
+        })
+      });
+
+      // Check if the request was successful
+      if (response.ok) {
+        const data = await response.json(); // Parse JSON if returned
+        orderNum = data.OrderID;
+        console.log('Order Num:', orderNum);
+        await AsyncStorage.setItem("orderNum", orderNum.toString());
+      } else {
+        console.error('Failed to create order:', response.status, await response.text());
       }
+
+ 
+      // Update the local state to remove the drink from the cart page
+      setDrinks(null);
+  
+      // Update the AsyncStorage to remove the drink ID from the checkout list
+      await AsyncStorage.removeItem("checkoutList");
+      
 
       console.log("cart cleared sucessfully");
       
@@ -71,15 +90,43 @@ export default function CheckoutForm(totalPrice) {
     }
   };
 
+  const addRevenue = async () => {
+    try {
+      const orderNum = await AsyncStorage.getItem("orderNum");
+    
+      const response = await fetch(`${BASE_URL}/backend/revenues/`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          OrderID: orderNum,
+          TotalAmount: totalPrice,
+        }),
+      });
+    
+      if (response.ok) {
+        const data = await response.json(); // Parse the response if needed
+        console.log("Revenue recorded successfully:", data);
+      } else {
+        const errorMessage = await response.text(); // Retrieve error details
+        console.error("Failed to record revenue:", response.status, errorMessage);
+      }
+    } catch (error) {
+      console.error("Error occurred while recording revenue:", error);
+    }
+  }
+
   const openPaymentSheet = async () => {
     const { error } = await presentPaymentSheet();
     if (error) Alert.alert(`Error code: ${error.code}`, error.message);
     else 
       Alert.alert('Success', 'Your order is confirmed!');
+      // call removeAllDrinks page
+      await removeAllDrinks();
+      await addRevenue();
       // navigate to ratings and geolocation page
       navigation.navigate('PostCheckout');
-      // call removeAllDrinks page
-      removeAllDrinks();
   };
 
   return { initializePaymentSheet, openPaymentSheet, loading };

@@ -12,8 +12,8 @@ from rest_framework.authtoken.models import Token
 from rest_framework import status, viewsets
 from rest_framework.views import APIView
 from .models import Preference, Drink, Inventory, Notification, Order, Revenue
-from .serializers import CreateUserSerializer, PreferenceSerializer, DrinkSerializer, InventorySerializer, NotificationSerializer, OrderSerializer, RevenueSerializer
-from rest_framework.permissions import IsAuthenticated
+from .serializers import CreateUserSerializer, GetUserSerializer, PreferenceSerializer, DrinkSerializer, InventorySerializer, NotificationSerializer, OrderSerializer, RevenueSerializer
+from rest_framework.permissions import IsAuthenticated, IsAdminUser
 import stripe
 from django.conf import settings
 from django.http import JsonResponse
@@ -24,8 +24,18 @@ import json
 from rest_framework.decorators import action
 from django.utils.dateparse import parse_datetime
 from .drinkAI import generate_soda
+from rest_framework.permissions import BasePermission
 
 stripe.api_key = settings.STRIPE_SECRET_KEY
+
+class IsSuperUser(BasePermission):
+    """
+    Custom permission to allow access only to superusers.
+    """
+
+    def has_permission(self, request, view):
+        # Check if the user is authenticated and a superuser
+        return request.user and request.user.is_authenticated and request.user.is_superuser
     
 #Custom login to so that it get's a token but also the user's first name and the user id
 class CustomAuthToken(ObtainAuthToken):
@@ -320,7 +330,9 @@ class OrderOperations(viewsets.ModelViewSet):
         if drinks_to_remove:
             order.remove_drinks(drinks_to_remove)
         
-        serializer = self.get_serializer(order)
+        serializer = self.get_serializer(order, data=request.data, partial=True)
+        if serializer.is_valid():
+            serializer.save()
         return Response(serializer.data, status=status.HTTP_200_OK)
         
     # def get_permissions(self):
@@ -330,7 +342,39 @@ class OrderOperations(viewsets.ModelViewSet):
     #     return super().get_permissions()
 
     def create(self, request, *args, **kwargs):
-        return super().create(request, *args, **kwargs)
+        # Extract data from the request
+        user_id = request.data.get("UserID", None)
+        drinks = request.data.get("Drinks", [])
+        order_status = request.data.get("OrderStatus", "processing")
+        payment_status = request.data.get("PaymentStatus", "pending")
+        stripe_id = request.data.get("StripeID", None)
+
+         # Log extracted values
+        print(f"UserID: {user_id}, Drinks: {drinks}, OrderStatus: {order_status}, PaymentStatus: {payment_status}, StripeID: {stripe_id}")
+
+        # Create a new order
+        order_data = {
+            "UserID": user_id,
+            "order_status": order_status,
+            "Drinks": drinks,
+            "PaymentStatus": payment_status,
+            "StripeID": stripe_id,
+        }
+
+        serializer = self.get_serializer(data=order_data)
+        if serializer.is_valid():
+            order = serializer.save()
+
+            # Add drinks to the order if provided
+            if drinks:
+                order.add_drinks(drinks)
+
+            # Return the created order's data
+            return Response(self.get_serializer(order).data, status=status.HTTP_201_CREATED)
+
+        print("Serializer errors:", serializer.errors)
+        # Handle validation errors
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
     def update(self, request, *args, **kwargs):
         return super().update(request, *args, **kwargs)
@@ -356,7 +400,7 @@ class UserOrdersLookup(ListCreateAPIView):
 
 @method_decorator(csrf_exempt, name='dispatch')
 class StripePaymentIntentView(View):
-
+    
     def post(self, request, *args, **kwargs):
         try:
             data = json.loads(request.body)
@@ -391,7 +435,28 @@ class StripePaymentIntentView(View):
         except Exception as e:
             return JsonResponse({'error': str(e)}, status=400)
 
+def refund_order(client_secret_or_id):
+    try:
+        # Extract PaymentIntent ID if a client secret is provided
+        if "_secret_" in client_secret_or_id:
+            payment_intent_id = client_secret_or_id.split("_secret_")[0]
+        else:
+            payment_intent_id = client_secret_or_id
 
+        # Process the refund using the PaymentIntent ID
+        refund = stripe.Refund.create(
+            payment_intent=payment_intent_id,
+        )
+        print("Refund successful:", refund)
+        return True
+
+    except stripe.error.StripeError as e:
+        print(f"Stripe error: {e}")
+        return False
+    except Exception as e:
+        print(f"Unexpected error: {e}")
+        return False
+    
 class GenerateAIDrink(APIView):
     permission_classes = [AllowAny]
 
@@ -446,13 +511,7 @@ class RevenueViewSet(viewsets.ModelViewSet):
     """
     queryset = Revenue.objects.all()
     serializer_class = RevenueSerializer
-    permission_classes = [IsAuthenticated]
-
-    def get_permissions(self):
-        """Require authentication for creating, updating, and deleting revenues."""
-        if self.action in ['create', 'update', 'destroy']:
-            return [IsAuthenticated()]
-        return super().get_permissions()
+    permission_classes = [AllowAny]
 
     def create(self, request, *args, **kwargs):
         """
@@ -479,3 +538,62 @@ class RevenueViewSet(viewsets.ModelViewSet):
         # Proceed with the standard update process
         return super().update(request, *args, **kwargs)
     
+class UserOperations(viewsets.ModelViewSet):
+    permission_classes = [IsSuperUser]
+    serializer_class = GetUserSerializer
+
+    def get(self, request):
+        userList = User.objects.all()
+        serializer = self.serializer_class(userList, many=True)
+        return Response(serializer.data)
+
+    def delete(self, request, user_id):
+        try:
+            user = User.objects.get(id=user_id)
+            user.delete()
+            return JsonResponse({"message":"User deleted successfully"}, status=status.HTTP_200_OK)
+        except Exception as e:
+            return JsonResponse({'Error': str(e)}, status=400)
+
+    def edit(self, request, user_id):
+        try:
+            user = User.objects.get(id=user_id)
+
+            data = json.loads(request.body)
+            edits = data.get('edits', {})
+
+            username = edits.get("username", None)
+            first_name = edits.get("firstName", None)
+            last_name = edits.get("lastName", None)
+            password = edits.get("password", None)
+            role = edits.get("role", None)
+
+            if (user.username != username and username != "unchanged" and username):
+                user.username = username
+
+            if (user.first_name != first_name and first_name != "unchanged" and first_name):
+                user.first_name = first_name
+
+            if (user.last_name != last_name and last_name != "unchanged" and last_name):
+                user.last_name = last_name
+
+            if (user.password != password and password != "unchanged" and password):
+                user.set_password(password)
+                print("Password updated")
+
+            if (role != "unchanged" and role):
+                if (role == "user"):
+                    user.is_staff = False
+                    user.is_superuser = False
+                elif (role == "staff"):
+                    user.is_staff = True
+                    user.is_superuser = False
+                elif (role == "admin"):
+                    user.is_staff = False
+                    user.is_superuser = True
+
+            user.save()
+            return JsonResponse({"message":"User edited successfully"}, status=status.HTTP_200_OK)
+        except Exception as e:
+            return JsonResponse({'Error': str(e)}, status=400)
+        
