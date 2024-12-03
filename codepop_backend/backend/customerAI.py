@@ -1,5 +1,6 @@
 
 from rest_framework.views import APIView
+from .views import refund_order
 from .models import Order, Revenue
 from django.http import JsonResponse
 from transformers import AutoModelForCausalLM, AutoTokenizer
@@ -269,7 +270,7 @@ class Chatbot(APIView):
                                 drink_ids = drink_ids + f"{drink.DrinkID}, "
                             print(drink_ids)
                             return JsonResponse({
-                            "responses": "We found your order! Please tell us which drink(s) you want a refund for\nif you want all drinks refunded say \"all\"\n\n" + drinks_info + "If you want to cancel this process please say cancel at any time!",
+                            "responses": "Is this the order you want refunded?\nConfirm by saying yes\n\n" + drinks_info + "If you want to cancel this process please say cancel at any time!",
                             "wrong_drink_phase": "none",
                             "refund_phase": "2",
                             "order_num": order_numbers[0],
@@ -278,49 +279,35 @@ class Chatbot(APIView):
                 case "2":
                     drink_numbers = [int(num) for num in re.findall(r'\d+', user_input)]
                     drink_list = drink_nums.split(", ")
-                    if "all" in user_input.lower():
-                        #INSERT LOGIC HERE TO REFUND DRINKS
-                        return JsonResponse({
-                            "responses": "Sucessfully started refund, please continute by saying \"I accept\".",
-                            "wrong_drink_phase": "none",
-                            "refund_phase": "3",
-                            "order_num": order_num,
-                            "drink_nums": drink_nums
-                            })
-                    elif len(drink_nums) == 0:
-                        return JsonResponse({
-                            "responses": "You didn't enter a valid drink number...\nplease try again! \n\nIf you want to cancel this process please say cancel at any time!",
-                            "wrong_drink_phase": "none",
-                            "refund_phase": "2",
-                            "order_num": order_num,
-                            "drink_nums": drink_nums
-                            })
-                    elif len(drink_numbers) > len(drink_list):
-                        return JsonResponse({
-                            "responses": "You entered too many drinks to remake...\nplease try again! \n\nIf you want to cancel this process please say cancel at any time!",
-                            "wrong_drink_phase": "none",
-                            "refund_phase": "2",
-                            "order_num": order_num,
-                            "drink_nums": drink_nums
-                            })
+                    if "yes" in user_input.lower():
+                        order_to_refund = Order.objects.get(OrderID = order_num)
+                        stripe_id = order_to_refund.StripeID
+                        print(stripe_id)
+                        refund_success = refund_order(stripe_id)
+                        orderRevenue = Revenue.objects.get(OrderID = order_num)
+                        orderRevenue.Refunded = True
+                        orderRevenue.save()
+                        if(refund_success):
+                            return JsonResponse({
+                                "responses": "Sucessfully started refund, please continute by saying \"I accept\".",
+                                "wrong_drink_phase": "none",
+                                "refund_phase": "3",
+                                "order_num": order_num,
+                                "drink_nums": drink_nums
+                                })
+                        else:
+                            return JsonResponse({
+                                "responses": "Sorry, There was a problem processing the refund. Please try again later!",
+                                "wrong_drink_phase": "none",
+                                "refund_phase": "2",
+                                "order_num": order_num,
+                                "drink_nums": drink_nums
+                                })
                     else:
-                        drinks_to_refund = []
-                        for drink in drink_numbers:
-                            if drink > len(drink_list):
-                                return JsonResponse({
-                                    "responses": "One of the drinks entered was not in the list...\nplease try again! \n\nIf you want to cancel this process please say cancel at any time!",
-                                    "wrong_drink_phase": "none",
-                                    "refund_phase": "2",
-                                    "order_num": order_num,
-                                    "drink_nums": drink_nums
-                                    })
-                            else:
-                                drinks_to_refund.append(drink_list[drink-1])
-                    
                         return JsonResponse({
-                            "responses": "Sucessfully started refund, please continute by saying \"I accept\".",
+                            "responses": "Please say yes to confirm this is the order you want to refund! \n\nIf you want to cancel this process please say cancel at any time!",
                             "wrong_drink_phase": "none",
-                            "refund_phase": "3",
+                            "refund_phase": "2",
                             "order_num": order_num,
                             "drink_nums": drink_nums
                             })
