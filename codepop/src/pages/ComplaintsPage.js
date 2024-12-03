@@ -15,6 +15,7 @@ const ComplaintsPage = () => {
     const [wrong_drink_phase, setWrongDrinkPhase] = useState("none");
     const [order_num, setOrderNum] = useState("none");
     const [drink_nums, setDrinkNums] = useState("none");
+    const [loading, setLoading] = useState(false);
     const navigation = useNavigation();
 
     // Function to handle message submission
@@ -31,7 +32,14 @@ const ComplaintsPage = () => {
     
         // Clear the input field
         setSearchText('');
-    
+
+        // Add a temporary "loading" message
+        setMessages((prevMessages) => [
+            ...prevMessages,
+            { text: "Bob is typing...", isBot: true, isLoading: true, showSpinner: true }
+        ]);
+        setLoading(true);
+
         try {
             // Make a POST request to the chatbot endpoint
             const response = await fetch(`${BASE_URL}/backend/chatbot/`, {
@@ -59,18 +67,21 @@ const ComplaintsPage = () => {
                 if(response_refund_phase === "none" && response_wrong_drink_phase === "none"){
                     setRefundPhase(null);
                     setWrongDrinkPhase(null);
-                    // Update messages with bot's response
-                    setMessages((prevMessages) => [
-                        ...prevMessages,
-                        { text: botResponse, isBot: true }
-                    ]);
+                    // Replace the "typing" message with the actual response
+                    setMessages((prevMessages) =>
+                        prevMessages.map((msg, index) =>
+                            msg.isLoading ? { text: botResponse, isBot: true } : msg
+                        )
+                    );
                 } else if (response_wrong_drink_phase === "4"){
                     //I will need to go to the post order page with it processing the newly remade order
                     // Update messages with bot's response
-                    setMessages((prevMessages) => [
-                        ...prevMessages,
-                        { text: botResponse, isBot: true }
-                    ]);
+                    // Replace the "typing" message with the actual response
+                    setMessages((prevMessages) =>
+                        prevMessages.map((msg, index) =>
+                            msg.isLoading ? { text: botResponse, isBot: true } : msg
+                        )
+                    );
 
                     const orderResponse = await fetch(`${BASE_URL}/backend/orders/${order_num}/`, {
                         method: 'GET',
@@ -104,20 +115,26 @@ const ComplaintsPage = () => {
                     setRefundPhase(response_refund_phase);
                     setWrongDrinkPhase(response_wrong_drink_phase);
                     // Update messages with bot's response
-                    setMessages((prevMessages) => [
-                        ...prevMessages,
-                        { text: botResponse, isBot: true }
-                    ]);
+                    // Replace the "typing" message with the actual response
+                    setMessages((prevMessages) =>
+                        prevMessages.map((msg, index) =>
+                            msg.isLoading ? { text: botResponse, isBot: true } : msg
+                        )
+                    );
                 }
             } else {
                 throw new Error("Failed to fetch response from chatbot");
             }
         } catch (error) {
             console.error('Error in chatbot response:', error);
-            setMessages((prevMessages) => [
-                ...prevMessages,
-                { text: "I'm having trouble understanding right now. Please try again later.", isBot: true }
-            ]);
+            // Replace the "typing" message with an error message
+            setMessages((prevMessages) =>
+                prevMessages.map((msg, index) =>
+                    msg.isLoading ? { text: "I'm having trouble understanding right now. Please try again later.", isBot: true } : msg
+                )
+            );
+        }finally{
+            setLoading(false);
         }
     };
 
@@ -152,6 +169,10 @@ const ComplaintsPage = () => {
 
     return (
         <View style={styles.container}>
+            <ScrollView 
+                style={styles.chatContainer} 
+                ref={scrollViewRef}
+            >
             <Text style={styles.title}>Complain to Bob</Text>
 
             <Image 
@@ -160,10 +181,7 @@ const ComplaintsPage = () => {
                 resizeMode="contain"
             />
 
-            <ScrollView 
-                style={styles.chatContainer} 
-                ref={scrollViewRef}
-            >
+            
                 {messages.map((message, index) => (
                     <View 
                         key={index} 
