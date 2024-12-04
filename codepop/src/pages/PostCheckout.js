@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, Image, Button, TouchableOpacity } from 'react-native';
+import { View, Text, StyleSheet, Image, Button, TouchableOpacity, ScrollView } from 'react-native';
 import NavBar from '../components/NavBar';
 import RatingCarosel from '../components/RatingCarosel';
 import Icon from 'react-native-vector-icons/FontAwesome';
@@ -154,7 +154,7 @@ const PostCheckout = () => {
 
   return (
     <View style={styles.container}>
-      <View style={styles.padding}>
+      <ScrollView contentContainerStyle={styles.scrollViewContainer}>
 
         {/*Distance from store*/}
         <View style={[styles.section, styles.nearbySection]}>
@@ -230,7 +230,7 @@ const PostCheckout = () => {
           </View>
         </View>
 
-      </View>
+      </ScrollView>
       <NavBar />
     </View>
   );
@@ -238,15 +238,15 @@ const PostCheckout = () => {
 
 const styles = StyleSheet.create({
   container: {
-    flex: 1, 
+    flex: 1,
     backgroundColor: '#8DF1D3', 
   },
-  padding: {
+  scrollViewContainer: {
+    flexGrow: 1,
     padding: 10,
   },
   section: {
     width: '100%',
-    // padding: 5,
     marginBottom: 15,
     borderRadius: 8,
     alignItems: 'center',
