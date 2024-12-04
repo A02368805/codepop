@@ -8,16 +8,6 @@ import GeoMap from '../components/map';
 import * as Location from 'expo-location';
 import MapView, { Marker } from 'react-native-maps';
 
-// todo
-// add geolocation tracking map
-  // use googles geolocation API: https://developers.google.com/maps/documentation/javascript/examples/map-geolocation#maps_map_geolocation-javascript
-// add timer from drink creation
-// add randomly generated code for locker combination
-  // right now the locker combo changes untill the timer runs out
-
-// test card number: 4242 4242 4242 4242
-  // enter a date in the future like 12/34
-  // for everything else, just add random numbers
 
 const PostCheckout = () => {
   const [lockerCombo, setLockerCombo] = useState('');
@@ -30,7 +20,7 @@ const PostCheckout = () => {
   const storeLocation = { //the store location is the Logan Cemetery because integrating this geolocator has been the death of me
       latitude: 41.748978207108976,
       longitude: -111.8076790945287
-//        latitude: 37.422,
+//        latitude: 37.422, //the emulator will likely user coordinates to google headquarters which is these coordinates. uncomment to test <500 yard option
 //        longitude: -122.0839
   };
 
@@ -38,24 +28,14 @@ const PostCheckout = () => {
       (async () => {
         let { status } = await Location.requestForegroundPermissionsAsync();
         if (status !== 'granted') {
-          setErrorMsg('Permission to access location was denied');
+          setErrorMsg('Permission to access location was denied.\n Please click the button when you have arrived so we can have your drink prepared.');
           return;
         }
-//
-//        let locationInterval = setInterval(async () => {
-//            try {
-//              let currentLocation = await Location.getCurrentPositionAsync({});
-//              setLocation(currentLocation);
-//              console.log(JSON.stringify(location));
-//            } catch (error) {
-//              console.error("Error fetching location:", error);
-//            }
-//          }, 5000); // Refresh location every 5 seconds
 
           try {
                 // Fetch the user's current location
                 let currentLocation = await Location.getCurrentPositionAsync({});
-//                console.log(JSON.stringify(currentlocation));
+                console.log(JSON.stringify(currentLocation));
                 setLocation(currentLocation);
               } catch (error) {
                 console.error("Error fetching location:", error);
@@ -167,9 +147,15 @@ const PostCheckout = () => {
   const minutes = String(Math.floor(timeLeft / 60)).padStart(2, '0');
   const seconds = String(timeLeft % 60).padStart(2, '0');
 
+  // Function for the "I've Arrived" button
+  const handleUserArrived = () => {
+    setIsNearby(true);
+  };
+
   return (
     <View style={styles.container}>
       <View style={styles.padding}>
+
         {/*Distance from store*/}
         <View style={[styles.section, styles.nearbySection]}>
             <View style={styles.section, styles.nearbyText}>
@@ -183,8 +169,6 @@ const PostCheckout = () => {
 
         {/* Map Image Box */}
         <View style={[styles.section, styles.mapSection]}>
-          {/* <GeoMap/> */}
-          <View style={styles.section}>
                 {location ? (
                   <MapView
                     style={styles.map}
@@ -205,10 +189,25 @@ const PostCheckout = () => {
                     />
                   </MapView>
                 ) : (
-                  <Text>Loading...</Text>
+                  <View style={styles.arrivalButtonContainer}>
+                    {errorMsg ? (
+                      <>
+                        <Text style={styles.errorMessage}>
+                          {errorMsg || "Location permission not granted."}
+                        </Text>
+                        <TouchableOpacity
+                          style={styles.button}
+                          onPress={handleUserArrived}
+                        >
+                          <Text style={styles.buttonText}>I've Arrived</Text>
+                        </TouchableOpacity>
+                      </>
+                    ) : (
+                      <Text>Loading...</Text>
+                    )}
+                  </View>
                 )}
               </View>
-        </View>
 
         {/* Rating Box */}
         <View style={[styles.section, styles.ratingSection]}>
@@ -332,10 +331,6 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontSize: 16,
   },
-  paragraph: {
-    fontSize: 18,
-    textAlign: 'center',
-  },
   map: {
     width: '90%',
     height: 200,
@@ -348,6 +343,17 @@ const styles = StyleSheet.create({
   },
   nearbyText: {
     fontWeight: '900',
+  },
+  arrivalButtonContainer: {
+    justifyContent: 'center',
+    alignItems: 'center',
+    width: '100%',
+    height: '100%',
+  },
+  errorMessage: {
+    fontWeight: 'bold',
+    marginBottom: 10,
+    textAlign: 'center',
   }
 });
 
