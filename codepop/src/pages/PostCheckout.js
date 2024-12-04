@@ -27,9 +27,59 @@ const PostCheckout = () => {
     const fetchPurchasedDrinks = async () => {
       try {
         const storedDrinks = await AsyncStorage.getItem("purchasedDrinks");
-        console.log(storedDrinks)
+        console.log(storedDrinks);
         const parsedDrinks = storedDrinks ? JSON.parse(storedDrinks) : [];
         setPurchasedDrinks(parsedDrinks);
+
+        // Loop through the drinks and log details
+        // Create a list to store all the items
+        const allUsedItems = [];
+
+        parsedDrinks.forEach((drink) => {
+
+          // Add SyrupsUsed to the list
+          if (drink.SyrupsUsed && drink.SyrupsUsed.length > 0) {
+            allUsedItems.push(...drink.SyrupsUsed); // Spread operator to merge arrays
+          }
+
+          // Add SodaUsed to the list
+          if (drink.SodaUsed && drink.SodaUsed.length > 0) {
+            allUsedItems.push(...drink.SodaUsed);
+          }
+
+        // Add AddIns to the list
+          if (drink.AddIns && drink.AddIns.length > 0) {
+            allUsedItems.push(...drink.AddIns);
+          }
+    });
+
+    // Fetch revenue data
+    const inventoryResponse = await fetch(`${BASE_URL}/backend/inventory/report/`, {
+      method: 'GET',
+      headers: { 'Content-Type': 'application/json' },
+    });
+    const inventoryData = await inventoryResponse.json();
+
+    // Extract matching InventoryIDs
+    const matchingInventoryIDs = inventoryData.inventory_items.filter(item => allUsedItems.some(usedItem => usedItem.toLowerCase() === item.ItemName.toLowerCase())).map(item => item.InventoryID); // Extract the InventoryID
+
+    for (const id of matchingInventoryIDs)
+    {
+      try{
+        const data = {'used_quantity': 1};
+        const response = await fetch(`${BASE_URL}/backend/inventory/${id}/`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(data),
+        });
+
+        if (!response.ok) {
+          throw new Error('Failed to update Inventory')
+        }
+      } catch (error) {
+        console.error('Error resetting incentory:', error)
+      }
+    }
       } catch (error) {
         console.error("Error fetching purchased drinks:", error);
       }
@@ -238,3 +288,22 @@ const styles = StyleSheet.create({
 });
 
 export default PostCheckout;
+
+
+
+  // try {
+  //         const data = {'used_quantity': 5}
+  //         const response = await fetch(`${BASE_URL}/backend/inventory/${syrup}/`, {
+  //           method: 'PATCH',
+  //           headers: { 'Content-Type': 'application/json' },
+  //           body: JSON.stringify(data),
+  //         });
+  //         if (!response.ok) {
+  //           throw new Error(`Failed to update syrup inventory: ${response.statusText}`);
+  //         }
+  //       }
+  //      catch (error) {
+  //       console.error('Error resetting inventory:', error);
+  //       alert('Failed to reset inventory');
+  //     }
+
