@@ -245,6 +245,7 @@ const CreateDrinkPage = () => {
           ))}
         </View>
 
+
         
         <View style={styles.graphicContainer}>
           <View style={styles.straw}></View>
