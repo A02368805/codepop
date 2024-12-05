@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, ScrollView, Modal, TextInput, ActivityIndicator } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, ScrollView, Modal, TextInput, ActivityIndicator, Image } from 'react-native';
 import { BASE_URL } from '../../ip_address';
 
 const ManagerDash = () => {
@@ -92,6 +92,11 @@ const ManagerDash = () => {
 
   return (
     <ScrollView style={styles.container}>
+      <Image 
+                source={require('../../assets/AISoda.jpg')}
+                style={styles.image}
+                resizeMode="contain"
+            />
       <Text style={styles.title}>Manager Dashboard</Text>
 
       {/* Revenue Section */}
@@ -204,19 +209,31 @@ const ManagerDash = () => {
 };
 
 const styles = StyleSheet.create({
+  image: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    width: '100%',
+    height: '100%',
+    // opacity: 0.2, // Optional: Add transparency
+  },
   container: {
     flex: 1,
     padding: 20,
-    backgroundColor: '#F0F4F8',
+    backgroundColor: '#D30C7B',
   },
   title: {
     fontSize: 24,
     fontWeight: 'bold',
+    color: '#fff',
     textAlign: 'center',
     marginBottom: 20,
+    zIndex: 2, // Ensure it's above the image
   },
   card: {
-    backgroundColor: '#fff',
+    backgroundColor: '#FFA686',
     padding: 20,
     borderRadius: 10,
     marginBottom: 15,
@@ -225,6 +242,7 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 4,
+    zIndex: 2, // Ensure it's above the image
   },
   cardTitle: {
     fontSize: 18,
@@ -243,7 +261,7 @@ const styles = StyleSheet.create({
   },
   buttonText: {
     fontSize: 14,
-    color: '#fff',
+    color: '#000',
   },
   modalBackground: {
     flex: 1,
