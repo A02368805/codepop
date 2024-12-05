@@ -323,6 +323,7 @@ const styles = StyleSheet.create({
   scrollViewContainer: {
     flexGrow: 1,
     padding: 10,
+    paddingBottom: 70,
   },
   section: {
     width: '100%',
@@ -331,6 +332,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   timerAndLockerContainer: {
+    paddingTop: 20,
     flexDirection: 'row',
     justifyContent: 'space-between',
   },
@@ -438,22 +440,4 @@ const styles = StyleSheet.create({
 });
 
 export default PostCheckout;
-
-
-
-  // try {
-  //         const data = {'used_quantity': 5}
-  //         const response = await fetch(`${BASE_URL}/backend/inventory/${syrup}/`, {
-  //           method: 'PATCH',
-  //           headers: { 'Content-Type': 'application/json' },
-  //           body: JSON.stringify(data),
-  //         });
-  //         if (!response.ok) {
-  //           throw new Error(`Failed to update syrup inventory: ${response.statusText}`);
-  //         }
-  //       }
-  //      catch (error) {
-  //       console.error('Error resetting inventory:', error);
-  //       alert('Failed to reset inventory');
-  //     }
 

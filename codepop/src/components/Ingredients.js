@@ -49,7 +49,7 @@ const syrupOptions = [
   { label: 'lime', value: 'lime', color: '#CDDC39' },  // Lime green
   { label: 'cupcake', value: 'cupcake', color: '#FF4081' },  // Pink
   { label: 'irish cream', value: 'irish cream', color: '#efcb6' },
-  { label: 'peppermint', value: 'irish cream', color: '#f794b4' },
+  { label: 'peppermint', value: 'peppermint', color: '#f794b4' },
   { label: 'salted caramel', value: 'salted caramel', color: '#6D4C41' },  // Brown
   { label: 'chocolate milano', value: 'chocolate milano', color: '#3E2723' },  // Dark brown
   { label: 'cinnamon', value: 'cinnamon', color: '#795548' },  // Brown
