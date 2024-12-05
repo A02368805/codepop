@@ -91,12 +91,13 @@ const ManagerDash = () => {
   };
 
   return (
-    <ScrollView style={styles.container}>
+    <View style={styles.container}>
       <Image 
-                source={require('../../assets/AISoda.jpg')}
+                source={require('../../assets/PinkBubbles.png')}
                 style={styles.image}
-                resizeMode="contain"
+                resizeMode="cover"
             />
+      <ScrollView contentContainerStyle={styles.content}>
       <Text style={styles.title}>Manager Dashboard</Text>
 
       {/* Revenue Section */}
@@ -204,20 +205,16 @@ const ManagerDash = () => {
           </View>
         </View>
       </Modal>
-    </ScrollView>
+      </ScrollView>
+    </View>
   );
 };
 
 const styles = StyleSheet.create({
   image: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    width: '100%',
-    height: '100%',
-    // opacity: 0.2, // Optional: Add transparency
+    width: '150%',
+    height: '200%',
+    ...StyleSheet.absoluteFillObject,
   },
   container: {
     flex: 1,
@@ -227,10 +224,13 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 24,
     fontWeight: 'bold',
-    color: '#fff',
+    color: '#D30C7B',
     textAlign: 'center',
     marginBottom: 20,
-    zIndex: 2, // Ensure it's above the image
+    zIndex: 2, 
+    backgroundColor: '#8DF1D3',
+    borderRadius: 10,
+    padding: 10,
   },
   card: {
     backgroundColor: '#FFA686',
