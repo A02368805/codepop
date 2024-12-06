@@ -101,26 +101,18 @@ const UpdateDrink = ({route, navigation}) => {
     });
   };
 
-  // const filterOptions = (options, selectedItems = []) => {
-  //   return options
-  //     .filter(option => 
-  //       option.label.toLowerCase().includes(searchText.toLowerCase())
-  //     )
-  //     .map(option => ({
-  //       ...option,
-  //       selected: selectedItems
-  //         .map(item => item.toLowerCase())
-  //         .includes(option.label.toLowerCase()),
-  //     }));
-  // };
   const filterOptions = (options, selectedItems = []) => {
-    return options.map(option => ({
-      ...option,
-      selected: selectedItems
-        .map(item => item.toLowerCase().trim())
-        .includes(option.label.toLowerCase().trim()),
-    }));
-  };  
+    return options
+      .filter(option => 
+        option.label.toLowerCase().includes(searchText.toLowerCase())
+      )
+      .map(option => ({
+        ...option,
+        selected: selectedItems
+          .map(item => item.toLowerCase())
+          .includes(option.label.toLowerCase()),
+      }));
+  }; 
   
 
   const updateDrink = async () => {
