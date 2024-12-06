@@ -353,7 +353,7 @@ const styles = StyleSheet.create({
     textAlign: "center",
     marginBottom: 25,
   },
-  modalButtonContainer: { // These need to be side by side
+  modalButtonContainer: {
     flexDirection: 'row',
     justifyContent: 'space-evenly',
     width: '100%',
