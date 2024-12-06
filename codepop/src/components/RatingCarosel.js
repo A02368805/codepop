@@ -8,17 +8,9 @@ import { BASE_URL } from '../../ip_address';
 import Gif from './Gif';
 import { sodaOptions, syrupOptions, AddInOptions } from '../components/Ingredients';
 
-// I think its not adding ratings/favorites becasue the drink gets deleted from the backend after checkout so the URL doesnt exist anymore
+// to do in phase 2: fix duplicate drink in carosel bug
 
 const { width: windowWidth } = Dimensions.get('window');
-
-// todo
-    // maybe think about clearing the purchased drinks list from async storage once a user navigates away from the page
-    // move all the things together
-    // fix the add to favorites and ratings stuff
-// bugs to fix
-    // carosel seems to have two of each drink that it rotates through
-    // if there are two drinks in the carosel and a ratign is selected for one of them, the rating stays for both drinks
 
 const RatingCarosel = ({ purchasedDrinks }) => {
     const navigation = useNavigation();
