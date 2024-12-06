@@ -13,19 +13,15 @@ const AdminDash = () => {
   const [popupIsOpen, setPopupIsOpen] = useState(false);
   const [editorIsOpen, setEditorIsOpen] = useState(false);
 
-  const [userToEdit, setUserToEdit] = useState(null)
+  const [userToDelete, setUserToDelete] = useState(null)
+  const [userToEdit, setUserToEdit] = useState(null);
   const [userInfo, setUserInfo] = useState({
     username: "",
     firstName: "",
     lastName: "",
     password: "",
     role: "",
-  })
-  // const [newUsername, changeUsername] = useState();
-  // const [newFirstname, changeFirstname] = useState();
-  // const [newLastname, changeLastname] = useState();
-  // const [newPassword, changePassword] = useState();
-  // const [newRole, changeRole] = useState();
+  });
 
   useFocusEffect(React.useCallback(() => {
     getUsers();
@@ -42,8 +38,14 @@ const AdminDash = () => {
     { label: 'Admin', value: 'admin' },
   ];
 
-  const openPopup = () => {setPopupIsOpen(true)}
-  const closePopup = () => {setPopupIsOpen(false)}
+  const openPopup = (user) => {
+    setUserToDelete(user)
+    setPopupIsOpen(true)
+  }
+  const closePopup = () => {
+    setPopupIsOpen(false)
+    setUserToDelete(null)
+  }
 
   const openEditor = (user) => {
     setUserToEdit(user)
@@ -211,7 +213,7 @@ const AdminDash = () => {
               <Text style={styles.buttonText}>Edit</Text>
             </TouchableOpacity>
 
-            <TouchableOpacity onPress={openPopup} style={styles.button}>
+            <TouchableOpacity onPress={() => openPopup(item)} style={styles.button}>
               <Text style={styles.buttonText}>Delete</Text>
             </TouchableOpacity>
           </View>
@@ -219,9 +221,9 @@ const AdminDash = () => {
           <Modal transparent={true} visible={popupIsOpen} onRequestClose={closePopup}>
               <View style={styles.modalBackground}>
                 <View style={styles.popup}>
-                    <Text style={styles.modalText}>Are you sure you want to delete user "{item.username}"?</Text>
+                    <Text style={styles.modalText}>Are you sure you want to delete user "{userToDelete?.username}"?</Text>
                     <View styles={styles.modalButtonContainer}>
-                      <TouchableOpacity onPress={() => deleteUser(item)} style={styles.button}><Text style={styles.buttonText}>Yes</Text></TouchableOpacity>
+                      <TouchableOpacity onPress={() => deleteUser(userToDelete)} style={styles.button}><Text style={styles.buttonText}>Yes</Text></TouchableOpacity>
                       <TouchableOpacity onPress={closePopup} style={styles.button}><Text style={styles.buttonText}>No</Text></TouchableOpacity>
                     </View>
                   </View>
@@ -366,7 +368,7 @@ const styles = StyleSheet.create({
     textAlign: "center",
     marginBottom: 25,
   },
-  modalButtonContainer: { // These need to be side by side
+  modalButtonContainer: {
     flexDirection: 'row',
     justifyContent: 'space-evenly',
     width: '100%',
