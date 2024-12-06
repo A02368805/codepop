@@ -1,7 +1,7 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import { useEffect, useState } from 'react';
-import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { ScrollView, StyleSheet, Text, TouchableOpacity, View, Image } from 'react-native';
 import { BASE_URL } from '../../ip_address';
 import DropDown from '../components/DropDown';
 import React from 'react';
@@ -251,63 +251,75 @@ const PreferencesPage = () => {
     };
 
   return (
-    <ScrollView style={styles.container} contentContainerStyle={styles.contentContainer}>
-      {isLoading ? (  // Conditionally render the content based on loading state
-        <Text>Loading...</Text> // You can display a loading spinner or message here
-      ) : (
-        <>
-          {/* If logged in, display the username and Logout button, otherwise display Login button */}
-          {isLoggedIn ? (
-            <>
-              {/* Conditionally render the "Hello <username>" if username exists */}
-              {name ? <Text style={styles.greeting}>{name}'s Drinks</Text> : null}
-              <View style={styles.navBarSpace}>
-                {/* <Text style={styles.subtitleText}>Saved Drinks (can be created on ratings page)</Text> */}
-                <Text style={styles.subtitleText}>Preferences</Text>
-                {/* <Text>{SodaUsed}</Text> */}
-                <DropDown
-                  title='Sodas'
-                  options={filterInventory("Soda")}
-                  onSelect={(soda) => handleSelection(soda, 'Soda')} 
-                  isOpen={openDropdown.sodas}
-                  setOpen={() => setOpenDropdown(prev => ({ ...prev, sodas: !prev.sodas }))}
-                  selectedValues={SodaUsed} // Pass selected values for prepopulation
-                />
-                <DropDown 
-                  title='Syrups' 
-                  options={filterInventory("Syrup")} 
-                  onSelect={(syrup) => handleSelection(syrup, 'Syrup')} 
-                  isOpen={openDropdown.syrups}
-                  setOpen={() => setOpenDropdown(prev => ({ ...prev, syrups: !prev.syrups }))}
-                  selectedValues={SyrupsUsed} // Pass selected values for prepopulation
-                />
-                <DropDown 
-                  title='Add ins' 
-                  options={filterInventory("Add In")} 
-                  onSelect={(addIns) => handleSelection(addIns, 'Add In')} 
-                  isOpen={openDropdown.addIns}
-                  setOpen={() => setOpenDropdown(prev => ({ ...prev, addIns: !prev.addIns }))}
-                  selectedValues={AddIns} // Pass selected values for prepopulation
-                />
-              </View>
-              
-            </>
-          ) : (
-            <>
-              <View style={styles.buttonContainer}>
-                <TouchableOpacity onPress={goToLoginPage} style={styles.mediumButton}>
-                  <Text style={styles.buttonText}>Login</Text>
-                </TouchableOpacity>
-              </View>
-            </>
-          )}
-        </>
-      )}
-    </ScrollView>
+    <View style={styles.container}>
+      <Image 
+                source={require('../../assets/PinkBubbles.png')}
+                style={styles.image}
+                resizeMode="cover"
+            />
+      <ScrollView contentContainerStyle={styles.contentContainer}>
+        {isLoading ? (  // Conditionally render the content based on loading state
+          <Text>Loading...</Text> // You can display a loading spinner or message here
+        ) : (
+          <>
+            {/* If logged in, display the username and Logout button, otherwise display Login button */}
+            {isLoggedIn ? (
+              <>
+                {/* Conditionally render the "Hello <username>" if username exists */}
+                {name ? <Text style={styles.greeting}>{name}'s Drinks</Text> : null}
+                <View style={styles.navBarSpace}>
+                  {/* <Text style={styles.subtitleText}>Saved Drinks (can be created on ratings page)</Text> */}
+                  <Text style={styles.subtitleText}>Preferences</Text>
+                  {/* <Text>{SodaUsed}</Text> */}
+                  <DropDown
+                    title='Sodas'
+                    options={filterInventory("Soda")}
+                    onSelect={(soda) => handleSelection(soda, 'Soda')} 
+                    isOpen={openDropdown.sodas}
+                    setOpen={() => setOpenDropdown(prev => ({ ...prev, sodas: !prev.sodas }))}
+                    selectedValues={SodaUsed} // Pass selected values for prepopulation
+                  />
+                  <DropDown 
+                    title='Syrups' 
+                    options={filterInventory("Syrup")} 
+                    onSelect={(syrup) => handleSelection(syrup, 'Syrup')} 
+                    isOpen={openDropdown.syrups}
+                    setOpen={() => setOpenDropdown(prev => ({ ...prev, syrups: !prev.syrups }))}
+                    selectedValues={SyrupsUsed} // Pass selected values for prepopulation
+                  />
+                  <DropDown 
+                    title='Add ins' 
+                    options={filterInventory("Add In")} 
+                    onSelect={(addIns) => handleSelection(addIns, 'Add In')} 
+                    isOpen={openDropdown.addIns}
+                    setOpen={() => setOpenDropdown(prev => ({ ...prev, addIns: !prev.addIns }))}
+                    selectedValues={AddIns} // Pass selected values for prepopulation
+                  />
+                </View>
+                
+              </>
+            ) : (
+              <>
+                <View style={styles.buttonContainer}>
+                  <TouchableOpacity onPress={goToLoginPage} style={styles.mediumButton}>
+                    <Text style={styles.buttonText}>Login</Text>
+                  </TouchableOpacity>
+                </View>
+              </>
+            )}
+          </>
+        )}
+      </ScrollView>
+    </View>
   );
 };
 
 const styles = StyleSheet.create({
+  image: {
+    width: '100%',
+    height: '150%',
+    ...StyleSheet.absoluteFillObject,
+  },
   container: {
     flex: 1,
     padding: 0,
@@ -348,7 +360,11 @@ const styles = StyleSheet.create({
   },
   subtitleText: {
     margin: 10,
-    fontSize: 16,
+    fontSize: 20,
+    backgroundColor: '#F92758',
+    color: '#fff',
+    padding: 10,
+    textAlign: 'center',
   }
 });
 
