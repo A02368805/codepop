@@ -11,6 +11,7 @@ from .customerAI import Chatbot
 from .views import GenerateAIDrink
 from .views import RevenueViewSet
 from .views import UserOperations
+from .views import emailAPI
 
 #this ensures that the url calls the right function from the views for each type of request
 preferences_list = PreferencesOperations.as_view({
@@ -209,4 +210,6 @@ urlpatterns = [
     path('users/', user_operations, name='get_user_list'),
     path('users/delete/<int:user_id>/', user_operations, name='delete_user'),
     path('users/edit/<int:user_id>/', user_operations, name='edit_user'),
+
+    path('email/<int:orderId>/', emailAPI.as_view(), name='Create Email')
 ]

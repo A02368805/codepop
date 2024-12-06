@@ -151,7 +151,7 @@ const App = () => {
         <Stack.Screen
           name="PostCheckout"
           component={PostCheckout}
-          options={{ title: 'PostCheckout' }}
+          options={{ title: 'PostCheckout' , headerBackVisible: false,}}
         />
       </Stack.Navigator>
     </NavigationContainer>

@@ -119,14 +119,27 @@ export default function CheckoutForm(totalPrice) {
 
   const openPaymentSheet = async () => {
     const { error } = await presentPaymentSheet();
-    if (error) Alert.alert(`Error code: ${error.code}`, error.message);
-    else 
-      Alert.alert('Success', 'Your order is confirmed!');
-      // call removeAllDrinks page
-      await removeAllDrinks();
-      await addRevenue();
-      // navigate to ratings and geolocation page
-      navigation.navigate('PostCheckout');
+  
+    if (error) {
+      Alert.alert(`Error code: ${error.code}`, error.message);
+    } else {
+      Alert.alert('Success', 'Your order is confirmed!', [
+        {
+          text: 'OK',
+          onPress: async () => {
+            await removeAllDrinks();
+            await addRevenue();
+            const response = await fetch(`${BASE_URL}/backend/email/${orderNum}/`, {
+              method: 'GET',
+              headers: {
+                'Content-Type': 'application/json',
+              },
+            });
+            navigation.navigate('PostCheckout');
+          },
+        },
+      ]);
+    }
   };
 
   return { initializePaymentSheet, openPaymentSheet, loading };

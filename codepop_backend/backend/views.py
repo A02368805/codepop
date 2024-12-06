@@ -500,6 +500,73 @@ def refund_order(client_secret_or_id):
         print(f"Unexpected error: {e}")
         return False
     
+class emailAPI(APIView):
+    def get(self, request, orderId):
+        try:
+            # Fetch order details
+            order = Order.objects.get(pk=orderId)
+            revenue = Revenue.objects.filter(OrderID=orderId).first()
+
+            # Generate styled terminal output
+            email_text = self.generate_email_preview(order, revenue)
+
+            # Print styled text to the terminal
+            print("\033[92m=== EMAIL PREVIEW ===\033[0m")  # Green and bold
+            print(email_text)
+            print("\033[92m=====================\033[0m")  # Green and bold
+
+            return Response({"message": "Email preview generated successfully."}, status=status.HTTP_200_OK)
+
+        except Order.DoesNotExist:
+            return Response({"error": f"Order with ID {orderId} does not exist."}, status=status.HTTP_404_NOT_FOUND)
+        except Exception as e:
+            return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+    def generate_email_preview(self, order, revenue):
+        """Generate a styled email preview for terminal output."""
+        email_subject = f"Order Confirmation - Order #{order.OrderID}"
+        user_info = f"Customer Name: {order.UserID.first_name}" if order.UserID else "Customer Name: Guest"
+
+        # Generate detailed drink information
+        drinks_list = "".join(
+            [
+                f"""  
+        - {drink.Name}:\033[92m ${drink.Price:.2f} \033[0m
+            Sodas: {', '.join(drink.SodaUsed) if drink.SodaUsed else 'None'}
+            Syrups: {', '.join(drink.SyrupsUsed) if drink.SyrupsUsed else 'None'}
+            Add-ins: {', '.join(drink.AddIns) if drink.AddIns else 'None'}\n"""
+                for drink in order.Drinks.all()
+            ]
+        )
+
+        total_amount = f"${revenue.TotalAmount:.2f}" if revenue else "N/A"
+        order_status = order.OrderStatus.capitalize()
+        payment_status = order.PaymentStatus.capitalize()
+
+        # Styled email content using ANSI escape codes
+        email_content = f"""
+        ==============================================
+        \033[96m{email_subject}\033[0m
+        ==============================================
+
+        \033[93mOrder Details:\033[0m  
+        {user_info}  
+        Payment Status: \033[94m{payment_status}\033[0m  
+        Pickup Time: {order.PickupTime.strftime('%Y-%m-%d %H:%M:%S') if order.PickupTime else 'Not Set'}
+
+        \033[93mDrinks Ordered:\033[0m 
+        {drinks_list if drinks_list else '  No drinks added to this order.'}
+
+        \033[93mTotal Amount:\033[0m  
+        \033[92m{total_amount}\033[0m 
+
+        Thank you for ordering with us!
+
+        ==============================================
+        """
+        return email_content
+
+    
 class GenerateAIDrink(APIView):
     permission_classes = [AllowAny]
 

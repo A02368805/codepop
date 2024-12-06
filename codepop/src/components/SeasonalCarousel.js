@@ -53,19 +53,43 @@ const SeasonalCarousel = () => {
 
             // Log the item to ensure it has the correct structure
             console.log(item);
+
+            const response = await fetch(`${BASE_URL}/backend/drinks/`, {
+                method: 'POST',
+                headers: {
+                  'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ 
+                  Name: item.name,  // Example name for the drink
+                  SodaUsed: item.sodaUsed,  // Default value if SodaUsed is null
+                  SyrupsUsed: item.syrupsUsed,
+                  AddIns: item.addIns,
+                  Price: item.price,
+                  User_Created: true,    // Assuming the user is creating the drink
+                  Size: '24oz',
+                  Ice: 'Regular',
+                })
+              });
             
-            // Check that DrinkID exists on the item
-            const drinkID = item.drinkID;
-            if (!drinkID) {
-              console.log("Invalid item: DrinkID is missing");
-              return;
-            }
-            console.log(currentList);
-            // Add the drinkID to the checkout list
-            const updatedList = [...cleanedList, drinkID];
-          
-            // Save the updated list back to AsyncStorage
-            await AsyncStorage.setItem('checkoutList', JSON.stringify(updatedList));
+              if (!response.ok) {
+                throw new Error(`Failed to add drink. Status: ${response.status}`);
+              }
+              // add drink item (the drinks ID) to the checkout list from App.js
+              try{
+                // gets list of out of storage on your phone
+                cartList = await AsyncStorage.getItem("checkoutList");
+                const currentList = cartList ? JSON.parse(cartList) : [];
+                // takes the response (what we get after we create a drink) and extracts the drinkID
+                const data = await response.json();
+                const drinkID = data.DrinkID;
+                // add the drinkID to the checkoutList
+                const updatedList = [...currentList, drinkID]
+                // Saves the checkoutlist back into the storage on the phone
+                await AsyncStorage.setItem('checkoutList', JSON.stringify(updatedList));
+                navigation.navigate('Cart');
+              }catch (error){
+                console.log(error)
+              }
           
             // Optionally, verify the save operation
             const savedList = await AsyncStorage.getItem('checkoutList');
@@ -75,7 +99,7 @@ const SeasonalCarousel = () => {
             console.log("Error:", error);
         }
           
-        navigation.navigate('Cart');
+        
     }
 
     const renderItem = ({ item }) => (

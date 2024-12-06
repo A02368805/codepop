@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, Image, Button, TouchableOpacity, ScrollView } from 'react-native';
+import { useNavigation } from '@react-navigation/native';
 import NavBar from '../components/NavBar';
 import RatingCarosel from '../components/RatingCarosel';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -8,6 +9,7 @@ import * as Location from 'expo-location';
 import MapView, { Marker } from 'react-native-maps';
 
 const PostCheckout = () => {
+  const navigation = useNavigation();
   const [lockerCombo, setLockerCombo] = useState('');
   const [timeLeft, setTimeLeft] = useState(60);
   const [purchasedDrinks, setPurchasedDrinks] = useState([]);
@@ -16,10 +18,10 @@ const PostCheckout = () => {
   const [isNearby, setIsNearby] = useState(false);
 
   const storeLocation = { //this is my apartment in case you were wondering lol
-      // latitude: 41.7376316,
-      // longitude: -111.8216457
-       latitude: 37.422, //the emulator will likely user coordinates to google headquarters which is these coordinates. uncomment to test <500 yard option
-       longitude: -122.0839
+      latitude: 41.7376316,
+      longitude: -111.8216457
+       //latitude: 37.422, //the emulator will likely user coordinates to google headquarters which is these coordinates. uncomment to test <500 yard option
+       //longitude: -122.0839
   };
 
   useEffect(() => {
@@ -231,6 +233,14 @@ const PostCheckout = () => {
     setIsNearby(true);
   };
 
+  const goHomePage = () => {
+    navigation.navigate('GeneralHome');  // Navigate to the login page
+  };
+
+  const makeDrink= () => {
+    setIsNearby(true);
+  }
+
   return (
     <View style={styles.container}>
       <ScrollView contentContainerStyle={styles.scrollViewContainer}>
@@ -308,9 +318,19 @@ const PostCheckout = () => {
             <Text style={styles.lockerCombo}>Locker combo: {lockerCombo}</Text>
           </View>
         </View>
-
+        {timeLeft === 0 ? (
+          <TouchableOpacity onPress={goHomePage} style={styles.mediumButton}>
+            <Text style={styles.buttonText}>Back To Home Page</Text>
+          </TouchableOpacity>
+        ) : isNearby ? (
+          <></>
+        ) : (
+          <TouchableOpacity onPress={makeDrink} style={styles.mediumButton}>
+            <Text style={styles.buttonText}>Location Not Working</Text>
+            <Text style= {styles.buttonText}>Press To Make Drink!</Text>
+          </TouchableOpacity>
+        )}
       </ScrollView>
-      <NavBar />
     </View>
   );
 };
@@ -323,7 +343,7 @@ const styles = StyleSheet.create({
   scrollViewContainer: {
     flexGrow: 1,
     padding: 10,
-    paddingBottom: 70,
+    paddingBottom: 30,
   },
   section: {
     width: '100%',
@@ -410,8 +430,10 @@ const styles = StyleSheet.create({
     marginVertical: 5,
   },
   buttonText: {
-    color: '#fff',
+    //color: '#fff',
+    color: 'black',
     fontSize: 16,
+    fontWeight: 'bold',
   },
   map: {
     width: '90%',
@@ -436,7 +458,19 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     marginBottom: 10,
     textAlign: 'center',
-  }
+  },
+  mediumButton: {
+    margin: 10,
+    padding: 15,
+    backgroundColor: '#D30C7B',
+    borderRadius: 10,
+    alignItems: 'center',
+    elevation: 3,
+    shadowColor: '#000',
+    shadowOffset: { width: 2, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 3,
+  },
 });
 
 export default PostCheckout;
