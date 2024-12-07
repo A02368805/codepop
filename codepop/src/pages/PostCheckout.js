@@ -17,11 +17,9 @@ const PostCheckout = () => {
   const [errorMsg, setErrorMsg] = useState(null);
   const [isNearby, setIsNearby] = useState(false);
 
-  const storeLocation = { //this is my apartment in case you were wondering lol
-      latitude: 41.7376316,
-      longitude: -111.8216457
-       //latitude: 37.422, //the emulator will likely user coordinates to google headquarters which is these coordinates. uncomment to test <500 yard option
-       //longitude: -122.0839
+  const storeLocation = {
+      latitude: 41.7421007, //the emulator will likely user coordinates to google headquarters which is these coordinates. uncomment to test <500 yard option
+      longitude: -111.8070335
   };
 
   useEffect(() => {
