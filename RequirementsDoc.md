@@ -122,18 +122,6 @@
 
 ---
 
-## Test Data Requirements
-
-### Supply Hubs (7 Required)
-
-### Store Locations
-
-### User Roles Test Data
-
-### Machine and Supply Test Data
-
----
-
 ## Use Case Diagrams
 
 ### Supply Chain Management Use Case
