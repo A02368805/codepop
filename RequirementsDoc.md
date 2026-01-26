@@ -155,28 +155,28 @@ These requirements established the foundational user experience and automation g
 ### User Goals and Expectations
 
 #### All Users
-- Experience a responsive, intuitive interface across all devices (phones, tablets, desktops)
-- Receive clear, helpful error messages when issues occur
+- Experience a responsive interface that loads within 3 seconds and functions consistently across phones, tablets, and desktops
+- Receive error messages that describe what went wrong and suggest corrective actions
 - Trust that their data is encrypted and protected using industry-standard security protocols
 - Access the application reliably with minimal downtime
 - Navigate an accessible interface compliant with WCAG 2.1 standards
 
 #### Account Users Specifically Expect
-- Seamless onboarding with a brief tutorial introducing key features
+- Onboarding tutorial completing in under 2 minutes that introduces key features including ordering, customization, and favorites
 - AI-powered drink recommendations that improve over time based on their preferences and ratings
 - Flexible pickup options through geolocation tracking or scheduled preparation times
 - A loyalty program that rewards repeat purchases
 - The ability to share favorite drinks on social media platforms
 
 #### Managers Expect
-- A comprehensive dashboard displaying inventory grids sortable by remaining quantity
+- A dashboard displaying inventory grids sortable by remaining quantity
 - Visual cooler status indicators showing full/empty states and order wait times
 - Lists of processed orders with focus on in-progress and scheduled orders
 - Real-time revenue statistics and performance metrics
 - Automated notifications for low inventory with AI-suggested reorder quantities
 
 #### Admins and Super Admins Expect
-- Robust user management tools to maintain account security and system integrity
+- User management tools supporting account creation, modification, locking, and deletion to maintain account security and system integrity
 - Clear permission assignment capabilities for creating manager accounts
 - Access to comprehensive reports on user activity, inventory costs, and revenue
 - The ability to respond to user complaints and system issues efficiently
@@ -491,7 +491,7 @@ General Users access the application without creating an account. They can place
 
 ### Performance & Scalability
 
-- (S) The system must support scaling to hundreds or thousands of stores without major performance degradation.
+- (S) The system must support scaling to hundreds or thousands of stores while maintaining response times under 3 seconds for standard operations.
 - (S) Local store operations must continue functioning even if other regions are offline.
 
 ### Availability & Reliability
@@ -508,17 +508,17 @@ General Users access the application without creating an account. They can place
 
 ### Maintainability
 
-- (M) The system must be modular and well-documented.
+- (M) The system must be modular with documented APIs and configuration files.
 - (M) The system must support:
-  - Easy addition of new stores
-  - Easy addition of new regions
-  - Easy addition of new machine types
+  - Addition of new stores without code changes (configuration-driven)
+  - Addition of new regions without code changes (configuration-driven)
+  - Addition of new machine types through configuration updates
 - (M) CSV import formats must be clearly documented.
 
 ### Usability
 
-- (M) Dashboards must be simple, role-focused, and easy to understand.
-- (S) Managers, logistics managers, and repair staff should be able to use the system with minimal training.
+- (M) Dashboards must display only role-relevant information with labeled metrics and consistent navigation elements.
+- (S) Managers, logistics managers, and repair staff should be able to perform core tasks after completing an onboarding walkthrough of 15 minutes or less.
 
 ### Fault Tolerance
 
@@ -576,7 +576,7 @@ General Users access the application without creating an account. They can place
 
 ### Reliability & Brand Protection
 
-- (M) Machines must not be allowed to operate in unsafe or error states for extended periods.
+- (M) Machines must not be allowed to operate in unsafe or error states for more than 7 days without repair or shutdown.
 - (M) Stores must avoid running out of key supplies.
 - (M) The system must protect the CodePop brand by ensuring consistent quality and uptime across locations.
 
@@ -637,7 +637,7 @@ General Users access the application without creating an account. They can place
 - AI may infer preferences based on user drink history and use them for randomly generated drinks
 - Accessibility support
 - Seasonal menu availability
-- Automatic disposal of drinks that remain in a cooler beyond an acceptable time threshold
+- Automatic disposal of drinks that remain in a cooler beyond a configurable time threshold (default: 30 minutes)
 - AI-assisted identification of supply usage patterns
 - AI-assisted repair schedule optimization
 - Supply routing optimization between hubs and stores
@@ -688,104 +688,104 @@ General Users access the application without creating an account. They can place
 
 ### Logistics Manager – User Stories
 
-- **(M)** As a logistics_manager, I want to manage supplies for stores in my assigned region so inventory remains available.
-- **(M)** As a logistics_manager, I want to view supply levels for all stores I manage.
-- **(M)** As a logistics_manager, I want to coordinate supplies between local stores and regional supply hubs.
-- **(M)** As a logistics_manager, I want to route supplies from hubs to stores within 1000 miles.
-- **(M)** As a logistics_manager, I want to import supply usage data from a CSV file.
-- **(S)** As a logistics_manager, I want AI to analyze supply usage patterns from historical data.
-- **(S)** As a logistics_manager, I want to suggest supply schedules based on usage trends.
-- **(C)** As a logistics_manager, I want visual reports showing supply movement between locations.
+- **(M)** As a logistics_manager, I want to manage supplies for stores in my assigned region so that inventory remains available and stores avoid stockouts.
+- **(M)** As a logistics_manager, I want to view supply levels for all stores I manage so that I can identify which stores need restocking and prioritize deliveries.
+- **(M)** As a logistics_manager, I want to coordinate supplies between local stores and regional supply hubs so that I can balance inventory across locations and reduce delivery costs.
+- **(M)** As a logistics_manager, I want to route supplies from hubs to stores within 1000 miles so that stores outside my primary region can still receive timely restocking.
+- **(M)** As a logistics_manager, I want to import supply usage data from structured files so that I can update inventory records in bulk without manual data entry.
+- **(S)** As a logistics_manager, I want AI to analyze supply usage patterns from historical data so that I can anticipate demand and prevent shortages.
+- **(S)** As a logistics_manager, I want to generate supply schedules based on usage trends so that deliveries align with actual consumption patterns.
+- **(C)** As a logistics_manager, I want visual reports showing supply movement between locations so that I can identify bottlenecks and optimize distribution routes.
 
 ---
 
 ### Repair Staff – User Stories
 
-- **(M)** As repair_staff, I want to manage machine repair schedules for the stores I am responsible for.
-- **(M)** As repair_staff, I want to import machine repair data from a CSV file.
-- **(M)** As repair_staff, I want to track machine status across all assigned locations.
-- **(M)** As repair_staff, I want to see machines that are out-of-order or in error status.
-- **(S)** As repair_staff, I want optimized repair routes to minimize travel time.
-- **(S)** As repair_staff, I want alerts when machines with warning status need service soon.
-- **(S)** As repair_staff, I want constraints enforced for maximum time between service visits.
-- **(C)** As repair_staff, I want predictive recommendations for upcoming machine failures.
+- **(M)** As repair_staff, I want to manage machine repair schedules for the stores I am responsible for so that I can ensure all machines receive timely maintenance.
+- **(M)** As repair_staff, I want to import machine repair data from structured files so that I can update maintenance records in bulk without manual entry.
+- **(M)** As repair_staff, I want to track machine status across all assigned locations so that I can monitor equipment health and plan service visits.
+- **(M)** As repair_staff, I want to see machines that are out-of-order or in error status so that I can prioritize urgent repairs and minimize store downtime.
+- **(S)** As repair_staff, I want optimized repair routes so that I can service more machines per day while reducing travel time and fuel costs.
+- **(S)** As repair_staff, I want alerts when machines with warning status approach their maximum operational threshold so that I can schedule preventive maintenance before failures occur.
+- **(S)** As repair_staff, I want the system to enforce maximum time constraints between service visits so that machines remain within safe operational parameters.
+- **(C)** As repair_staff, I want predictive recommendations for upcoming machine failures so that I can perform preventive repairs and reduce emergency service calls.
 
 ---
 
 ### Super Admin – User Stories
 
-- **(M)** As a super_admin, I want to access data for any store location.
-- **(M)** As a super_admin, I want to view supply, repair, and financial data across all regions and stores.
-- **(M)** As a super_admin, I want to audit role permissions and access levels.
-- **(S)** As a super_admin, I want system-wide reports for logistics and maintenance.
-- **(C)** As a super_admin, I want historical trend analysis across all regions.
+- **(M)** As a super_admin, I want to access data for any store location so that I can investigate issues and oversee operations company-wide.
+- **(M)** As a super_admin, I want to view supply, repair, and financial data across all regions and stores so that I can assess overall business performance and identify trends.
+- **(M)** As a super_admin, I want to audit role permissions and access levels so that I can ensure security policies are enforced and detect unauthorized access.
+- **(S)** As a super_admin, I want system-wide reports for logistics and maintenance so that I can present operational metrics to stakeholders.
+- **(C)** As a super_admin, I want historical trend analysis across all regions so that I can identify long-term patterns and inform strategic decisions.
 
 ---
 
 ### Admin – Updated User Stories
 
-- **(M)** As an admin, I want to manage user accounts for my store only.
-- **(M)** As an admin, I want to unlock, disable, or remove user accounts.
-- **(M)** As an admin, I want to access certain user data such as the number of user accounts.
-- **(M)** As an admin, I want to track the cost of inventory and maintenance of the shop.
-- **(M)** As an admin, I want to view general and account user complaints.
-- **(M)** As an admin, I want to add or remove manager permissions.
-- **(C)** As an admin, I want to view the app as if I were a manager.
-- **(S)** As an admin, I want to receive all available data in easily understandable and regular reports.
-- **(S)** As an admin, I want to view revenue reports including net and gross income.
-- **(M)** As an admin, I want to be able to add permissions to manager accounts.
+- **(M)** As an admin, I want to manage user accounts for my store only so that I can resolve account issues while maintaining data boundaries between locations.
+- **(M)** As an admin, I want to unlock, disable, or remove user accounts so that I can restore access for legitimate users and remove inactive or compromised accounts.
+- **(M)** As an admin, I want to access user metrics such as total account count and active users so that I can monitor store engagement and growth.
+- **(M)** As an admin, I want to track inventory costs and maintenance expenses so that I can monitor store profitability and identify cost-saving opportunities.
+- **(M)** As an admin, I want to view user complaints so that I can address service issues and improve customer satisfaction.
+- **(M)** As an admin, I want to add or remove manager permissions so that I can adjust staff access as roles change.
+- **(C)** As an admin, I want to view the app from a manager's perspective so that I can troubleshoot issues managers report and verify their dashboard displays correctly.
+- **(S)** As an admin, I want to receive weekly automated reports with key metrics (revenue, inventory, complaints) so that I can stay informed without manually querying data.
+- **(S)** As an admin, I want to view revenue reports including net and gross income so that I can assess store financial performance.
+- **(M)** As an admin, I want to assign specific permissions to manager accounts so that I can grant appropriate access based on each manager's responsibilities.
 
 ---
 
 ### Manager – Updated User Stories
 
-- **(M)** As a manager, I want to view inventory levels for my store.
-- **(S)** As a manager, I want to receive notifications when inventory levels are low for my store.
-- **(M)** As a manager, I want access to revenue and payment reports.
-- **(S)** As a manager, I want to see machine downtime impacting store operations.
-- **(M)** As a manager, I want to view user payments and look up transactions.
+- **(M)** As a manager, I want to view inventory levels for my store so that I can verify stock availability and identify items needing reorder.
+- **(S)** As a manager, I want to receive notifications when inventory drops below defined thresholds so that I can reorder supplies before stockouts occur.
+- **(M)** As a manager, I want access to revenue and payment reports so that I can track daily sales and reconcile transactions.
+- **(S)** As a manager, I want to see machine downtime records so that I can understand how equipment issues affect order fulfillment.
+- **(M)** As a manager, I want to view user payments and look up transactions so that I can investigate payment disputes and process refunds.
 
 ---
 
 ### Account User – Updated User Stories
 
-- **(M)** As an account_user, I want to order drinks from any store location.
-- **(M)** As an account_user, I want the system to suggest the best store based on my location and pickup time.
-- **(S)** As an account_user, I want the system to remember my location preferences.
-- **(M)** As an account_user, I want to easily and securely sign in to access my drink history and place orders.
-- **(M)** As an account_user, I want to know that my private data such as payment information and geolocation is protected if I choose to share it.
-- **(S)** As an account_user, I want drinks recommended to me based on my preferences.
-- **(M)** As an account_user, I want the app to be visually pleasing.
-- **(M)** As an account_user, I want to see all possible combinations of syrups, sodas, and add-ins so I can craft my drink.
-- **(M)** As an account_user, I want to save favorite drinks for easy future ordering.
-- **(M)** As an account_user, I want my drink fresh and ready when I arrive to pick it up.
-- **(M)** As an account_user, I want the option to deny geolocation access and instead choose a pickup time manually.
-- **(M)** As an account_user, I want to receive notifications when my soda is ready.
-- **(M)** As an account_user, I want to add payment options to my account and pay through the app.
-- **(M)** As an account_user, I want to be refunded if I cancel my drink order.
-- **(C)** As an account_user, I want to rate sodas out of 5.
-- **(C)** As an account_user, I want AI to use my ratings to recommend future soda combinations.
-- **(M)** As an account_user, I want to pay for my drink when I order it.
-- **(M)** As an account_user, I want to lodge complaints.
-- **(M)** As an account_user, I want to add and remove preferences.
-- **(M)** As an account_user, I want to dislike ingredients so they are not recommended to me.
-- **(C)** As an account_user, I want to share my drinks on social media.
-- **(S)** As an account_user, I want access to a seasonal drink menu for inspiration.
+- **(M)** As an account_user, I want to order drinks from any store location so that I can use the service wherever I travel.
+- **(M)** As an account_user, I want the system to suggest the best store based on my location and desired pickup time so that I can receive my drink with minimal wait.
+- **(S)** As an account_user, I want the system to remember my preferred store locations so that I can quickly reorder from frequent pickup spots.
+- **(M)** As an account_user, I want to sign in using secure authentication so that I can access my drink history and saved preferences.
+- **(M)** As an account_user, I want my payment information and geolocation data encrypted and stored securely so that my personal information is protected from unauthorized access.
+- **(S)** As an account_user, I want drinks recommended based on my order history and stated preferences so that I can discover new drinks I am likely to enjoy.
+- **(M)** As an account_user, I want the app interface to follow consistent design patterns and color schemes so that I can navigate the app without confusion.
+- **(M)** As an account_user, I want to see all available syrups, sodas, and add-ins with their descriptions so that I can make informed choices when crafting my drink.
+- **(M)** As an account_user, I want to save drinks to a favorites list so that I can reorder them with a single tap.
+- **(M)** As an account_user, I want my drink prepared close to my arrival time so that I receive it fresh rather than after sitting in a cooler.
+- **(M)** As an account_user, I want the option to specify a pickup time manually so that I can control when my drink is ready without sharing my location.
+- **(M)** As an account_user, I want to receive a push notification when my drink is ready so that I know when to pick it up.
+- **(M)** As an account_user, I want to save multiple payment methods to my account so that I can complete purchases without re-entering card details.
+- **(M)** As an account_user, I want a full refund processed within 24 hours if I cancel my order before preparation begins so that I am not charged for drinks I did not receive.
+- **(C)** As an account_user, I want to rate drinks on a 1-5 scale so that I can provide feedback and help improve recommendations.
+- **(C)** As an account_user, I want the AI to incorporate my ratings when generating recommendations so that suggestions improve over time based on my feedback.
+- **(M)** As an account_user, I want to complete payment at the time of ordering so that my drink is confirmed and queued for preparation.
+- **(M)** As an account_user, I want to submit complaints through the app so that I can report issues without needing to contact support by phone.
+- **(M)** As an account_user, I want to add and remove ingredient preferences so that my profile reflects my current tastes.
+- **(M)** As an account_user, I want to mark ingredients as disliked so that they are excluded from AI-generated drink suggestions.
+- **(C)** As an account_user, I want to share my drink creations on social media so that I can recommend favorites to friends.
+- **(S)** As an account_user, I want access to a seasonal menu so that I can try limited-time drink options.
 
 ---
 
 ### General User – Updated User Stories
 
-- **(M)** As a general_user, I want to choose a store location manually.
-- **(S)** As a general_user, I want to see the closest store based on geolocation.
-- **(W)** As a general_user, I do not expect my preferences or data to be saved.
-- **(M)** As a general_user, I want to order drinks without having an account.
-- **(M)** As a general_user, I want to create personalized drinks.
-- **(S)** As a general_user, I want to see drink suggestions based on popular drinks.
-- **(M)** As a general_user, I want to see all possible combinations of syrups, sodas, and add-ins.
-- **(S)** As a general_user, I want to receive notifications when my soda is ready.
-- **(M)** As a general_user, I want to receive a refund if I cancel my order.
-- **(S)** As a general_user, I want access to a seasonal drink menu for inspiration.
+- **(M)** As a general_user, I want to select a store location manually so that I can order from a specific location without enabling geolocation.
+- **(S)** As a general_user, I want to see nearby stores ranked by distance so that I can choose the most convenient pickup location.
+- **(W)** The system will not persist preferences or order history for general users; data is cleared when the session ends.
+- **(M)** As a general_user, I want to place orders without creating an account so that I can try the service without a registration barrier.
+- **(M)** As a general_user, I want to customize drinks using available syrups, sodas, and add-ins so that I can create a drink matching my preferences.
+- **(S)** As a general_user, I want to see a list of popular drinks so that I can choose a well-reviewed option if unsure what to order.
+- **(M)** As a general_user, I want to view all available ingredients and combinations so that I understand my customization options.
+- **(S)** As a general_user, I want to receive a notification when my drink is ready so that I know when to pick it up.
+- **(M)** As a general_user, I want a full refund if I cancel my order before preparation begins so that I am not charged for drinks I did not receive.
+- **(S)** As a general_user, I want access to the seasonal menu so that I can try limited-time offerings.
 
 ---
 
