@@ -1,0 +1,36 @@
+/* Custom styles for CodePop */
+
+/* Smooth transitions for all interactive elements */
+* {
+    transition: all 0.2s ease-in-out;
+}
+
+/* Custom radio button and checkbox styling */
+input[type="radio"]:checked + span,
+input[type="checkbox"]:checked + span {
+    font-weight: bold;
+    color: #7c3aed;
+}
+
+/* Price display animation */
+#price-display {
+    animation: priceUpdate 0.3s ease-in-out;
+}
+
+@keyframes priceUpdate {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.1); }
+    100% { transform: scale(1); }
+}
+
+/* Hover effects for cards */
+.hover\:border-purple-600:hover {
+    border-color: #7c3aed !important;
+    box-shadow: 0 0 0 3px rgba(124, 58, 237, 0.1);
+}
+
+/* Smooth fade out for deleted items */
+tr.htmx-swapping {
+    opacity: 0;
+    transition: opacity 1s ease-out;
+}

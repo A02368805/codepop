@@ -20,6 +20,6 @@ from django.urls import path, include
 
 urlpatterns = [
     path('admin/', admin.site.urls),
-    path('backend/', include('backend.urls'), name="backend authentication")
-
+    path('api/', include('backend.urls'), name="backend api"),  # API endpoints
+    path('', include('backend.web_urls')),  # Web interface
 ]

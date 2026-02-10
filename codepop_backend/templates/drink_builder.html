@@ -1,0 +1,136 @@
+{% extends 'base.html' %}
+
+{% block title %}Build Your Drink - CodePop{% endblock %}
+
+{% block content %}
+<div class="max-w-4xl mx-auto">
+    <h2 class="text-4xl font-bold text-center mb-8 text-gray-800">Build Your Custom Drink</h2>
+
+    <div class="bg-white rounded-lg shadow-xl p-8">
+        <form id="drink-form" hx-post="{% url 'calculate_price' %}" hx-trigger="change" hx-target="#price-display" hx-swap="innerHTML">
+            {% csrf_token %}
+
+            <!-- Drink Name -->
+            <div class="mb-6">
+                <label class="block text-gray-700 text-lg font-semibold mb-2">
+                    Drink Name
+                </label>
+                <input type="text" name="name" placeholder="My Awesome Drink"
+                       class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-600"
+                       required>
+            </div>
+
+            <!-- Size Selection -->
+            <div class="mb-6">
+                <label class="block text-gray-700 text-lg font-semibold mb-2">
+                    Size
+                </label>
+                <div class="grid grid-cols-3 gap-4">
+                    <label class="flex items-center justify-center p-4 border-2 border-gray-300 rounded-lg cursor-pointer hover:border-purple-600 transition">
+                        <input type="radio" name="size" value="s" class="mr-2" required>
+                        <span>Small</span>
+                    </label>
+                    <label class="flex items-center justify-center p-4 border-2 border-gray-300 rounded-lg cursor-pointer hover:border-purple-600 transition">
+                        <input type="radio" name="size" value="m" class="mr-2" checked>
+                        <span>Medium</span>
+                    </label>
+                    <label class="flex items-center justify-center p-4 border-2 border-gray-300 rounded-lg cursor-pointer hover:border-purple-600 transition">
+                        <input type="radio" name="size" value="l" class="mr-2">
+                        <span>Large</span>
+                    </label>
+                </div>
+            </div>
+
+            <!-- Ice Selection -->
+            <div class="mb-6">
+                <label class="block text-gray-700 text-lg font-semibold mb-2">
+                    Ice Amount
+                </label>
+                <div class="grid grid-cols-3 gap-4">
+                    <label class="flex items-center justify-center p-4 border-2 border-gray-300 rounded-lg cursor-pointer hover:border-purple-600 transition">
+                        <input type="radio" name="ice" value="light" class="mr-2" required>
+                        <span>Light</span>
+                    </label>
+                    <label class="flex items-center justify-center p-4 border-2 border-gray-300 rounded-lg cursor-pointer hover:border-purple-600 transition">
+                        <input type="radio" name="ice" value="normal" class="mr-2" checked>
+                        <span>Normal</span>
+                    </label>
+                    <label class="flex items-center justify-center p-4 border-2 border-gray-300 rounded-lg cursor-pointer hover:border-purple-600 transition">
+                        <input type="radio" name="ice" value="heavy" class="mr-2">
+                        <span>Heavy</span>
+                    </label>
+                </div>
+            </div>
+
+            <!-- Soda Selection -->
+            <div class="mb-6">
+                <label class="block text-gray-700 text-lg font-semibold mb-2">
+                    Base Soda
+                </label>
+                <select name="soda" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-600" required>
+                    <option value="">-- Select a Soda --</option>
+                    {% for soda in sodas %}
+                        <option value="{{ soda.ItemName }}">{{ soda.ItemName }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <!-- Syrup Selection -->
+            <div class="mb-6">
+                <label class="block text-gray-700 text-lg font-semibold mb-2">
+                    Syrups (Select multiple)
+                </label>
+                <div class="grid grid-cols-2 md:grid-cols-3 gap-3">
+                    {% for syrup in syrups %}
+                        <label class="flex items-center p-3 border border-gray-300 rounded-lg cursor-pointer hover:bg-purple-50 transition">
+                            <input type="checkbox" name="syrups" value="{{ syrup.ItemName }}" class="mr-2">
+                            <span class="text-sm">{{ syrup.ItemName }}</span>
+                        </label>
+                    {% endfor %}
+                </div>
+            </div>
+
+            <!-- Add-Ins Selection -->
+            <div class="mb-6">
+                <label class="block text-gray-700 text-lg font-semibold mb-2">
+                    Add-Ins (Optional)
+                </label>
+                <div class="grid grid-cols-2 md:grid-cols-3 gap-3">
+                    {% for addin in addins %}
+                        <label class="flex items-center p-3 border border-gray-300 rounded-lg cursor-pointer hover:bg-purple-50 transition">
+                            <input type="checkbox" name="addins" value="{{ addin.ItemName }}" class="mr-2">
+                            <span class="text-sm">{{ addin.ItemName }}</span>
+                        </label>
+                    {% endfor %}
+                </div>
+            </div>
+
+            <!-- Price Display -->
+            <div class="bg-gradient-to-r from-purple-100 to-pink-100 rounded-lg p-6 mb-6">
+                <div class="text-center">
+                    <p class="text-gray-600 text-sm mb-2">Total Price</p>
+                    <div id="price-display" class="text-5xl font-bold text-purple-700">
+                        $0.00
+                    </div>
+                </div>
+            </div>
+
+            <!-- Submit Button -->
+            <div class="flex gap-4">
+                <button type="button"
+                        hx-post="{% url 'create_drink' %}"
+                        hx-include="#drink-form"
+                        hx-target="body"
+                        class="flex-1 bg-gradient-to-r from-purple-600 to-pink-600 text-white font-bold py-3 px-6 rounded-lg hover:from-purple-700 hover:to-pink-700 transition duration-300">
+                    Add to Cart
+                </button>
+                <button type="button"
+                        onclick="document.getElementById('drink-form').reset(); htmx.trigger('#drink-form', 'change')"
+                        class="px-6 py-3 bg-gray-300 text-gray-700 font-bold rounded-lg hover:bg-gray-400 transition">
+                    Reset
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}
