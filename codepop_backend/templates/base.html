@@ -1,35 +1,64 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{% block title %}CodePop - Custom Soda Builder{% endblock %}</title>
+    <title>{% block title %}FloatStack - Custom Soda Builder{% endblock %}</title>
 
     <!-- HTMX -->
     <script src="https://unpkg.com/htmx.org@1.9.10"></script>
 
     <!-- Tailwind CSS for quick styling -->
     <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        'float-coral': '#CF9893',
+                        'float-pink': '#BC7C9C',
+                        'float-purple': '#A96DA3',
+                        'float-mauve': '#7A5980',
+                        'float-navy': '#3B3B58'
+                    }
+                }
+            }
+        }
+    </script>
 
     {% load static %}
     <link rel="stylesheet" href="{% static 'css/style.css' %}">
 
     {% block extra_head %}{% endblock %}
 </head>
-<body class="bg-gray-100 min-h-screen">
+
+<body
+    style="background: linear-gradient(135deg, #CF9893 0%, #BC7C9C 25%, #A96DA3 50%, #7A5980 75%, #3B3B58 100%); min-height: 100vh;">
     <!-- Navigation -->
-    <nav class="bg-gradient-to-r from-purple-600 to-pink-600 text-white shadow-lg">
-        <div class="container mx-auto px-4 py-4">
+    <nav style="background: linear-gradient(90deg, #A96DA3 0%, #7A5980 100%); backdrop-filter: blur(10px);"
+        class="text-white shadow-2xl border-b border-white/20">
+        <div class="container mx-auto px-4 py-6">
             <div class="flex justify-between items-center">
-                <h1 class="text-2xl font-bold">🥤 CodePop</h1>
-                <div class="space-x-4">
-                    <a href="{% url 'drink_builder' %}" class="hover:underline">Build Drink</a>
-                    <a href="{% url 'drink_list' %}" class="hover:underline">Menu</a>
+                <h1 class="text-3xl font-bold flex items-center">
+                    <span class="text-4xl mr-3">🥤</span>
+                    <span
+                        style="background: linear-gradient(90deg, #CF9893 0%, #BC7C9C 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;">FloatStack</span>
+                </h1>
+                <div class="space-x-6 flex items-center">
+                    <a href="{% url 'drink_builder' %}"
+                        class="hover:text-float-coral transition-all duration-300 font-semibold text-lg">🧪 Build
+                        Drink</a>
+                    <a href="{% url 'drink_list' %}"
+                        class="hover:text-float-coral transition-all duration-300 font-semibold text-lg">📋 Menu</a>
                     {% if user.is_authenticated %}
-                        <span>Hello, {{ user.username }}!</span>
-                        <a href="{% url 'logout' %}" class="hover:underline">Logout</a>
+                    <span class="text-float-coral">👋 Hello, {{ user.username }}!</span>
+                    <a href="{% url 'logout' %}"
+                        class="hover:text-float-coral transition-all duration-300 font-semibold">🚪 Logout</a>
                     {% else %}
-                        <a href="{% url 'login' %}" class="hover:underline">Login</a>
+                    <a href="{% url 'login' %}"
+                        class="bg-gradient-to-r from-float-coral to-float-pink px-4 py-2 rounded-full hover:from-float-pink hover:to-float-purple transition-all duration-300 font-semibold">🔑
+                        Login</a>
                     {% endif %}
                 </div>
             </div>
@@ -38,27 +67,47 @@
 
     <!-- Messages -->
     {% if messages %}
-        <div class="container mx-auto px-4 mt-4">
-            {% for message in messages %}
-                <div class="bg-{% if message.tags == 'error' %}red{% elif message.tags == 'success' %}green{% else %}blue{% endif %}-100 border border-{% if message.tags == 'error' %}red{% elif message.tags == 'success' %}green{% else %}blue{% endif %}-400 text-{% if message.tags == 'error' %}red{% elif message.tags == 'success' %}green{% else %}blue{% endif %}-700 px-4 py-3 rounded mb-4">
-                    {{ message }}
-                </div>
-            {% endfor %}
+    <div class="container mx-auto px-4 mt-6">
+        {% for message in messages %}
+        <div class="text-white px-6 py-4 rounded-2xl mb-4 shadow-lg border-2 message-box message-{{ message.tags|default:'info' }}"
+            style="background: rgba(207, 152, 147, 0.2); backdrop-filter: blur(10px);">
+            <div class="flex items-center">
+                <span class="text-2xl mr-3">
+                    {% if message.tags == 'error' %}❌{% elif message.tags == 'success' %}✅{% else %}ℹ️{% endif %}
+                </span>
+                <span class="font-semibold">{{ message }}</span>
+            </div>
         </div>
+        {% endfor %}
+    </div>
     {% endif %}
 
     <!-- Main Content -->
-    <main class="container mx-auto px-4 py-8">
-        {% block content %}{% endblock %}
+    <main class="container mx-auto px-4 py-12">
+        <div style="background: rgba(255, 255, 255, 0.9); backdrop-filter: blur(15px);"
+            class="rounded-3xl shadow-2xl p-8 border border-white/30">
+            {% block content %}{% endblock %}
+        </div>
     </main>
 
     <!-- Footer -->
-    <footer class="bg-gray-800 text-white mt-12 py-6">
+    <footer style="background: linear-gradient(90deg, #3B3B58 0%, #7A5980 100%);" class="text-white mt-12 py-8">
         <div class="container mx-auto px-4 text-center">
-            <p>&copy; 2026 CodePop - AI-Powered Soda Customization</p>
+            <div class="flex items-center justify-center mb-4">
+                <span class="text-3xl mr-3">🥤</span>
+                <span class="text-xl font-bold">FloatStack</span>
+                <span class="text-3xl ml-3">✨</span>
+            </div>
+            <p class="text-float-coral">&copy; 2026 FloatStack - AI-Powered Soda Customization Magic</p>
+            <div class="flex justify-center space-x-6 mt-4 text-sm">
+                <span>🧪 Custom Creations</span>
+                <span>🤖 AI Recommendations</span>
+                <span>🎨 Beautiful Flavors</span>
+            </div>
         </div>
     </footer>
 
     {% block extra_scripts %}{% endblock %}
 </body>
+
 </html>
