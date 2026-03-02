@@ -5,15 +5,15 @@ import DropDown from '../components/DropDown';
 import { useNavigation } from '@react-navigation/native';
 import { sodaOptions, syrupOptions, AddInOptions } from '../components/Ingredients';
 import Gif from '../components/Gif';
-import {BASE_URL} from '../../ip_address'
+import { BASE_URL } from '../../ip_address'
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 // todo:
-  // the options in the drop downs still dont preselect like the drink size and ice ammount do
-    // probably something to do with the lowercase/spelling
+// the options in the drop downs still dont preselect like the drink size and ice ammount do
+// probably something to do with the lowercase/spelling
 
-const UpdateDrink = ({route, navigation}) => {
-  
+const UpdateDrink = ({ route, navigation }) => {
+
   const { drink } = route.params;
   const [searchText, setSearchText] = useState('');
 
@@ -46,7 +46,7 @@ const UpdateDrink = ({route, navigation}) => {
   const handleSizeSelection = (size) => {
     setSize(size);
   };
-  
+
   const handleIceSelection = (ice) => {
     setIce(ice);
   };
@@ -103,7 +103,7 @@ const UpdateDrink = ({route, navigation}) => {
 
   const filterOptions = (options, selectedItems = []) => {
     return options
-      .filter(option => 
+      .filter(option =>
         option.label.toLowerCase().includes(searchText.toLowerCase())
       )
       .map(option => ({
@@ -112,19 +112,32 @@ const UpdateDrink = ({route, navigation}) => {
           .map(item => item.toLowerCase())
           .includes(option.label.toLowerCase()),
       }));
-  }; 
-  
+  };
+
 
   const updateDrink = async () => {
     try {
       // Make sure the user has a soda selected
-      if(SodaUsed.length == 0){
+      if (SodaUsed.length == 0) {
 
         Alert.alert("Dont forget to choose a Soda!")
 
-      }else{
+      } else {
+        // Calculate price based on size and ingredients
+        let basePrice = 2.50; // Default to medium
+        if (selectedSize === 'Small') {
+          basePrice = 2.00;
+        } else if (selectedSize === 'Medium') {
+          basePrice = 2.50;
+        } else if (selectedSize === 'Large') {
+          basePrice = 3.00;
+        }
+
+        const ingredientCost = (SyrupsUsed.length + AddIns.length) * 0.30;
+        const totalPrice = basePrice + ingredientCost;
+
         const token = await AsyncStorage.getItem('userToken');
-    
+
         const response = await fetch(`${BASE_URL}/backend/drinks/${drink.DrinkID}/`, {
           method: 'PUT',
           headers: {
@@ -135,17 +148,17 @@ const UpdateDrink = ({route, navigation}) => {
             SodaUsed,
             SyrupsUsed,
             AddIns,
-            Price: 2.00, // Adjust price as needed
+            Price: totalPrice,
             User_Created: true,
             Size: selectedSize,
             Ice: selectedIce,
           }),
         });
-    
+
         if (!response.ok) {
           throw new Error(`Failed to update drink. Status: ${response.status}`);
         }
-    
+
         navigation.navigate('Cart');
       }
     } catch (error) {
@@ -157,7 +170,7 @@ const UpdateDrink = ({route, navigation}) => {
   const getLayers = (soda, syrups, addins) => {
     const layers = [];
     const totalItems = soda.length + syrups.length + addins.length;
-  
+
     soda.forEach((sodaName) => {
       const sodaOption = sodaOptions.find((opt) => opt.label === sodaName);
       if (sodaOption) {
@@ -165,7 +178,7 @@ const UpdateDrink = ({route, navigation}) => {
       } else {
       }
     });
-  
+
     syrups.forEach((syrupName) => {
       const syrupOption = syrupOptions.find((opt) => opt.label === syrupName);
       if (syrupOption) {
@@ -173,80 +186,80 @@ const UpdateDrink = ({route, navigation}) => {
       } else {
       }
     });
-  
+
     addins.forEach((addinName) => {
-      const addInOption = AddInOptions.find((opt) => opt.label === addinName); 
+      const addInOption = AddInOptions.find((opt) => opt.label === addinName);
       if (addInOption) {
         layers.push({ color: addInOption.color, height: 100 / totalItems });
       } else {
       }
     });
     return layers;
-  };  
-  
+  };
+
   const layers = getLayers(SodaUsed, SyrupsUsed, AddIns);
-  
+
   return (
     <View style={styles.wholePage}>
 
       <ScrollView style={styles.padding}>
-      <View style={styles.rowContainer}>
-        {/* Size buttons on the left */}
-        <View style={styles.buttonContainerLeft}>
-          {['16oz', '24oz', '32oz'].map((size) => (
-            <TouchableOpacity
-              key={size}
-              onPress={() => handleSizeSelection(size)}
-              style={[
-                styles.circularButton,
-                selectedSize === size && styles.circularButtonSelected,
-              ]}
-            >
-              <Text style={[styles.buttonText, selectedSize === size && styles.selectedButtonText]}>
-                {size}
-              </Text>
-            </TouchableOpacity>
-          ))}
+        <View style={styles.rowContainer}>
+          {/* Size buttons on the left */}
+          <View style={styles.buttonContainerLeft}>
+            {['16oz', '24oz', '32oz'].map((size) => (
+              <TouchableOpacity
+                key={size}
+                onPress={() => handleSizeSelection(size)}
+                style={[
+                  styles.circularButton,
+                  selectedSize === size && styles.circularButtonSelected,
+                ]}
+              >
+                <Text style={[styles.buttonText, selectedSize === size && styles.selectedButtonText]}>
+                  {size}
+                </Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+
+
+          <View style={styles.graphicContainer}>
+            <Gif layers={layers} />
+          </View>
+
+          {/* Ice buttons on the right */}
+          <View style={styles.buttonContainerRight}>
+            {['none', 'light', 'regular', 'extra'].map((ice) => (
+              <TouchableOpacity
+                key={ice}
+                onPress={() => handleIceSelection(ice)}
+                style={[
+                  styles.circularButton,
+                  selectedIce === ice && styles.circularButtonSelected,
+                ]}
+              >
+                <Text style={[styles.buttonText, selectedIce === ice && styles.selectedButtonText]}>{ice}</Text>
+              </TouchableOpacity>
+            ))}
+          </View>
         </View>
 
-        
-        <View style={styles.graphicContainer}>
-          <Gif layers={layers}/>
-        </View>
+        {/* Button to add to cart */}
+        <TouchableOpacity onPress={updateDrink} style={styles.button}>
+          <Text style={styles.buttonText}>Update</Text>
+        </TouchableOpacity>
 
-        {/* Ice buttons on the right */}
-        <View style={styles.buttonContainerRight}>
-          {['none', 'light', 'regular', 'extra'].map((ice) => (
-            <TouchableOpacity
-              key={ice}
-              onPress={() => handleIceSelection(ice)}
-              style={[
-                styles.circularButton,
-                selectedIce === ice && styles.circularButtonSelected,
-              ]}
-            >
-              <Text style={[styles.buttonText, selectedIce === ice && styles.selectedButtonText]}>{ice}</Text>
-            </TouchableOpacity>
-          ))}
-        </View>
-      </View>
+        {/* Search Input */}
+        <TextInput
+          placeholder="Search ingredients"
+          style={styles.searchInput}
+          value={searchText}
+          onChangeText={handleSearch}
+        />
 
-      {/* Button to add to cart */}
-      <TouchableOpacity onPress={updateDrink} style={styles.button}>
-        <Text style={styles.buttonText}>Update</Text>
-      </TouchableOpacity>
-
-      {/* Search Input */}
-      <TextInput
-        placeholder="Search ingredients"
-        style={styles.searchInput}
-        value={searchText}
-        onChangeText={handleSearch}
-      />
-
-      {/* Dropdowns */}
-      <View style={styles.navBarSpace}>
-      {/* <DropDown 
+        {/* Dropdowns */}
+        <View style={styles.navBarSpace}>
+          {/* <DropDown 
         title="Sodas" 
         options={filterOptions(sodaOptions, SodaUsed)} 
         onSelect={handleSodaSelection} 
@@ -254,34 +267,34 @@ const UpdateDrink = ({route, navigation}) => {
         setOpen={() => setOpenDropdown(prev => ({ ...prev, sodas: !prev.sodas }))}
         selectedValues={SodaUsed} // Pass the updated state
       /> */}
-      <DropDown
-        title="Sodas"
-        options={filterOptions(sodaOptions, SodaUsed)} 
-        onSelect={handleSodaSelection}
-        isOpen={openDropdown.sodas}
-        setOpen={() => setOpenDropdown(prev => ({ ...prev, sodas: !prev.sodas }))}
-        selectedValues={SodaUsed}
-      />
-      <DropDown 
-        title="Syrups" 
-        options={filterOptions(syrupOptions, SyrupsUsed)} 
-        onSelect={handleSyrupSelection} 
-        isOpen={openDropdown.syrups}
-        setOpen={() => setOpenDropdown(prev => ({ ...prev, syrups: !prev.syrups }))}
-        selectedValues={SyrupsUsed}
-      />
-      <DropDown 
-        title="AddIns" 
-        options={filterOptions(AddInOptions, AddIns)} 
-        onSelect={handleAddInSelection} 
-        isOpen={openDropdown.juices}
-        setOpen={() => setOpenDropdown(prev => ({ ...prev, juices: !prev.juices }))}
-        selectedValues={AddIns}
-      />
+          <DropDown
+            title="Sodas"
+            options={filterOptions(sodaOptions, SodaUsed)}
+            onSelect={handleSodaSelection}
+            isOpen={openDropdown.sodas}
+            setOpen={() => setOpenDropdown(prev => ({ ...prev, sodas: !prev.sodas }))}
+            selectedValues={SodaUsed}
+          />
+          <DropDown
+            title="Syrups"
+            options={filterOptions(syrupOptions, SyrupsUsed)}
+            onSelect={handleSyrupSelection}
+            isOpen={openDropdown.syrups}
+            setOpen={() => setOpenDropdown(prev => ({ ...prev, syrups: !prev.syrups }))}
+            selectedValues={SyrupsUsed}
+          />
+          <DropDown
+            title="AddIns"
+            options={filterOptions(AddInOptions, AddIns)}
+            onSelect={handleAddInSelection}
+            isOpen={openDropdown.juices}
+            setOpen={() => setOpenDropdown(prev => ({ ...prev, juices: !prev.juices }))}
+            selectedValues={AddIns}
+          />
 
-      </View>
+        </View>
       </ScrollView>
-      <NavBar/>
+      <NavBar />
     </View>
   );
 };

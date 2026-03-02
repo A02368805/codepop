@@ -53,20 +53,37 @@ def drink_builder(request):
 
 
 def calculate_price(request):
-    """HTMX endpoint to calculate drink price dynamically - follows LLD pricing model"""
+    """HTMX endpoint to calculate drink price dynamically - size-based pricing model"""
     if request.method == 'POST':
-        # Base price: $2.00 (per LLD Section 4.3.2)
-        base_price = Decimal('2.00')
+        # Get cup size
+        size = request.POST.get('size', 'm')
+        
+        # Size-based pricing
+        size_prices = {
+            's': Decimal('2.00'),  # Small: $2.00
+            'm': Decimal('2.50'),  # Medium: $2.50
+            'l': Decimal('3.00')   # Large: $3.00
+        }
+        
+        base_price = size_prices.get(size, Decimal('2.50'))
 
         # Get selected items
         syrups = request.POST.getlist('syrups')
         addins = request.POST.getlist('addins')
 
-        # Calculate additional ingredients cost: $0.30 per ingredient (per LLD)
+        # Calculate additional ingredients cost: $0.30 per ingredient
         ingredient_count = len(syrups) + len(addins)
         ingredient_cost = Decimal('0.30') * ingredient_count
 
         total_price = base_price + ingredient_cost
+
+        # Size display names
+        size_names = {
+            's': 'Small',
+            'm': 'Medium',
+            'l': 'Large'
+        }
+        size_name = size_names.get(size, 'Medium')
 
         # Return price display with breakdown
         return HttpResponse(f'''
@@ -74,13 +91,13 @@ def calculate_price(request):
                 ${total_price:.2f}
             </div>
             <div class="text-sm opacity-90 mb-2">
-                <p>🥤 Base Price: <span class="font-bold">$2.00</span></p>
+                <p>🥤 {size_name} Base Price: <span class="font-bold">${base_price:.2f}</span></p>
                 <p id="ingredient-count">✨ Additional Ingredients: <span class="font-bold">{ingredient_count} × $0.30 = ${ingredient_cost:.2f}</span></p>
             </div>
             <p class="text-lg opacity-90 italic">Updates in real-time as you build! 🎨</p>
         ''')
 
-    return HttpResponse('$2.00')
+    return HttpResponse('$2.50')
 
 
 def create_drink(request):
@@ -98,10 +115,16 @@ def create_drink(request):
             messages.error(request, 'Drink name and base soda are required!')
             return redirect('drink_builder')
 
-        # Calculate price (same logic as calculate_price - follows LLD pricing model)
-        base_price = Decimal('2.00')  # Base price per LLD Section 4.3.2
+        # Calculate price using same logic as calculate_price - size-based pricing model
+        size_prices = {
+            's': Decimal('2.00'),  # Small: $2.00
+            'm': Decimal('2.50'),  # Medium: $2.50
+            'l': Decimal('3.00')   # Large: $3.00
+        }
+        
+        base_price = size_prices.get(size, Decimal('2.50'))
         ingredient_count = len(syrups) + len(addins)
-        ingredient_cost = Decimal('0.30') * ingredient_count  # $0.30 per ingredient per LLD
+        ingredient_cost = Decimal('0.30') * ingredient_count  # $0.30 per ingredient
         total_price = float(base_price + ingredient_cost)
 
         # Create the drink
@@ -117,7 +140,15 @@ def create_drink(request):
             Rating=None
         )
 
-        messages.success(request, f'Drink "{name}" created successfully! Price: ${total_price:.2f}')
+        # Size display names for message
+        size_names = {
+            's': 'Small',
+            'm': 'Medium',
+            'l': 'Large'
+        }
+        size_name = size_names.get(size, 'Medium')
+
+        messages.success(request, f'{size_name} "{name}" created successfully! Price: ${total_price:.2f}')
         return redirect('drink_list')
 
     return redirect('drink_builder')
