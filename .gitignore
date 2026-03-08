@@ -10,3 +10,4 @@ codepop_virtual_enviroment
 
 .idea
 node_modules
+.DS_Store
