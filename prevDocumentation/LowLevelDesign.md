@@ -15,9 +15,11 @@ Welcome to the Low Level Design document for CodePop, a mobile app designed for 
   * Sprint 2 **(S)** 1 week  
     * Should have features to enhance the application  
     * Finish up remaining Must Have features not completed in previous sprint  
-  * Sprint 3 **(C )** 2 weeks  
-    * Could have features  
-    * Finish up any remaining tasks left unfinished in previous sprints. 
+  * Sprint 3 **(C )** 2 weeks
+    * Could have features
+    * Finish up any remaining tasks left unfinished in previous sprints.
+
+![Sprint Timeline](misc/sprint_timeline.png)
 
 ### Sprint Tasks Outline
 
@@ -282,8 +284,10 @@ Redirects
   * Or do a completely random one  
 * Bring back AI output to display (should become a soda object: Add to cart or edit – force the AI to follow a strict format so we can parse it’s response into an object)  
 * Error message if something went wrong creating the object (will take the place of the randomized soda image)  
-* Rerandomize clicked \= resend the message  
-    
+* Rerandomize clicked \= resend the message
+
+![AI Drink Recommendation Flow](misc/AI_drink_flow.png)
+
   Cart **(M)**  
 * Remove from cart  
 * Edit \+ add to favorites  
@@ -295,8 +299,10 @@ Redirects
   * Finish at time (use pickup time \- creation time \= start time)  
   * Start when button clicked  
   * geolocation  
-* Save payment (**Security:** sha256 hash?)  
-    
+* Save payment (**Security:** sha256 hash?)
+
+![Payment Processing Sequence](misc/payment_seq.png)
+
   Geolocation / Start Order Creation  
 * If Geolocation (MapBox) **(S)**  
   * Track the user up until they are within 500-1000m (500 \= TSC to Engineering \- 1000 \= bottom of Old Main hill to FAV stoplight) of a location  
@@ -312,6 +318,7 @@ Redirects
   * When button gets clicked start the timer and show it on screen (order is being created)  
   * Timer ends, say order is ready (give cooler-code)
 
+![Order Lifecycle State Diagram](misc/order_lifecycle.png)
 
   Confirmation **(S)**
 
@@ -341,9 +348,9 @@ Client-server architecture
 
 The CodePop system architecture follows a three-tier model, consisting of the front-end, middle-end, and back-end layers. The front-end, built with React Native, handles user interaction and interfaces, communicating with the middle-end via API requests. The middle-end is powered by Django, acting as the central framework that manages business logic, authentication, and data flow. It interacts with the PostgreSQL database on the back-end, which stores user data, drink configurations, and order information. APIs like Stripe (for payments), MapBox (for geolocation), and AI-based models (for drink generation and complaints chatbot) are integrated to enhance functionality and user experience, ensuring seamless interaction between the client and server.
 
-## 
+![System Architecture Diagram](misc/Sys_architecture.png)
 
-## 
+##
 
 Subsystems and UML Class Diagrams
 
@@ -352,9 +359,9 @@ Subsystems and UML Class Diagrams
 ![Objects](misc/Objects.png) 
 
 
-* Main user flow:  
+* Main user flow:
 
-![UserFlow](misc/UserFlow.png) 
+![User Navigation Flow](misc/user_nav_flow.png) 
  
 
 ## User interfaces:
@@ -529,6 +536,8 @@ The CodePop interface is carefully designed to support both usability and access
 | Date | date |  |
 | UserID | int | Foreign Key References User(UserID) |
 
+![Entity-Relationship Diagram](misc/Entity-relation.png)
+
 ### Inventory(Items that must be in the database)
 
 | Sodas | Syrups | Add ins |
@@ -598,6 +607,8 @@ The CodePop app incorporates a robust security model based on Django’s built-i
     * Revenue reports  
 * **Privacy**  
   * We will make sure that the user has the option to opt into any of the features that handle personal data (geolocation, drink preferences, emails) to ensure that they are able to make an informed choice about their data.
+
+![Authentication & Authorization Flow](misc/auth_flow.png)
 
 ## Programming languages, libraries, frameworks, and third party systems
 
@@ -710,3 +721,4 @@ The CodePop app incorporates a robust security model based on Django’s built-i
 * **Feature Rollouts**: Plan for iterative feature deployment, such as enhanced AI drink recommendations or more detailed analytics for managers and admins.  
 * **Performance Optimization**: Regularly review the system’s performance and optimize database queries, asset loading times, and server response times.
 
+![Deployment Pipeline](misc/deploy_timeline.png)
