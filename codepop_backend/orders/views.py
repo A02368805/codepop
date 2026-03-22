@@ -93,7 +93,8 @@ def _validate_and_create_transfer(actor, payload, permission_mixin):
 				return None, str(error_payload["non_field_errors"][0]), status.HTTP_400_BAD_REQUEST
 			first_key = next(iter(error_payload), None)
 			if first_key and error_payload[first_key]:
-				return None, str(error_payload[first_key][0]), status.HTTP_400_BAD_REQUEST
+				error_msg = str(error_payload[first_key][0])
+				return None, f"{first_key}: {error_msg}", status.HTTP_400_BAD_REQUEST
 		return None, "Invalid transfer input.", status.HTTP_400_BAD_REQUEST
 	data = serializer.validated_data
 
@@ -306,6 +307,7 @@ class LogisticsDashboardTemplateView(LogisticsPermissionMixin, View):
 		context["actor"] = actor
 		return render(request, "orders/logistics_dashboard.html", context)
 
+	@transaction.atomic
 	def post(self, request, region_id):
 		actor = _effective_dashboard_user(request)
 		if not actor:
@@ -320,13 +322,18 @@ class LogisticsDashboardTemplateView(LogisticsPermissionMixin, View):
 		operation = request.POST.get("operation")
 		if operation == "create_transfer":
 			payload = {
-				"source_store_id": request.POST.get("source_store_id") or None,
-				"source_hub_id": request.POST.get("source_hub_id") or None,
 				"destination_store_id": request.POST.get("destination_store_id"),
 				"item_id": request.POST.get("item_id"),
 				"quantity": request.POST.get("quantity"),
 				"note": request.POST.get("note", ""),
 			}
+			# Only include source fields if they have values
+			source_hub = request.POST.get("source_hub_id")
+			source_store = request.POST.get("source_store_id")
+			if source_hub:
+				payload["source_hub_id"] = source_hub
+			if source_store:
+				payload["source_store_id"] = source_store
 			transfer, error_message, status_code = _validate_and_create_transfer(actor, payload, self)
 			if status_code == status.HTTP_201_CREATED:
 				messages.success(request, f"Transfer #{transfer.id} created.")
@@ -337,7 +344,7 @@ class LogisticsDashboardTemplateView(LogisticsPermissionMixin, View):
 			transfer_id = request.POST.get("transfer_id")
 			action = request.POST.get("transfer_action")
 			transfer = get_object_or_404(
-				SupplyTransfer.objects.select_for_update().select_related(
+				SupplyTransfer.objects.select_related(
 					"destination_store",
 					"source_store",
 					"source_hub",

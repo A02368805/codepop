@@ -1,5 +1,5 @@
 from django.contrib.auth import get_user_model
-from django.shortcuts import get_object_or_404
+from django.shortcuts import get_object_or_404, render
 from django.db.models import F
 from django.db import models
 from django.utils import timezone
@@ -27,6 +27,10 @@ from .drinkAI import generate_soda
 from rest_framework.permissions import BasePermission
 
 stripe.api_key = settings.STRIPE_SECRET_KEY
+
+def home(request):
+    """Home page for CodePop."""
+    return render(request, 'home.html')
 
 class IsSuperUser(BasePermission):
     """
