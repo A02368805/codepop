@@ -10,3 +10,5 @@ node_modules
 
 # Ignore old React Native frontend
 codepop/
+
+.venv/
