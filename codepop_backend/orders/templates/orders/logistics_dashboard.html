@@ -6,13 +6,19 @@
     <title>Logistics Dashboard</title>
     <style>
         :root {
-            --pink-dark: #D30C7B;
-            --pink-light: #F92758;
-            --teal: #8DF1D3;
-            --purple: #C6C8EE;
-            --peach: #FFA686;
-            --mint: #C8E6C9;
-            --text-dark: #2E2E38;
+            --palette-1: #CF9893;
+            --palette-2: #BC7C9C;
+            --palette-3: #896DA3;
+            --palette-4: #7A5980;
+            --palette-5: #3B3B5A;
+            --pink-dark: var(--palette-4);
+            --pink-light: var(--palette-3);
+            --teal: var(--palette-1);
+            --purple: var(--palette-2);
+            --peach: var(--palette-2);
+            --mint: var(--palette-3);
+            --text-dark: var(--palette-5);
+            --text-light: var(--palette-3);
             --white: #FFFFFF;
         }
 
@@ -204,7 +210,7 @@
             border-radius: 16px;
             color: var(--white);
             background: linear-gradient(90deg, var(--pink-dark) 0%, var(--pink-light) 100%);
-            box-shadow: 0 8px 24px rgba(211, 12, 123, 0.24);
+            box-shadow: 0 8px 24px rgba(122, 89, 128, 0.24);
             animation: bob 5s ease-in-out infinite;
         }
 
@@ -261,7 +267,7 @@
         }
 
         tbody tr:nth-child(even) {
-            background: rgba(141, 241, 211, 0.24);
+            background: rgba(188, 124, 156, 0.16);
         }
 
         .status-critical {
@@ -286,13 +292,13 @@
         }
 
         .at-risk-badge.critical {
-            background: rgba(229, 57, 53, 0.2);
-            color: #E53935;
+            background: rgba(122, 89, 128, 0.2);
+            color: var(--palette-4);
         }
 
         .at-risk-badge.warning {
-            background: rgba(255, 152, 0, 0.2);
-            color: #FF9800;
+            background: rgba(188, 124, 156, 0.2);
+            color: var(--palette-2);
         }
 
         .recommendation-item {
@@ -316,21 +322,21 @@
         .stockout-warning {
             padding: 12px;
             margin-bottom: 10px;
-            background: rgba(229, 57, 53, 0.1);
-            border-left: 4px solid #E53935;
+            background: rgba(122, 89, 128, 0.1);
+            border-left: 4px solid var(--palette-4);
             border-radius: 6px;
-            color: #E53935;
+            color: var(--palette-4);
             font-weight: 600;
         }
 
         .stockout-warning .store-name {
-            color: #D32F2F;
+            color: var(--palette-4);
             font-weight: 700;
         }
 
         .days-indicator {
             display: inline-block;
-            background: #FF9800;
+            background: var(--palette-3);
             color: white;
             padding: 2px 8px;
             border-radius: 4px;
@@ -341,17 +347,17 @@
 
         .trend-card {
             padding: 10px;
-            background: #f9f9f9;
+            background: rgba(207, 152, 147, 0.16);
             border-radius: 3px;
-            border-left: 4px solid #2196F3;
+            border-left: 4px solid var(--palette-3);
         }
 
         .trend-card.down {
-            border-left-color: #FF5252;
+            border-left-color: var(--palette-4);
         }
 
         .trend-card.up {
-            border-left-color: #4CAF50;
+            border-left-color: var(--palette-2);
         }
 
         .route-quality {
@@ -360,18 +366,18 @@
             border-radius: 12px;
             font-size: 11px;
             font-weight: 600;
-            background: #FFEBEE;
-            color: #C62828;
+            background: rgba(122, 89, 128, 0.16);
+            color: var(--palette-4);
         }
 
         .route-quality.nearby {
-            background: #E8F5E9;
-            color: #2E7D32;
+            background: rgba(207, 152, 147, 0.2);
+            color: var(--palette-5);
         }
 
         .route-quality.moderate {
-            background: #FFF3E0;
-            color: #E65100;
+            background: rgba(188, 124, 156, 0.2);
+            color: var(--palette-5);
         }
 
         @media (max-width: 900px) {
@@ -493,16 +499,16 @@
                                         From: <strong>{{ rec.source_name }}</strong>
                                     </div>
                                     <div style="font-size: 12px; color: #888;">
-                                        To: <strong style="color: #1976D2;">{{ rec.destination_store.name }}</strong>
+                                        To: <strong style="color: var(--palette-5);">{{ rec.destination_store.name }}</strong>
                                     </div>
                                 </div>
                                 <div style="text-align: right;">
-                                    <span class="days-indicator" style="background: #4CAF50; color: white; padding: 4px 8px; border-radius: 4px; font-size: 12px; font-weight: 600;">
+                                    <span class="days-indicator" style="background: var(--palette-2); color: white; padding: 4px 8px; border-radius: 4px; font-size: 12px; font-weight: 600;">
                                         ↑ {{ rec.suggested_qty }} units
                                     </span>
                                 </div>
                             </div>
-                            <div style="font-size: 11px; color: #666; background: #f5f5f5; padding: 6px 8px; border-radius: 3px;">
+                            <div style="font-size: 11px; color: #666; background: rgba(207, 152, 147, 0.16); padding: 6px 8px; border-radius: 3px;">
                                 Available: {{ rec.available_qty }} {{ rec.item.unit }} | Priority: <strong>{{ rec.priority }}</strong>
                             </div>
                         </div>
@@ -522,29 +528,29 @@
                         <div class="stockout-warning">
                             <div style="display: flex; justify-content: space-between; align-items: center;">
                                 <div>
-                                    <strong style="color: #D32F2F;">{{ alert.item.name }}</strong>
+                                    <strong style="color: var(--palette-4);">{{ alert.item.name }}</strong>
                                     <div style="font-size: 12px; color: #888; margin-top: 4px;">
                                         Store: <strong>{{ alert.store.name }}</strong>
                                     </div>
                                 </div>
                                 <div style="text-align: right;">
                                     {% if alert.days_remaining <= 0 %}
-                                        <span class="days-indicator" style="background: #D32F2F; color: white;">🔴 OUT NOW</span>
+                                        <span class="days-indicator" style="background: var(--palette-5); color: white;">🔴 OUT NOW</span>
                                     {% elif alert.days_remaining == 1 %}
-                                        <span class="days-indicator" style="background: #FF6F00; color: white;">⏰ 1 DAY</span>
+                                        <span class="days-indicator" style="background: var(--palette-4); color: white;">⏰ 1 DAY</span>
                                     {% else %}
-                                        <span class="days-indicator" style="background: #FF9800; color: white;">⏰ {{ alert.days_remaining }} DAYS</span>
+                                        <span class="days-indicator" style="background: var(--palette-3); color: white;">⏰ {{ alert.days_remaining }} DAYS</span>
                                     {% endif %}
                                 </div>
                             </div>
-                            <div style="font-size: 11px; color: #666; background: #fff3e0; padding: 8px; border-left: 3px solid #FF9800; margin-top: 8px; border-radius: 2px;">
+                            <div style="font-size: 11px; color: #666; background: rgba(188, 124, 156, 0.14); padding: 8px; border-left: 3px solid var(--palette-3); margin-top: 8px; border-radius: 2px;">
                                 Current qty: <strong>{{ alert.current_qty }}</strong> | Status: <strong>{{ alert.severity }}</strong>
                             </div>
                         </div>
                     {% endfor %}
                     </div>
                 {% else %}
-                    <p style="color: #4CAF50; font-style: italic; text-align: center; padding: 20px 0;">✓ No critical stockout alerts. Supply chain is healthy!</p>
+                    <p style="color: var(--palette-2); font-style: italic; text-align: center; padding: 20px 0;">✓ No critical stockout alerts. Supply chain is healthy!</p>
                 {% endif %}
             </div>
 
@@ -562,11 +568,11 @@
                                 </div>
                                 <div style="text-align: right; font-size: 12px;">
                                     {% if trend.direction == 'down' %}
-                                        <span style="color: #FF5252; font-weight: 600;">📉 Depleting</span>
+                                        <span style="color: var(--palette-4); font-weight: 600;">📉 Depleting</span>
                                     {% elif trend.direction == 'up' %}
-                                        <span style="color: #4CAF50; font-weight: 600;">📈 Growing</span>
+                                        <span style="color: var(--palette-2); font-weight: 600;">📈 Growing</span>
                                     {% else %}
-                                        <span style="color: #2196F3; font-weight: 600;">➡️ Stable</span>
+                                        <span style="color: var(--palette-3); font-weight: 600;">➡️ Stable</span>
                                     {% endif %}
                                 </div>
                             </div>
@@ -590,7 +596,7 @@
                     <p style="font-size: 13px; color: #666; margin-bottom: 12px;">Geography-based optimization for faster resupply</p>
                     <div style="display: grid; gap: 8px;">
                     {% for route in hub_distances %}
-                        <div style="padding: 10px; background: #f9f9f9; border: 1px solid #ddd; border-radius: 3px;">
+                        <div style="padding: 10px; background: rgba(207, 152, 147, 0.16); border: 1px solid rgba(59, 59, 90, 0.2); border-radius: 3px;">
                             <div style="display: flex; justify-content: space-between; align-items: center;">
                                 <div style="flex: 1;">
                                     <strong>{{ route.store.name }}</strong>
@@ -625,7 +631,7 @@
                             {% endwith %}
                         {% endif %}
                         {% with ratio=ratio|default:0 %}
-                        <tr {% if ratio < 30 %}style="background: rgba(229, 57, 53, 0.08);"{% endif %}>
+                        <tr {% if ratio < 30 %}style="background: rgba(122, 89, 128, 0.12);"{% endif %}>
                             <td>{{ b.store.name }}</td>
                             <td>{{ b.item.name }}</td>
                             <td>{{ b.quantity }} {{ b.item.unit }}</td>
@@ -636,7 +642,7 @@
                                 {% elif ratio < 30 %}
                                     <span class="at-risk-badge warning">⚡ At Risk</span>
                                 {% else %}
-                                    <span style="color: #4CAF50; font-weight: 600; font-size: 11px;">✓ OK</span>
+                                    <span style="color: var(--palette-2); font-weight: 600; font-size: 11px;">✓ OK</span>
                                 {% endif %}
                             </td>
                         </tr>
