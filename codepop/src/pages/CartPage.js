@@ -5,7 +5,7 @@ import Icon from 'react-native-vector-icons/Ionicons';
 import { useNavigation, useFocusEffect, NavigationContainer } from '@react-navigation/native';
 import { useStripe, StripeProvider } from '@stripe/stripe-react-native';
 import CheckoutForm from './CheckoutForm';
-import {BASE_URL} from '../../ip_address'
+import { BASE_URL } from '../../ip_address'
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 // to do:
@@ -48,32 +48,40 @@ const CartPage = () => {
           fetchedDrinks.push(data); // Add each drink to the temporary array
         }
       }
-      
+
       setDrinks(fetchedDrinks); // Update state once after all drinks are collected
       calculateTotalPrice(fetchedDrinks); // Calculate total price after fetching drinks
 
       // Store the full drink objects in `purchasedDrinks` instead of IDs
       await AsyncStorage.setItem("purchasedDrinks", JSON.stringify(fetchedDrinks));
-  
+
     } catch (error) {
       console.error('Failed to get drinks: ', error);
     }
   };
-  
-  
+
+
 
   const calculatePrice = (drink) => {
-    // $2 base price + $0.30 per ingredient
-    if (drink.Price == 2) {
+    // Size-based pricing: Small $2.00, Medium $2.50, Large $3.00 + $0.30 per ingredient
+    if (drink.Price == 2 || drink.User_Created) {
+      // Size-based base pricing
+      let basePrice = 2.50; // Default to medium
+      if (drink.Size === 's' || drink.Size === 'Small') {
+        basePrice = 2.00;
+      } else if (drink.Size === 'm' || drink.Size === 'Medium') {
+        basePrice = 2.50;
+      } else if (drink.Size === 'l' || drink.Size === 'Large') {
+        basePrice = 3.00;
+      }
+
       const syrupsCount = Array.isArray(drink.SyrupsUsed) ? drink.SyrupsUsed.length : 0;
       const addInsCount = Array.isArray(drink.AddIns) ? drink.AddIns.length : 0;
-      return 2 + (syrupsCount + addInsCount) * 0.3;
-      // return 2 + (drink.SyrupsUsed.length + drink.AddIns.length) * 0.3;
+      return basePrice + (syrupsCount + addInsCount) * 0.3;
     } else {
       // Carousel drink prices
       return drink.Price;
     }
-
   };
 
 
@@ -81,7 +89,7 @@ const CartPage = () => {
     let total = 0; // Initialize total here
 
     for (let i = 0; i < drinksList.length; i++) {
-      total += calculatePrice(drinksList[i]);      
+      total += calculatePrice(drinksList[i]);
     }
     setTotalPrice(total); // Update the total price state
   };
@@ -91,7 +99,7 @@ const CartPage = () => {
       const cartList = await AsyncStorage.getItem('checkoutList');
       const currentList = cartList ? JSON.parse(cartList) : [];
       const token = await AsyncStorage.getItem('userToken');
-  
+
       // Don't delete seasonal carousel items (items prepopulated in the database after running clean script)
       if (drinkId > 6) {
         // Delete the drink from the backend database
@@ -110,27 +118,27 @@ const CartPage = () => {
         //   },
         // });
       }
-  
+
       // Update the local state to remove the drink from the cart page
       const updatedDrinks = drinks.filter(data => data.DrinkID !== drinkId);
       setDrinks(updatedDrinks);
-  
+
       // Update the AsyncStorage to remove the drink ID from the checkout list
       const updatedList = currentList.filter(item => item !== drinkId);
       await AsyncStorage.setItem("checkoutList", JSON.stringify(updatedList));
       // also update the rating list
       await AsyncStorage.setItem("purchasedDrinks", JSON.stringify(updatedDrinks));
-  
+
       // Recalculate the total price with the updated drinks list
       calculateTotalPrice(updatedDrinks);
-  
+
       console.log('Drink removed and total price recalculated successfully');
     } catch (error) {
       console.error('Error removing drink:', error);
     }
   };
-  
-  
+
+
 
   const renderDrinkItem = (drink) => (
     <View style={styles.drinkContainer}>
@@ -145,7 +153,7 @@ const CartPage = () => {
         <TouchableOpacity onPress={() => navigation.navigate('UpdateDrink', { drink })} style={styles.button}>
           <Icon name="create-outline" size={24} color="#000" />
         </TouchableOpacity>
-  
+
         <TouchableOpacity onPress={() => removeDrink(drink.DrinkID)} style={styles.button}>
           <Icon name="close-circle-outline" size={24} color="#000" />
         </TouchableOpacity>
@@ -156,16 +164,16 @@ const CartPage = () => {
   const goToCheckout = () => {
     navigation.navigate('Checkout');
   };
-  
+
 
   return (
     <StripeProvider publishableKey="pk_test_51QEDP7HwEWxwIyaLoeRGprLwnn6Fj7jZljzxglWudPSTSe6sMyFPAjHZsnMOy1HuwZhUYT9JGZbOsxhXxkFTJp9700JSZTZKIz">
-        <View style={styles.container}>
+      <View style={styles.container}>
         <Text style={styles.headerText}>Your Drinks</Text>
 
         {Array.isArray(drinks) && drinks.length === 0 ? (
           <Text style={styles.emptyCartText}>Your cart is empty</Text>
-          
+
         ) : (
           <FlatList
             style={styles.padding}
@@ -188,7 +196,7 @@ const CartPage = () => {
         </View>
 
         <NavBar />
-        </View>
+      </View>
     </StripeProvider>
   );
 };

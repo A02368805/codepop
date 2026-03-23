@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, Button, StyleSheet, TouchableOpacity } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
-import {BASE_URL} from '../../ip_address'
+import { BASE_URL } from '../../ip_address'
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import Gif from '../components/Gif';
 import { sodaOptions, syrupOptions, AddInOptions } from '../components/Ingredients';
@@ -16,12 +16,27 @@ const AIAlert = ({ isModalVisible, toggleModal, drinkDict }) => {
       const sodaUsed = Array.isArray(drinkDict.SodaUsed) && drinkDict.SodaUsed.length > 0 ? drinkDict.SodaUsed : [drinkDict.SodaUsed];
       const syrupsUsed = Array.isArray(drinkDict.SyrupsUsed) ? drinkDict.SyrupsUsed : [];
       const addIns = Array.isArray(drinkDict.AddIns) ? drinkDict.AddIns : [];
-  
+
       // If SodaUsed is empty, set it to ["DefaultSoda"] (or any default soda)
       if (sodaUsed.length === 0) {
         console.warn('SodaUsed is empty, setting to default soda.');
       }
-  
+
+      const drinkSize = drinkDict.Size || "Medium"; // Default size
+
+      // Calculate price based on size and ingredients
+      let basePrice = 2.50; // Default to medium
+      if (drinkSize === 'Small') {
+        basePrice = 2.00;
+      } else if (drinkSize === 'Medium') {
+        basePrice = 2.50;
+      } else if (drinkSize === 'Large') {
+        basePrice = 3.00;
+      }
+
+      const ingredientCost = (syrupsUsed.length + addIns.length) * 0.30;
+      const totalPrice = basePrice + ingredientCost;
+
       const response = await fetch(`${BASE_URL}/backend/drinks/`, {
         method: 'POST',
         headers: {
@@ -32,13 +47,13 @@ const AIAlert = ({ isModalVisible, toggleModal, drinkDict }) => {
           SodaUsed: sodaUsed, // Make sure it's an array with at least one item
           SyrupsUsed: syrupsUsed, // Make sure it's an array
           AddIns: addIns, // Make sure it's an array
-          Price: 2.00,
+          Price: totalPrice,
           User_Created: true,
-          Size: drinkDict.Size || "24oz", // Default size
+          Size: drinkSize,
           Ice: drinkDict.Ice || "regular", // Default ice amount
         }),
       });
-  
+
       // Check if the response is not OK (status code not in the range 200-299)
       if (!response.ok) {
         const errorText = await response.text(); // Get the error message from the response body
@@ -46,27 +61,27 @@ const AIAlert = ({ isModalVisible, toggleModal, drinkDict }) => {
         console.error('Response Text:', errorText);
         throw new Error(`Failed to create drink: ${response.status} - ${errorText}`);
       }
-  
+
       const data = await response.json();
       // gets list of out of storage on your phone
       let cartList = await AsyncStorage.getItem("checkoutList");
       const currentList = cartList ? JSON.parse(cartList) : [];
-  
+
       const drinkID = data.DrinkID; // assuming the response contains DrinkID
       const updatedList = [...currentList, drinkID];
       await AsyncStorage.setItem('checkoutList', JSON.stringify(updatedList));
 
       console.log("created drink obj")
       return data; // Return the created drink object
-  
+
     } catch (error) {
       console.error('Error in createObj:', error); // Log any other errors
       throw error; // Rethrow error to be handled by the caller
     }
   };
-  
-  
-  
+
+
+
   const edit = async () => {
     try {
       const drink = await createObj(); // Wait for the drink object to be created
@@ -89,7 +104,7 @@ const AIAlert = ({ isModalVisible, toggleModal, drinkDict }) => {
   const getLayers = (soda, syrups, addins) => {
     const layers = [];
     const totalItems = soda.length + syrups.length + addins.length;
-  
+
     soda.forEach((sodaName) => {
       const sodaOption = sodaOptions.find((opt) => opt.label === sodaName);
       if (sodaOption) {
@@ -97,7 +112,7 @@ const AIAlert = ({ isModalVisible, toggleModal, drinkDict }) => {
       } else {
       }
     });
-  
+
     syrups.forEach((syrupName) => {
       const syrupOption = syrupOptions.find((opt) => opt.label === syrupName);
       if (syrupOption) {
@@ -105,7 +120,7 @@ const AIAlert = ({ isModalVisible, toggleModal, drinkDict }) => {
       } else {
       }
     });
-  
+
     addins.forEach((addinName) => {
       const addInOption = AddInOptions.find((opt) => opt.label === addinName); // Assuming AddIns use syrupOptions
       if (addInOption) {
@@ -119,7 +134,7 @@ const AIAlert = ({ isModalVisible, toggleModal, drinkDict }) => {
   const syrupsUsed = Array.isArray(drinkDict.SyrupsUsed) ? drinkDict.SyrupsUsed : [];
   const addIns = Array.isArray(drinkDict.AddIns) ? drinkDict.AddIns : [];
 
-  
+
 
   const layers = getLayers(sodaUsed, syrupsUsed, addIns);
   console.log(layers);

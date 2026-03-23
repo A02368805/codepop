@@ -23,7 +23,8 @@ from django.utils.decorators import method_decorator
 import json
 from rest_framework.decorators import action
 from django.utils.dateparse import parse_datetime
-from .drinkAI import generate_soda
+# Temporarily disabled AI imports - requires ML libraries
+# from .drinkAI import generate_soda
 from rest_framework.permissions import BasePermission
 
 stripe.api_key = settings.STRIPE_SECRET_KEY
@@ -559,52 +560,53 @@ class emailAPI(APIView):
         return email_content
 
     
-class GenerateAIDrink(APIView):
-    permission_classes = [AllowAny]
-
-    def get(self, request, user_id=None):
-        try:
-            if user_id:
-                # Generate drink for account user
-                response_data = self.generate_account_user(user_id)
-            else:
-                # Generate drink for general user
-                response_data = self.generate_general_user()
-            return Response(response_data)
-        except Exception as e:
-            return Response({'error': str(e)}, status=400)
-    
-    def generate_account_user(self, user_id):
-        """Generate AI drink for a registered user using their preferences."""
-        user = get_object_or_404(User, pk=user_id)
-        preferences = Preference.objects.filter(UserID=user)
-        preferences_list = []
-
-        if preferences.exists():
-            for pref in preferences:
-                preferences_list.append(pref.Preference)
-        else:
-            preferences_list = ["mango", "peach", "vanilla", "salted caramel", "orange", "lavender", "peppermint", "blue raspberry"]
-        print("User") # Test code
-        return self.generate_response_data(preferences_list, user_created=True)
-
-    def generate_general_user(self):
-        """Generate AI drink for a general user with hardcoded preferences."""
-        preferences = ["mango", "peach", "vanilla", "salted caramel", "orange", "lavender", "peppermint", "blue raspberry"]
-        print("General") # Test code
-        return self.generate_response_data(preferences, user_created=False)
-
-    def generate_response_data(self, preferences, user_created):
-        """Helper function to generate response data."""
-        result = generate_soda(preferences)
-        return {
-            'SyrupsUsed': result["syrups"],
-            'SodaUsed': result["soda"][0],
-            'AddIns': result["addins"],
-            'Size': "24oz",
-            'Ice': "regular",
-            "UserCreated": user_created,
-        }
+# Temporarily disabled AI drink generation - requires ML libraries
+# class GenerateAIDrink(APIView):
+#     permission_classes = [AllowAny]
+#
+#     def get(self, request, user_id=None):
+#         try:
+#             if user_id:
+#                 # Generate drink for account user
+#                 response_data = self.generate_account_user(user_id)
+#             else:
+#                 # Generate drink for general user
+#                 response_data = self.generate_general_user()
+#             return Response(response_data)
+#         except Exception as e:
+#             return Response({'error': str(e)}, status=400)
+#
+#     def generate_account_user(self, user_id):
+#         """Generate AI drink for a registered user using their preferences."""
+#         user = get_object_or_404(User, pk=user_id)
+#         preferences = Preference.objects.filter(UserID=user)
+#         preferences_list = []
+#
+#         if preferences.exists():
+#             for pref in preferences:
+#                 preferences_list.append(pref.Preference)
+#         else:
+#             preferences_list = ["mango", "peach", "vanilla", "salted caramel", "orange", "lavender", "peppermint", "blue raspberry"]
+#         print("User") # Test code
+#         return self.generate_response_data(preferences_list, user_created=True)
+#
+#     def generate_general_user(self):
+#         """Generate AI drink for a general user with hardcoded preferences."""
+#         preferences = ["mango", "peach", "vanilla", "salted caramel", "orange", "lavender", "peppermint", "blue raspberry"]
+#         print("General") # Test code
+#         return self.generate_response_data(preferences, user_created=False)
+#
+#     def generate_response_data(self, preferences, user_created):
+#         """Helper function to generate response data."""
+#         result = generate_soda(preferences)
+#         return {
+#             'SyrupsUsed': result["syrups"],
+#             'SodaUsed': result["soda"][0],
+#             'AddIns': result["addins"],
+#             'Size': "24oz",
+#             'Ice': "regular",
+#             "UserCreated": user_created,
+#         }
 
 
 class RevenueViewSet(viewsets.ModelViewSet):

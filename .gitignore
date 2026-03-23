@@ -7,3 +7,6 @@ codepop_virtual_enviroment
 .idea
 node_modules
 .DS_Store
+
+# Ignore old React Native frontend
+codepop/
