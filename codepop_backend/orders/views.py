@@ -3,6 +3,7 @@ from django.contrib.auth.models import User
 from django.db import transaction
 from django.db.models import Q, F
 from django.http import HttpResponseForbidden
+from django.urls import reverse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.utils import timezone
 from django.views import View
@@ -30,6 +31,19 @@ from .serializers import (
 	SupplyTransferCreateSerializer,
 	SupplyTransferSerializer,
 )
+
+
+TREND_RANGE_DAYS = {
+	"day": 1,
+	"week": 7,
+	"month": 30,
+}
+
+TREND_RANGE_LABELS = {
+	"day": "Past Day",
+	"week": "Past Week",
+	"month": "Past Month",
+}
 
 
 class LogisticsPermissionMixin:
@@ -388,21 +402,22 @@ def _identify_at_risk_items(store_balances):
 	return at_risk
 
 
-def _calculate_inventory_trends(store_balances):
+def _calculate_inventory_trends(store_balances, trend_range="week"):
 	"""
-	Calculate 7-day inventory trends showing depletion/growth patterns.
+	Calculate inventory trends for a selected period showing depletion/growth patterns.
 	Returns trend data (slope, direction, days of supply remaining).
 	"""
 	from datetime import timedelta
 	from .models import InventorySnapshot
 	
 	trends = []
-	seven_days_ago = timezone.now() - timedelta(days=7)
+	days_back = TREND_RANGE_DAYS.get(trend_range, 7)
+	period_start = timezone.now() - timedelta(days=days_back)
 	
 	for balance in store_balances:
 		snapshots = (
 			InventorySnapshot.objects
-			.filter(store=balance.store, item=balance.item, created_at__gte=seven_days_ago)
+			.filter(store=balance.store, item=balance.item, created_at__gte=period_start)
 			.order_by('created_at')
 		)
 		
@@ -441,6 +456,55 @@ def _calculate_inventory_trends(store_balances):
 		})
 	
 	return trends
+
+
+def _queue_recommended_transfers(actor, region):
+	"""Create pending transfers from current recommendation set, skipping duplicates already in queue."""
+	created = 0
+	skipped = 0
+	recommendations = _calculate_recommended_transfers(region)
+
+	for rec in recommendations:
+		source_store = None
+		source_hub = None
+
+		if rec.get("source_type") == "store":
+			source_store = Store.objects.filter(id=rec.get("source_id"), region=region).first()
+			if not source_store:
+				skipped += 1
+				continue
+
+		if rec.get("source_type") == "hub":
+			source_hub = SupplyHub.objects.filter(id=rec.get("source_id"), region=region).first()
+			if not source_hub:
+				skipped += 1
+				continue
+
+		existing = SupplyTransfer.objects.filter(
+			source_store=source_store,
+			source_hub=source_hub,
+			destination_store_id=rec.get("destination_store_id"),
+			item_id=rec.get("item_id"),
+			status__in=["pending", "approved"],
+		).exists()
+
+		if existing:
+			skipped += 1
+			continue
+
+		SupplyTransfer.objects.create(
+			source_store=source_store,
+			source_hub=source_hub,
+			destination_store_id=rec.get("destination_store_id"),
+			item_id=rec.get("item_id"),
+			quantity=rec.get("suggested_qty", 1),
+			status="pending",
+			requested_by=actor,
+			note="Auto-queued from Smart Transfer Recommendations",
+		)
+		created += 1
+
+	return created, skipped
 
 
 def _calculate_hub_distances(region):
@@ -494,7 +558,7 @@ def _calculate_hub_distances(region):
 class LogisticsDashboardTemplateView(LogisticsPermissionMixin, View):
 	permission_classes = [AllowAny]
 
-	def _build_context(self, region, actor):
+	def _build_context(self, region, actor, trend_range="week"):
 		regions_qs = Region.objects.all().order_by("code")
 		if actor and not actor.is_superuser:
 			regions_qs = self.get_assigned_regions(actor).order_by("code")
@@ -527,17 +591,23 @@ class LogisticsDashboardTemplateView(LogisticsPermissionMixin, View):
 			"recommended_transfers": _calculate_recommended_transfers(region),
 			"predicted_stockouts": _calculate_predicted_stockouts(region),
 			"at_risk_items": _identify_at_risk_items(store_balances),
-			"inventory_trends": _calculate_inventory_trends(store_balances),
+			"inventory_trends": _calculate_inventory_trends(store_balances, trend_range),
 			"hub_distances": _calculate_hub_distances(region),
+			"trend_range": trend_range,
+			"trend_label": TREND_RANGE_LABELS.get(trend_range, "Past Week"),
+			"trend_ranges": [("day", "Past Day"), ("week", "Past Week"), ("month", "Past Month")],
 		}
 
 	def get(self, request, region_id):
 		actor = _effective_dashboard_user(request)
 		region = get_object_or_404(Region, id=region_id)
+		trend_range = request.GET.get("trend_range", "week").lower()
+		if trend_range not in TREND_RANGE_DAYS:
+			trend_range = "week"
 		if actor and not actor.is_superuser and not self.get_assigned_regions(actor).filter(id=region_id).exists():
 			return HttpResponseForbidden("You do not have access to this region.")
 
-		context = self._build_context(region, actor)
+		context = self._build_context(region, actor, trend_range)
 		context["actor"] = actor
 		return render(request, "orders/logistics_dashboard.html", context)
 
@@ -593,8 +663,23 @@ class LogisticsDashboardTemplateView(LogisticsPermissionMixin, View):
 			else:
 				messages.error(request, error_message)
 
-		target_region = request.POST.get("target_region")
-		if target_region:
-			return redirect("orders:logistics-dashboard-web", region_id=target_region)
+		if operation == "queue_recommended_transfers":
+			created_count, skipped_count = _queue_recommended_transfers(actor, region)
+			if created_count:
+				messages.success(request, f"Queued {created_count} recommended transfers.")
+			if skipped_count:
+				messages.info(request, f"Skipped {skipped_count} items already in pending/approved queue.")
+			if created_count == 0 and skipped_count == 0:
+				messages.info(request, "No recommended transfers available to queue.")
 
-		return redirect("orders:logistics-dashboard-web", region_id=region_id)
+		target_region = request.POST.get("target_region")
+		trend_range = request.POST.get("trend_range", "week").lower()
+		if trend_range not in TREND_RANGE_DAYS:
+			trend_range = "week"
+
+		if target_region:
+			region_url = reverse("orders:logistics-dashboard-web", kwargs={"region_id": target_region})
+			return redirect(f"{region_url}?trend_range={trend_range}")
+
+		region_url = reverse("orders:logistics-dashboard-web", kwargs={"region_id": region_id})
+		return redirect(f"{region_url}?trend_range={trend_range}")

@@ -432,6 +432,7 @@
         <form method="post" class="toolbar">
             {% csrf_token %}
             <input type="hidden" name="target_region" value="" id="target-region-input" />
+            <input type="hidden" name="trend_range" value="{{ trend_range }}" />
             <label for="region-picker"><strong>Region:</strong></label>
             <select id="region-picker" onchange="document.getElementById('target-region-input').value=this.value; this.form.submit();">
                 {% for r in regions %}
@@ -447,6 +448,7 @@
                 <form method="post" class="toolbar">
                     {% csrf_token %}
                     <input type="hidden" name="operation" value="create_transfer" />
+                    <input type="hidden" name="trend_range" value="{{ trend_range }}" />
                     <label>Source Hub</label>
                     <select name="source_hub_id" id="source-hub-select">
                         <option value="">-- none --</option>
@@ -489,6 +491,12 @@
                 <h2>🚀 Smart Transfer Recommendations</h2>
                 {% if recommended_transfers %}
                     <p style="font-size: 13px; color: #666; margin-bottom: 12px;">AI-powered suggestions to optimize inventory across your region</p>
+                    <form method="post" style="margin-bottom: 12px;">
+                        {% csrf_token %}
+                        <input type="hidden" name="operation" value="queue_recommended_transfers" />
+                        <input type="hidden" name="trend_range" value="{{ trend_range }}" />
+                        <button type="submit" class="action-btn">Queue All Recommended Transfers</button>
+                    </form>
                     <div style="display: grid; gap: 10px;">
                     {% for rec in recommended_transfers %}
                         <div class="recommendation-item">
@@ -555,7 +563,15 @@
             </div>
 
             <div class="card" id="trends">
-                <h2>📈 Inventory Trends (7-Day)</h2>
+                <h2>📈 Inventory Trends ({{ trend_label }})</h2>
+                <form method="get" style="margin-bottom: 12px;">
+                    <label for="trend-range-picker" style="font-size: 13px; color: #666; margin-right: 8px;"><strong>Time Scale:</strong></label>
+                    <select id="trend-range-picker" name="trend_range" onchange="this.form.submit();">
+                        {% for key, label in trend_ranges %}
+                            <option value="{{ key }}" {% if key == trend_range %}selected{% endif %}>{{ label }}</option>
+                        {% endfor %}
+                    </select>
+                </form>
                 {% if inventory_trends %}
                     <p style="font-size: 13px; color: #666; margin-bottom: 12px;">Recent usage patterns showing depletion and growth rates</p>
                     <div style="display: grid; gap: 10px;">
@@ -693,6 +709,7 @@
                                     {% csrf_token %}
                                     <input type="hidden" name="operation" value="transfer_action" />
                                     <input type="hidden" name="transfer_id" value="{{ t.id }}" />
+                                    <input type="hidden" name="trend_range" value="{{ trend_range }}" />
                                     {% if t.status == 'pending' %}
                                         <button class="action-btn" type="submit" name="transfer_action" value="approve">Approve</button>
                                         <button class="action-btn" type="submit" name="transfer_action" value="reject">Reject</button>
@@ -735,6 +752,57 @@
     </div>
     <script>
         (function () {
+            const SCROLL_KEY = 'logistics-dashboard-scroll';
+            const SECTION_KEY = 'logistics-dashboard-section';
+
+            if ('scrollRestoration' in history) {
+                history.scrollRestoration = 'manual';
+            }
+
+            function restoreScroll() {
+                const savedSection = sessionStorage.getItem(SECTION_KEY);
+                const savedY = sessionStorage.getItem(SCROLL_KEY);
+
+                if (savedSection) {
+                    const sectionEl = document.getElementById(savedSection);
+                    if (sectionEl) {
+                        sectionEl.scrollIntoView({ block: 'start' });
+                    }
+                }
+
+                if (savedY !== null) {
+                    const y = parseInt(savedY, 10);
+                    if (!Number.isNaN(y)) {
+                        window.scrollTo(0, y);
+                    }
+                }
+            }
+
+            restoreScroll();
+            window.addEventListener('load', function () {
+                restoreScroll();
+                setTimeout(restoreScroll, 80);
+                setTimeout(restoreScroll, 250);
+                sessionStorage.removeItem(SCROLL_KEY);
+                sessionStorage.removeItem(SECTION_KEY);
+            });
+
+            const forms = document.querySelectorAll('form');
+            forms.forEach(function (form) {
+                form.addEventListener('submit', function (event) {
+                    sessionStorage.setItem(SCROLL_KEY, String(window.scrollY || window.pageYOffset || 0));
+
+                    const submitter = event.submitter;
+                    const sourceEl = submitter || form;
+                    const card = sourceEl.closest('.card');
+                    if (card && card.id) {
+                        sessionStorage.setItem(SECTION_KEY, card.id);
+                    } else {
+                        sessionStorage.removeItem(SECTION_KEY);
+                    }
+                });
+            });
+
             const hubSelect = document.getElementById('source-hub-select');
             const storeSelect = document.getElementById('source-store-select');
 
