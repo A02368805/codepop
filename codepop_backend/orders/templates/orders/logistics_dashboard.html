@@ -339,6 +339,41 @@
             margin-left: 6px;
         }
 
+        .trend-card {
+            padding: 10px;
+            background: #f9f9f9;
+            border-radius: 3px;
+            border-left: 4px solid #2196F3;
+        }
+
+        .trend-card.down {
+            border-left-color: #FF5252;
+        }
+
+        .trend-card.up {
+            border-left-color: #4CAF50;
+        }
+
+        .route-quality {
+            display: inline-block;
+            padding: 4px 10px;
+            border-radius: 12px;
+            font-size: 11px;
+            font-weight: 600;
+            background: #FFEBEE;
+            color: #C62828;
+        }
+
+        .route-quality.nearby {
+            background: #E8F5E9;
+            color: #2E7D32;
+        }
+
+        .route-quality.moderate {
+            background: #FFF3E0;
+            color: #E65100;
+        }
+
         @media (max-width: 900px) {
             .grid {
                 grid-template-columns: 1fr;
@@ -519,7 +554,7 @@
                     <p style="font-size: 13px; color: #666; margin-bottom: 12px;">Recent usage patterns showing depletion and growth rates</p>
                     <div style="display: grid; gap: 10px;">
                     {% for trend in inventory_trends %}
-                        <div style="padding: 10px; background: #f9f9f9; border-left: 4px solid {% if trend.direction == 'down' %}#FF5252{% elif trend.direction == 'up' %}#4CAF50{% else %}#2196F3{% endif %}; border-radius: 3px;">
+                        <div class="trend-card{% if trend.direction == 'down' %} down{% elif trend.direction == 'up' %} up{% endif %}">
                             <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 6px;">
                                 <div>
                                     <strong>{{ trend.item.name }}</strong>
@@ -562,7 +597,7 @@
                                     <div style="font-size: 12px; color: #666; margin-top: 2px;">← {{ route.hub.name }}</div>
                                 </div>
                                 <div style="text-align: right;">
-                                    <span style="display: inline-block; padding: 4px 10px; background: {% if route.quality == 'nearby' %}#E8F5E9{% elif route.quality == 'moderate' %}#FFF3E0{% else %}#FFEBEE{% endif %}; color: {% if route.quality == 'nearby' %}#2E7D32{% elif route.quality == 'moderate' %}#E65100{% else %}#C62828{% endif %}; border-radius: 12px; font-size: 11px; font-weight: 600;">
+                                    <span class="route-quality{% if route.quality == 'nearby' %} nearby{% elif route.quality == 'moderate' %} moderate{% endif %}">
                                         {{ route.distance_miles }} mi ({{ route.quality }})
                                     </span>
                                 </div>
