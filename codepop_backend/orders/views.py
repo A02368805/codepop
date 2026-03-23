@@ -1,7 +1,7 @@
 from django.contrib import messages
 from django.contrib.auth.models import User
 from django.db import transaction
-from django.db.models import Q
+from django.db.models import Q, F
 from django.shortcuts import get_object_or_404, redirect, render
 from django.utils import timezone
 from django.views import View
@@ -264,6 +264,129 @@ class SupplyTransferStatusAPIView(LogisticsPermissionMixin, APIView):
 		return Response(SupplyTransferSerializer(transfer).data)
 
 
+def _calculate_recommended_transfers(region):
+	"""
+	Suggest transfers to fill low-stock stores.
+	For each store/item combo with low stock, find hubs or other stores that can supply it.
+	"""
+	recommendations = []
+	
+	# Get all low-stock items (< 50% of threshold)
+	low_stock_balances = StoreInventoryBalance.objects.filter(
+		store__region=region,
+		quantity__lte=F('threshold') * 0.5
+	).select_related('store', 'item')
+	
+	for balance in low_stock_balances:
+		needed_qty = max(balance.threshold - balance.quantity, 10)  # at least 10 units or full threshold
+		
+		# Check hubs in same region
+		hub_sources = HubInventoryBalance.objects.filter(
+			hub__region=region,
+			item=balance.item,
+			quantity__gte=needed_qty
+		).select_related('hub')
+		
+		# Check other stores in same region with surplus
+		store_sources = StoreInventoryBalance.objects.filter(
+			store__region=region,
+			item=balance.item,
+			quantity__gte=needed_qty * 1.5  # Need surplus
+		).exclude(store=balance.store).select_related('store')
+		
+		for hub_source in hub_sources:
+			recommendations.append({
+				'destination_store': balance.store,
+				'destination_store_id': balance.store.id,
+				'item': balance.item,
+				'item_id': balance.item.id,
+				'suggested_qty': needed_qty,
+				'source_type': 'hub',
+				'source_name': hub_source.hub.name,
+				'source_id': hub_source.hub.id,
+				'available_qty': hub_source.quantity,
+				'priority': 'high',
+			})
+		
+		for store_source in store_sources:
+			recommendations.append({
+				'destination_store': balance.store,
+				'destination_store_id': balance.store.id,
+				'item': balance.item,
+				'item_id': balance.item.id,
+				'suggested_qty': needed_qty,
+				'source_type': 'store',
+				'source_name': store_source.store.name,
+				'source_id': store_source.store.id,
+				'available_qty': store_source.quantity,
+				'priority': 'medium',
+			})
+	
+	return recommendations[:10]  # Return top 10 recommendations
+
+
+def _calculate_predicted_stockouts(region):
+	"""
+	Identify stores at critical risk of stockout.
+	Based on current stock level vs threshold and alert history.
+	"""
+	predictions = []
+	
+	# Get all critical alerts (these flag stores near stockout)
+	critical_alerts = RestockAlert.objects.filter(
+		store__region=region,
+		status='open',
+		severity='critical'
+	).select_related('store', 'item')
+	
+	for alert in critical_alerts:
+		store_balance = StoreInventoryBalance.objects.filter(
+			store=alert.store,
+			item=alert.item
+		).first()
+		
+		if store_balance and store_balance.quantity <= 1:
+			# Estimate: at zero, store is critically out
+			days_remaining = 0
+		elif store_balance and store_balance.quantity > 0:
+			# Conservative: assume 2-3 days usage at current burn rate
+			days_remaining = max(1, min(store_balance.quantity, 3))
+		else:
+			continue
+		
+		predictions.append({
+			'store': alert.store,
+			'store_id': alert.store.id,
+			'item': alert.item,
+			'item_id': alert.item.id,
+			'current_qty': store_balance.quantity if store_balance else 0,
+			'days_remaining': days_remaining,
+			'severity': 'critical' if days_remaining <= 1 else 'urgent',
+			'message': f"{alert.item.name}: {days_remaining} days until stockout"
+		})
+	
+	return predictions[:5]  # Top 5 at-risk items
+
+
+def _identify_at_risk_items(store_balances):
+	"""
+	Mark inventory items that are below 30% of threshold as 'at-risk'.
+	"""
+	at_risk = []
+	
+	for balance in store_balances:
+		if balance.threshold > 0:
+			stock_ratio = (balance.quantity * 100) / balance.threshold
+			if stock_ratio < 30:
+				at_risk.append({
+					'balance': balance,
+					'stock_ratio': int(stock_ratio),
+					'status': 'critical' if stock_ratio < 10 else 'warning'
+				})
+	
+	return at_risk
+
+
 class LogisticsDashboardTemplateView(LogisticsPermissionMixin, View):
 	permission_classes = [AllowAny]
 
@@ -272,15 +395,17 @@ class LogisticsDashboardTemplateView(LogisticsPermissionMixin, View):
 		if actor and not actor.is_superuser:
 			regions_qs = self.get_assigned_regions(actor).order_by("code")
 
+		store_balances = StoreInventoryBalance.objects.filter(store__region=region).select_related(
+			"store", "item"
+		).order_by("store__name", "item__name")
+
 		return {
 			"region": region,
 			"regions": regions_qs,
 			"stores": Store.objects.filter(region=region).order_by("name"),
 			"hubs": SupplyHub.objects.filter(region=region).order_by("name"),
 			"items": InventoryItem.objects.all().order_by("name"),
-			"store_balances": StoreInventoryBalance.objects.filter(store__region=region)
-			.select_related("store", "item")
-			.order_by("store__name", "item__name"),
+			"store_balances": store_balances,
 			"hub_balances": HubInventoryBalance.objects.filter(hub__region=region)
 			.select_related("hub", "item")
 			.order_by("hub__name", "item__name"),
@@ -295,6 +420,9 @@ class LogisticsDashboardTemplateView(LogisticsPermissionMixin, View):
 			"alerts": RestockAlert.objects.filter(store__region=region, status="open")
 			.select_related("store", "item")
 			.order_by("-created_at"),
+			"recommended_transfers": _calculate_recommended_transfers(region),
+			"predicted_stockouts": _calculate_predicted_stockouts(region),
+			"at_risk_items": _identify_at_risk_items(store_balances),
 		}
 
 	def get(self, request, region_id):
