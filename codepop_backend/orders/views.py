@@ -388,6 +388,109 @@ def _identify_at_risk_items(store_balances):
 	return at_risk
 
 
+def _calculate_inventory_trends(store_balances):
+	"""
+	Calculate 7-day inventory trends showing depletion/growth patterns.
+	Returns trend data (slope, direction, days of supply remaining).
+	"""
+	from datetime import timedelta
+	from .models import InventorySnapshot
+	
+	trends = []
+	seven_days_ago = timezone.now() - timedelta(days=7)
+	
+	for balance in store_balances:
+		snapshots = (
+			InventorySnapshot.objects
+			.filter(store=balance.store, item=balance.item, created_at__gte=seven_days_ago)
+			.order_by('created_at')
+		)
+		
+		if snapshots.count() < 2:
+			continue
+		
+		quantities = list(snapshots.values_list('quantity', flat=True))
+		oldest_qty = quantities[0]
+		current_qty = quantities[-1]
+		change = current_qty - oldest_qty
+		
+		# Trend slope: positive=growth, negative=depletion
+		days_data = snapshots.count()
+		if days_data > 1:
+			slope = change / days_data
+		else:
+			slope = 0
+		
+		# Estimate days until depletion
+		if slope < -0.5 and balance.threshold > 0:
+			burn_rate = abs(slope)
+			days_left = int(balance.quantity / burn_rate) if burn_rate > 0 else 999
+		else:
+			days_left = None
+		
+		trends.append({
+			'store': balance.store,
+			'item': balance.item,
+			'current_qty': current_qty,
+			'oldest_qty': oldest_qty,
+			'change': change,
+			'slope': round(slope, 2),
+			'direction': 'down' if slope < -0.5 else 'up' if slope > 0.5 else 'stable',
+			'days_left': days_left,
+			'snapshot_count': days_data,
+		})
+	
+	return trends
+
+
+def _calculate_hub_distances(region):
+	"""
+	Calculate distances from hubs to stores using Haversine formula.
+	Returns optimization opportunities (nearby hubs for low-stock stores).
+	"""
+	import math
+	
+	def haversine(lat1, lon1, lat2, lon2):
+		"""Calculate distance in miles between two lat/lon points."""
+		R = 3959  # Earth radius in miles
+		
+		if not all([lat1, lon1, lat2, lon2]):
+			return None
+		
+		phi1, phi2 = math.radians(lat1), math.radians(lat2)
+		dphi = math.radians(lat2 - lat1)
+		dlam = math.radians(lon2 - lon1)
+		
+		a = math.sin(dphi/2)**2 + math.cos(phi1)*math.cos(phi2)*math.sin(dlam/2)**2
+		c = 2 * math.asin(math.sqrt(a))
+		return R * c
+	
+	hubs = SupplyHub.objects.filter(region=region)
+	stores = Store.objects.filter(region=region)
+	optimizations = []
+	
+	for store in stores:
+		if not store.latitude or not store.longitude:
+			continue
+		
+		for hub in hubs:
+			if not hub.latitude or not hub.longitude:
+				continue
+			
+			distance = haversine(store.latitude, store.longitude, hub.latitude, hub.longitude)
+			if distance is not None:
+				optimizations.append({
+					'store': store,
+					'hub': hub,
+					'distance_miles': round(distance, 1),
+					'quality': 'nearby' if distance < 10 else 'moderate' if distance < 25 else 'far',
+				})
+	
+	# Sort by distance
+	optimizations.sort(key=lambda x: x['distance_miles'])
+	return optimizations[:15]  # Top 15 optimal routes
+
+
 class LogisticsDashboardTemplateView(LogisticsPermissionMixin, View):
 	permission_classes = [AllowAny]
 
@@ -424,6 +527,8 @@ class LogisticsDashboardTemplateView(LogisticsPermissionMixin, View):
 			"recommended_transfers": _calculate_recommended_transfers(region),
 			"predicted_stockouts": _calculate_predicted_stockouts(region),
 			"at_risk_items": _identify_at_risk_items(store_balances),
+			"inventory_trends": _calculate_inventory_trends(store_balances),
+			"hub_distances": _calculate_hub_distances(region),
 		}
 
 	def get(self, request, region_id):

@@ -368,10 +368,13 @@
     <div class="shell">
         <div class="app-nav">
             <a class="pill-link" href="#create-transfer">Create Transfer</a>
+            <a class="pill-link" href="#recommendations">Smart Transfers</a>
+            <a class="pill-link" href="#stockouts">Stockout Alerts</a>
+            <a class="pill-link" href="#trends">Trends</a>
+            <a class="pill-link" href="#routes">Routes</a>
             <a class="pill-link" href="#inventory">Store Inventory</a>
             <a class="pill-link" href="#hub">Hub Inventory</a>
             <a class="pill-link" href="#transfers">Pending Transfers</a>
-            <a class="pill-link" href="#alerts">Restock Alerts</a>
             <a class="pill-link" href="/api/orders/logistics/dashboard/{{ region.id }}/">API JSON</a>
         </div>
 
@@ -510,6 +513,68 @@
                 {% endif %}
             </div>
 
+            <div class="card" id="trends">
+                <h2>📈 Inventory Trends (7-Day)</h2>
+                {% if inventory_trends %}
+                    <p style="font-size: 13px; color: #666; margin-bottom: 12px;">Recent usage patterns showing depletion and growth rates</p>
+                    <div style="display: grid; gap: 10px;">
+                    {% for trend in inventory_trends %}
+                        <div style="padding: 10px; background: #f9f9f9; border-left: 4px solid {% if trend.direction == 'down' %}#FF5252{% elif trend.direction == 'up' %}#4CAF50{% else %}#2196F3{% endif %}; border-radius: 3px;">
+                            <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 6px;">
+                                <div>
+                                    <strong>{{ trend.item.name }}</strong>
+                                    <div style="font-size: 11px; color: #888;">{{ trend.store.name }}</div>
+                                </div>
+                                <div style="text-align: right; font-size: 12px;">
+                                    {% if trend.direction == 'down' %}
+                                        <span style="color: #FF5252; font-weight: 600;">📉 Depleting</span>
+                                    {% elif trend.direction == 'up' %}
+                                        <span style="color: #4CAF50; font-weight: 600;">📈 Growing</span>
+                                    {% else %}
+                                        <span style="color: #2196F3; font-weight: 600;">➡️ Stable</span>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            <div style="font-size: 11px; color: #666; background: white; padding: 6px 8px; border-radius: 2px;">
+                                {{ trend.oldest_qty }} → {{ trend.current_qty }} (Δ {{ trend.change }}) | Rate: {{ trend.slope }}/day | Samples: {{ trend.snapshot_count }}
+                                {% if trend.days_left %}
+                                    | ⚠️ Depletion in ~{{ trend.days_left }} days
+                                {% endif %}
+                            </div>
+                        </div>
+                    {% endfor %}
+                    </div>
+                {% else %}
+                    <p style="color: #999; font-style: italic; text-align: center; padding: 20px 0;">Gathering inventory history. Trends will appear after 1-2 sync periods.</p>
+                {% endif %}
+            </div>
+
+            <div class="card" id="routes">
+                <h2>🗺️ Optimal Hub-Store Routes</h2>
+                {% if hub_distances %}
+                    <p style="font-size: 13px; color: #666; margin-bottom: 12px;">Geography-based optimization for faster resupply</p>
+                    <div style="display: grid; gap: 8px;">
+                    {% for route in hub_distances %}
+                        <div style="padding: 10px; background: #f9f9f9; border: 1px solid #ddd; border-radius: 3px;">
+                            <div style="display: flex; justify-content: space-between; align-items: center;">
+                                <div style="flex: 1;">
+                                    <strong>{{ route.store.name }}</strong>
+                                    <div style="font-size: 12px; color: #666; margin-top: 2px;">← {{ route.hub.name }}</div>
+                                </div>
+                                <div style="text-align: right;">
+                                    <span style="display: inline-block; padding: 4px 10px; background: {% if route.quality == 'nearby' %}#E8F5E9{% elif route.quality == 'moderate' %}#FFF3E0{% else %}#FFEBEE{% endif %}; color: {% if route.quality == 'nearby' %}#2E7D32{% elif route.quality == 'moderate' %}#E65100{% else %}#C62828{% endif %}; border-radius: 12px; font-size: 11px; font-weight: 600;">
+                                        {{ route.distance_miles }} mi ({{ route.quality }})
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+                    {% endfor %}
+                    </div>
+                {% else %}
+                    <p style="color: #999; font-style: italic; text-align: center; padding: 20px 0;">Location data not yet configured. Add latitude/longitude to stores and hubs.</p>
+                {% endif %}
+            </div>
+
             <div class="card" id="inventory">
                 <h2>Regional Store Inventory</h2>
                 <table>
@@ -518,7 +583,13 @@
                     </thead>
                     <tbody>
                     {% for b in store_balances %}
-                        {% with ratio=b.quantity|add:0|mul:100|div:b.threshold|default:0|round %}
+                        {% if b.threshold %}
+                            {% widthratio b.quantity b.threshold 100 as ratio %}
+                        {% else %}
+                            {% with 0 as ratio %}
+                            {% endwith %}
+                        {% endif %}
+                        {% with ratio=ratio|default:0 %}
                         <tr {% if ratio < 30 %}style="background: rgba(229, 57, 53, 0.08);"{% endif %}>
                             <td>{{ b.store.name }}</td>
                             <td>{{ b.item.name }}</td>

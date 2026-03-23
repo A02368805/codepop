@@ -14,6 +14,8 @@ class Region(models.Model):
 class Store(models.Model):
 	name = models.CharField(max_length=100)
 	region = models.ForeignKey(Region, on_delete=models.CASCADE, related_name="stores")
+	latitude = models.FloatField(null=True, blank=True)
+	longitude = models.FloatField(null=True, blank=True)
 
 	class Meta:
 		unique_together = ("name", "region")
@@ -25,6 +27,8 @@ class Store(models.Model):
 class SupplyHub(models.Model):
 	name = models.CharField(max_length=100)
 	region = models.ForeignKey(Region, on_delete=models.CASCADE, related_name="hubs")
+	latitude = models.FloatField(null=True, blank=True)
+	longitude = models.FloatField(null=True, blank=True)
 
 	class Meta:
 		unique_together = ("name", "region")
@@ -181,3 +185,21 @@ class SupplyTransfer(models.Model):
 
 	def __str__(self):
 		return f"Transfer #{self.pk} {self.item.name} x{self.quantity} [{self.status}]"
+
+
+class InventorySnapshot(models.Model):
+	"""Historical snapshot of inventory levels for trend analysis."""
+	store = models.ForeignKey(Store, on_delete=models.CASCADE, related_name="inventory_snapshots")
+	item = models.ForeignKey(InventoryItem, on_delete=models.CASCADE, related_name="store_snapshots")
+	quantity = models.PositiveIntegerField()
+	threshold = models.PositiveIntegerField()
+	created_at = models.DateTimeField(auto_now_add=True, db_index=True)
+
+	class Meta:
+		ordering = ["-created_at"]
+		indexes = [
+			models.Index(fields=["store", "item", "-created_at"]),
+		]
+
+	def __str__(self):
+		return f"{self.store.name}: {self.item.name}={self.quantity} @{self.created_at}"
