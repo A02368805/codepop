@@ -2,6 +2,7 @@ from django.contrib import messages
 from django.contrib.auth.models import User
 from django.db import transaction
 from django.db.models import Q, F
+from django.http import HttpResponseForbidden
 from django.shortcuts import get_object_or_404, redirect, render
 from django.utils import timezone
 from django.views import View
@@ -429,7 +430,7 @@ class LogisticsDashboardTemplateView(LogisticsPermissionMixin, View):
 		actor = _effective_dashboard_user(request)
 		region = get_object_or_404(Region, id=region_id)
 		if actor and not actor.is_superuser and not self.get_assigned_regions(actor).filter(id=region_id).exists():
-			return Response({"detail": "Forbidden for this region."}, status=status.HTTP_403_FORBIDDEN)
+			return HttpResponseForbidden("You do not have access to this region.")
 
 		context = self._build_context(region, actor)
 		context["actor"] = actor
