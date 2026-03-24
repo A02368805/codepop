@@ -6,11 +6,11 @@
 codepop_virtual_enviroment
 .venv
 .env
-codepop_backend/db.sqlite3
-codepop_backend/dev.sqlite3
-codepop_backend/staticfiles
-codepop_backend/media
-codepop_backend/celerybeat-schedule*
+server/db.sqlite3
+server/dev.sqlite3
+server/staticfiles
+server/media
+server/celerybeat-schedule*
 
 .idea
 node_modules
