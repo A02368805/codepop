@@ -1,0 +1,44 @@
+{% extends "base/base.html" %}
+
+{% block title %}Order History | FloatStack{% endblock %}
+
+{% block content %}
+<section class="panel">
+    <div class="section-heading">
+        <div>
+            <p class="eyebrow">Account Orders</p>
+            <h1>Your order history</h1>
+        </div>
+        <a class="button button--ghost" href="{% url 'stores:index' %}">Start a new order</a>
+    </div>
+    {% if orders %}
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>Code</th>
+                    <th>Store</th>
+                    <th>Status</th>
+                    <th>Total</th>
+                    <th>Placed</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for order in orders %}
+                    <tr>
+                        <td><a href="{% url 'orders:detail' order.public_order_code %}">{{ order.public_order_code }}</a></td>
+                        <td>{{ order.store.name }}</td>
+                        <td>{{ order.get_status_display }}</td>
+                        <td>${{ order.total_amount }}</td>
+                        <td>{{ order.created_at|date:"M j, g:i A" }}</td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    {% else %}
+        <div class="empty-state">
+            <h2>No orders yet.</h2>
+            <p>Your completed and active account orders will appear here.</p>
+        </div>
+    {% endif %}
+</section>
+{% endblock %}

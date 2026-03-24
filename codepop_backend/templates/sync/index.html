@@ -1,0 +1,18 @@
+{% extends "base/base.html" %}
+
+{% block title %}Sync | FloatStack{% endblock %}
+
+{% block content %}
+<section class="panel">
+    <div class="section-heading">
+        <div>
+            <p class="eyebrow">Regional Sync</p>
+            <h1>Outbox health, retries, and background event visibility</h1>
+        </div>
+        <p class="lede-small">This simulates region-safe coordination inside the modular monolith: state changes become outbox events, then background workers dispatch them and surface failures.</p>
+    </div>
+    <div id="sync-panel" hx-get="{% url 'sync:panel' %}" hx-trigger="load, every 30s" hx-swap="innerHTML">
+        {% include "sync/partials/event_table.html" %}
+    </div>
+</section>
+{% endblock %}

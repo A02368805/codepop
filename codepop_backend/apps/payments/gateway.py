@@ -1,0 +1,84 @@
+from __future__ import annotations
+
+from dataclasses import dataclass
+
+from django.conf import settings
+
+class PaymentMode:
+    MOCK = "mock"
+    STRIPE = "stripe"
+
+
+@dataclass(frozen=True)
+class CheckoutSessionResult:
+    checkout_url: str
+    checkout_session_id: str
+    payment_intent_id: str
+
+
+def get_payment_mode():
+    configured_mode = getattr(settings, "PAYMENT_MODE", PaymentMode.MOCK).lower()
+    if configured_mode == PaymentMode.STRIPE and getattr(settings, "STRIPE_SECRET_KEY", ""):
+        return PaymentMode.STRIPE
+    return PaymentMode.MOCK
+
+
+def stripe_is_configured():
+    return get_payment_mode() == PaymentMode.STRIPE
+
+
+def _import_stripe():
+    try:
+        import stripe  # type: ignore
+    except ModuleNotFoundError as exc:
+        raise RuntimeError(
+            "Stripe support requires the 'stripe' package to be installed."
+        ) from exc
+    return stripe
+
+
+def _client():
+    stripe = _import_stripe()
+    stripe.api_key = settings.STRIPE_SECRET_KEY
+    return stripe
+
+
+def create_stripe_checkout_session(*, order, success_url, cancel_url):
+    client = _client()
+    session = client.checkout.Session.create(
+        mode="payment",
+        success_url=success_url,
+        cancel_url=cancel_url,
+        metadata={"order_id": str(order.pk), "order_code": order.public_order_code},
+        line_items=[
+            {
+                "quantity": item.quantity,
+                "price_data": {
+                    "currency": order.currency.lower(),
+                    "unit_amount": int((item.line_total / item.quantity) * 100),
+                    "product_data": {
+                        "name": item.display_name_snapshot,
+                        "description": item.size_snapshot.title(),
+                    },
+                },
+            }
+            for item in order.items.all()
+        ],
+    )
+    return CheckoutSessionResult(
+        checkout_url=session.url,
+        checkout_session_id=session.id,
+        payment_intent_id=getattr(session, "payment_intent", "") or "",
+    )
+
+
+def retrieve_checkout_session(session_id):
+    return _client().checkout.Session.retrieve(session_id)
+
+
+def construct_webhook_event(*, payload, signature):
+    return _client().Webhook.construct_event(
+        payload=payload,
+        sig_header=signature,
+        secret=settings.STRIPE_WEBHOOK_SECRET,
+    )

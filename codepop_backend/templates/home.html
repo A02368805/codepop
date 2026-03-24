@@ -1,67 +1,119 @@
-{% extends 'base.html' %}
+{% extends "base/base.html" %}
 
-{% block title %}FloatStack - AI-Powered Soda Customization{% endblock %}
+{% block title %}FloatStack{% endblock %}
 
 {% block content %}
-<div class="text-center">
-    <div class="mb-8">
-        <span class="text-8xl mb-4 block">🥤</span>
-        <h2 class="text-6xl font-bold mb-6"
-            style="background: linear-gradient(90deg, #A96DA3 0%, #7A5980 50%, #3B3B58 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;">
-            Welcome to FloatStack!
-        </h2>
-        <div class="flex items-center justify-center mb-4">
-            <span class="text-2xl mr-2">✨</span>
-            <p class="text-2xl font-semibold" style="color: #7A5980;">
-                Create your perfect custom soda with AI-powered magic
-            </p>
-            <span class="text-2xl ml-2">✨</span>
+<section class="hero hero--landing">
+    <div class="hero-copy">
+        <p class="eyebrow">FloatStack</p>
+        <h1>Build a soda you actually want, then pick it up fast.</h1>
+        <p class="lede">FloatStack pairs a polished drink builder with store-aware pickup timing, favorites, and operational workflows that stay tightly scoped behind the scenes.</p>
+        <div class="cta-row">
+            {% if can_start_order %}
+                <a class="button button--primary" href="{% url 'stores:index' %}">Build a drink</a>
+                <a class="button button--ghost" href="{% url 'stores:index' %}">Build with AI</a>
+                {% if request.user.is_authenticated %}
+                    <a class="button button--ghost" href="{% url 'dashboard' %}">Open your dashboard</a>
+                {% else %}
+                    <a class="button button--ghost" href="{% url 'login' %}">Log in</a>
+                    <a class="button button--ghost" href="{% url 'register' %}">Create account</a>
+                {% endif %}
+            {% else %}
+                <a class="button button--primary" href="{% url 'dashboard' %}">Open operations dashboard</a>
+                <a class="button button--ghost" href="{% url 'analytics:index' %}">Review analytics</a>
+            {% endif %}
+            <a class="button button--ghost" href="{% url 'orders:guest-lookup' %}">Track a guest order</a>
         </div>
     </div>
-
-    <div class="flex gap-6 justify-center mb-16">
-        <a href="{% url 'drink_builder' %}" style="background: linear-gradient(135deg, #A96DA3 0%, #7A5980 100%);"
-            class="text-white font-bold py-4 px-10 rounded-full hover:scale-105 transition-all duration-300 text-xl shadow-2xl border border-white/30">
-            🧪 Build a Drink
-        </a>
-        <a href="{% url 'drink_list' %}" style="background: linear-gradient(135deg, #CF9893 0%, #BC7C9C 100%);"
-            class="text-white font-bold py-4 px-10 rounded-full hover:scale-105 transition-all duration-300 text-xl shadow-2xl border border-white/30">
-            📋 View Menu
-        </a>
+    <div class="hero-card hero-card--showcase">
+        <p class="eyebrow">What FloatStack Delivers</p>
+        <ul class="checklist">
+            {% for principle in platform_principles %}
+                <li>{{ principle }}</li>
+            {% endfor %}
+        </ul>
+        <div class="floating-orb floating-orb--one"></div>
+        <div class="floating-orb floating-orb--two"></div>
     </div>
+</section>
 
-    <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
-        <div style="background: linear-gradient(135deg, #CF9893 0%, #BC7C9C 100%);"
-            class="p-8 rounded-3xl shadow-2xl text-white border border-white/30 hover:scale-105 transition-all duration-300">
-            <div class="text-5xl mb-6">🎨</div>
-            <h3 class="text-2xl font-bold mb-4">Infinite Customization</h3>
-            <p class="text-lg leading-relaxed">Choose from dozens of sodas, syrups, and magical add-ins to create your
-                perfect float masterpiece!</p>
+{% if can_start_order %}
+    <section class="page-grid page-grid--sidebar">
+        <div class="panel">
+            <div class="section-heading">
+                <div>
+                    <p class="eyebrow">Start Fast</p>
+                    <h2>Go from homepage to drink builder in two clicks.</h2>
+                </div>
+            </div>
+            <div class="card-grid">
+                <article class="role-card">
+                    <p class="eyebrow">1. Pick a store</p>
+                    <h3>Find the best pickup location</h3>
+                    <p>Use ZIP or address input, your preferred store, and pickup timing to rank the best spot.</p>
+                    <a href="{% url 'stores:index' %}">Choose a store</a>
+                </article>
+                <article class="role-card">
+                    <p class="eyebrow">2. Build your drink</p>
+                    <h3>Customize a polished signature</h3>
+                    <p>Adjust size, soda, flavors, and add-ins while the builder preview and assistant update with you.</p>
+                    <a href="{% url 'stores:index' %}">Start building</a>
+                </article>
+                <article class="role-card">
+                    <p class="eyebrow">3. Track pickup</p>
+                    <h3>Stay updated after checkout</h3>
+                    <p>Guests get lookup access. Account users get favorites, preferences, recommendations, and history.</p>
+                    <a href="{% url 'orders:guest-lookup' %}">Track an order</a>
+                </article>
+            </div>
         </div>
+        <div class="panel">
+            <p class="eyebrow">Account Benefits</p>
+            <div class="surface-list">
+                <article class="list-card">
+                    <div class="list-card__main">
+                        <h3>Save favorites</h3>
+                        <p class="muted">Rebuild your go-to drink without re-entering every ingredient.</p>
+                    </div>
+                </article>
+                <article class="list-card">
+                    <div class="list-card__main">
+                        <h3>Guide recommendations</h3>
+                        <p class="muted">Structured preferences help FloatStack assist instead of guessing.</p>
+                    </div>
+                </article>
+                <article class="list-card">
+                    <div class="list-card__main">
+                        <h3>Keep order history</h3>
+                        <p class="muted">Track current pickups and reorder from your account workspace.</p>
+                    </div>
+                </article>
+            </div>
+        </div>
+    </section>
+{% endif %}
 
-        <div style="background: linear-gradient(135deg, #A96DA3 0%, #7A5980 100%);"
-            class="p-8 rounded-3xl shadow-2xl text-white border border-white/30 hover:scale-105 transition-all duration-300">
-            <div class="text-5xl mb-6">💰</div>
-            <h3 class="text-2xl font-bold mb-4">Live Price Magic</h3>
-            <p class="text-lg leading-relaxed">Watch the price sparkle and update in real-time as you craft your perfect
-                fizzy creation!</p>
+<section class="panel">
+    <div class="section-heading">
+        <div>
+            <p class="eyebrow">Role Workspaces</p>
+            <h2>Every dashboard stays scoped to the user who signed in.</h2>
         </div>
-
-        <div style="background: linear-gradient(135deg, #7A5980 0%, #3B3B58 100%);"
-            class="p-8 rounded-3xl shadow-2xl text-white border border-white/30 hover:scale-105 transition-all duration-300">
-            <div class="text-5xl mb-6">🤖</div>
-            <h3 class="text-2xl font-bold mb-4">AI-Powered Genius</h3>
-            <p class="text-lg leading-relaxed">Our smart AI learns your taste and suggests amazing flavor combinations
-                you'll absolutely love!</p>
-        </div>
+        <p class="lede-small">Managers stay store-scoped, regional teams stay region-scoped, and super admins get the full oversight layer.</p>
     </div>
-
-    <!-- Fun decorative elements -->
-    <div class="mt-16 text-center">
-        <div class="text-6xl mb-4">🫧✨🥤✨🫧</div>
-        <p style="color: #A96DA3;" class="text-xl font-semibold italic">
-            "Where every sip is a celebration!"
-        </p>
+    <div class="card-grid">
+        {% for card in role_cards %}
+            <article class="role-card">
+                <p class="eyebrow">{{ card.title }}</p>
+                <h3>{{ card.title }} Workspace</h3>
+                <p>{{ card.description }}</p>
+                {% if request.user.is_authenticated %}
+                    <a href="{% url card.dashboard_route %}">Open workspace</a>
+                {% else %}
+                    <a href="{% url 'login' %}">Sign in for access</a>
+                {% endif %}
+            </article>
+        {% endfor %}
     </div>
-</div>
+</section>
 {% endblock %}

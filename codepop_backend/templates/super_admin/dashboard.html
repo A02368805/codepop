@@ -1,0 +1,77 @@
+{% extends "base/base.html" %}
+
+{% block title %}Super Admin Dashboard | FloatStack{% endblock %}
+
+{% block content %}
+<section class="hero hero--dashboard">
+    <div>
+        <p class="eyebrow">System-Wide Oversight</p>
+        <h1>{{ dashboard.title }}</h1>
+        <p class="lede">{{ dashboard.intro }}</p>
+        <div class="cta-row">
+            <a class="button button--primary" href="{% url 'analytics:index' %}">Open analytics</a>
+            <a class="button button--ghost" href="{% url 'admin-users' %}">Review accounts</a>
+        </div>
+    </div>
+    <div class="hero-card" id="dashboard-metrics" hx-get="{{ dashboard.refresh_url }}" hx-trigger="load, every 30s" hx-swap="innerHTML">
+        {% include "partials/dashboard_metrics.html" %}
+    </div>
+</section>
+
+<section class="page-grid page-grid--sidebar">
+    <div class="panel">
+        <p class="eyebrow">Account Oversight</p>
+        <dl class="summary-list">
+            <div><dt>Customers</dt><dd>{{ account_summary.customers }}</dd></div>
+            <div><dt>Staff</dt><dd>{{ account_summary.staff }}</dd></div>
+            <div><dt>Stores</dt><dd>{{ account_summary.stores }}</dd></div>
+        </dl>
+    </div>
+    <div class="panel">
+        <p class="eyebrow">Recent Audit Events</p>
+        <ul class="mini-list">
+            {% for log in recent_audit_logs|slice:":6" %}
+                <li>
+                    {{ log.action }} ·
+                    {% if log.store %}
+                        {{ log.store.name }}
+                    {% elif log.region %}
+                        {{ log.region.name }}
+                    {% else %}
+                        global
+                    {% endif %}
+                </li>
+            {% empty %}
+                <li>No audit events recorded.</li>
+            {% endfor %}
+        </ul>
+    </div>
+</section>
+
+<section class="panel">
+    <div class="section-heading">
+        <div>
+            <p class="eyebrow">Region Comparison</p>
+            <h2>Store and hub footprint</h2>
+        </div>
+    </div>
+    <table class="data-table">
+        <thead>
+            <tr>
+                <th>Region</th>
+                <th>Stores</th>
+                <th>Hubs</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for region in region_rows %}
+                <tr>
+                    <td>{{ region.name }}</td>
+                    <td>{{ region.store_count }}</td>
+                    <td>{{ region.hub_count }}</td>
+                </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</section>
+{% endblock %}

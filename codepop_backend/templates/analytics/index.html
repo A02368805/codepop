@@ -1,0 +1,190 @@
+{% extends "base/base.html" %}
+
+{% block title %}Analytics | FloatStack{% endblock %}
+
+{% block content %}
+<section class="panel">
+    <div class="section-heading">
+        <div>
+            <p class="eyebrow">Analytics</p>
+            <h1>Regional and store-level health summary</h1>
+        </div>
+    </div>
+    <form method="get" class="filter-bar">
+        <select name="region">
+            <option value="">All regions</option>
+            {% for region in region_options %}
+                <option value="{{ region.id }}" {% if selected_region and selected_region.id == region.id %}selected{% endif %}>{{ region.name }}</option>
+            {% endfor %}
+        </select>
+        <select name="store">
+            <option value="">All stores</option>
+            {% for store in store_options %}
+                <option value="{{ store.id }}" {% if selected_store and selected_store.id == store.id %}selected{% endif %}>{{ store.name }}</option>
+            {% endfor %}
+        </select>
+        <input type="date" name="date_from" value="{{ date_from }}">
+        <input type="date" name="date_to" value="{{ date_to }}">
+        <button class="button button--ghost" type="submit">Filter</button>
+    </form>
+    <div class="metric-grid">
+        <article class="metric">
+            <p>Stores In Scope</p>
+            <strong>{{ visible_stores.count }}</strong>
+        </article>
+        <article class="metric">
+            <p>Regions In Scope</p>
+            <strong>{{ visible_regions.count }}</strong>
+        </article>
+        <article class="metric metric--warning">
+            <p>Open Alerts</p>
+            <strong>{{ open_alerts }}</strong>
+        </article>
+        <article class="metric metric--info">
+            <p>Machine Issues</p>
+            <strong>{{ machine_issues }}</strong>
+        </article>
+    </div>
+</section>
+
+<section class="page-grid page-grid--sidebar">
+    <div class="panel">
+        <p class="eyebrow">Revenue</p>
+        <dl class="summary-list">
+            <div><dt>Gross</dt><dd>${{ gross_revenue }}</dd></div>
+            <div><dt>Net</dt><dd>${{ net_revenue }}</dd></div>
+        </dl>
+    </div>
+    <div class="panel">
+        <p class="eyebrow">Region Comparison</p>
+        <ul class="mini-list">
+            {% for region in region_rows %}
+                <li>{{ region.name }} · {{ region.store_count }} stores · {{ region.hub_count }} hubs</li>
+            {% endfor %}
+        </ul>
+    </div>
+</section>
+
+<section class="page-grid page-grid--sidebar">
+    <div class="panel">
+        <div class="section-heading">
+            <div>
+                <p class="eyebrow">Revenue By Store</p>
+                <h2>Top stores in scope</h2>
+            </div>
+        </div>
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>Store</th>
+                    <th>Gross</th>
+                    <th>Net</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for row in revenue_by_store %}
+                    <tr>
+                    <td>{{ row.store__name }}</td>
+                        <td>${{ row.gross }}</td>
+                        <td>${{ row.net }}</td>
+                    </tr>
+                {% empty %}
+                    <tr><td colspan="3">No revenue data yet.</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    <div class="panel">
+        <div class="section-heading">
+            <div>
+                <p class="eyebrow">Supply Usage Trends</p>
+                <h2>Last 30 days</h2>
+            </div>
+        </div>
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>Item</th>
+                    <th>Total Used</th>
+                    <th>Stores</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for row in usage_trends %}
+                    <tr>
+                        <td>{{ row.inventory_item__name }}</td>
+                        <td>{{ row.total_used }}</td>
+                        <td>{{ row.store_count }}</td>
+                    </tr>
+                {% empty %}
+                    <tr><td colspan="3">No supply usage data yet.</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</section>
+
+<section class="panel">
+    <div class="section-heading">
+        <div>
+            <p class="eyebrow">Machine Failure Trends</p>
+            <h2>Recent warning and outage events</h2>
+        </div>
+    </div>
+    <table class="data-table">
+        <thead>
+            <tr>
+                <th>Store</th>
+                <th>Status</th>
+                <th>Events</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for row in machine_failure_trends %}
+                <tr>
+                    <td>{{ row.machine__store__name }}</td>
+                    <td>{{ row.status|title }}</td>
+                    <td>{{ row.event_count }}</td>
+                </tr>
+            {% empty %}
+                <tr><td colspan="3">No recent machine failure trends.</td></tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</section>
+
+<section class="panel">
+    <div class="section-heading">
+        <div>
+            <p class="eyebrow">Audit Visibility</p>
+            <h2>Recent system events</h2>
+        </div>
+    </div>
+    <table class="data-table">
+        <thead>
+            <tr>
+                <th>Action</th>
+                <th>Actor</th>
+                <th>Store</th>
+                <th>Region</th>
+                <th>When</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for log in audit_logs %}
+                <tr>
+                    <td>{{ log.action }}</td>
+                    <td>{{ log.actor.email|default:"system" }}</td>
+                    <td>{{ log.store.name|default:"-" }}</td>
+                    <td>{{ log.region.name|default:"-" }}</td>
+                    <td>{{ log.created_at|date:"M j, g:i A" }}</td>
+                </tr>
+            {% empty %}
+                <tr>
+                    <td colspan="5">No audit events available.</td>
+                </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</section>
+{% endblock %}

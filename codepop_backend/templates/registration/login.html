@@ -1,0 +1,30 @@
+{% extends "base/base.html" %}
+
+{% block title %}Sign In | FloatStack{% endblock %}
+
+{% block content %}
+<section class="auth-shell">
+    <div class="auth-card">
+        <p class="eyebrow">Session Authentication</p>
+        <h1>Sign in to FloatStack</h1>
+        <p class="lede-small">Use your customer or operations account to get into the right workspace. Guests can still place one-time orders without signing in.</p>
+        <form method="post" class="auth-form">
+            {% csrf_token %}
+            {{ form.non_field_errors }}
+            <label>
+                {{ form.username.label }}
+                {{ form.username }}
+            </label>
+            <label>
+                {{ form.password.label }}
+                {{ form.password }}
+            </label>
+            <button class="button button--primary" type="submit">Sign in</button>
+        </form>
+        <div class="cta-row">
+            <a class="button button--ghost" href="{% url 'register' %}">Create account</a>
+            <a class="button button--ghost" href="{% url 'orders:guest-lookup' %}">Guest order lookup</a>
+        </div>
+    </div>
+</section>
+{% endblock %}

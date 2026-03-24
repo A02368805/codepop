@@ -1,14 +1,16 @@
 # Ignore Python cache and compiled files
 **/__pycache__/
 *.pyc
+.DS_Store
 
 codepop_virtual_enviroment
+.venv
+.env
+codepop_backend/db.sqlite3
+codepop_backend/dev.sqlite3
+codepop_backend/staticfiles
+codepop_backend/media
+codepop_backend/celerybeat-schedule*
 
 .idea
 node_modules
-.DS_Store
-
-# Ignore old React Native frontend
-codepop/
-
-.venv/

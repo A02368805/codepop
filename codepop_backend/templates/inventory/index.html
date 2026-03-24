@@ -1,0 +1,55 @@
+{% extends "base/base.html" %}
+
+{% block title %}Inventory | FloatStack{% endblock %}
+
+{% block content %}
+<section class="panel">
+    <div class="section-heading">
+        <div>
+            <p class="eyebrow">Inventory Workspace</p>
+            <h1>Grouped inventory with per-store stock detail</h1>
+        </div>
+        <form method="get" class="filter-bar" hx-get="{% url 'inventory:index' %}" hx-target="#inventory-balances" hx-push-url="true">
+            <select name="region">
+                <option value="">All regions</option>
+                {% for region in region_options %}
+                    <option value="{{ region.id }}" {% if selected_region and selected_region.id == region.id %}selected{% endif %}>{{ region.name }}</option>
+                {% endfor %}
+            </select>
+            <select name="store">
+                <option value="">All stores</option>
+                {% for store in store_options %}
+                    <option value="{{ store.id }}" {% if selected_store and selected_store.id == store.id %}selected{% endif %}>{{ store.name }}</option>
+                {% endfor %}
+            </select>
+            <input type="search" name="search" value="{{ search }}" placeholder="Search item name">
+            <button class="button button--ghost" type="submit">Filter</button>
+        </form>
+    </div>
+    <p class="lede-small">Inventory is grouped by item first so leadership can quickly spot weak stores without scanning a wall of repeated rows.</p>
+    <div id="inventory-balances">
+        {% include "inventory/partials/balance_table.html" %}
+    </div>
+</section>
+
+<section class="panel">
+    <div class="section-heading">
+        <div>
+            <p class="eyebrow">Low-Stock Queue</p>
+            <h2>Open alerts in your current store scope</h2>
+        </div>
+    </div>
+    <div class="surface-list">
+        {% for alert in low_stock_alerts %}
+            <article class="list-card">
+                <div class="list-card__main">
+                    <h3>{{ alert.inventory_item.name }}</h3>
+                    <p class="muted">{{ alert.store.name }} · {{ alert.get_severity_display }}</p>
+                </div>
+            </article>
+        {% empty %}
+            <div class="empty-state"><p>No open alerts.</p></div>
+        {% endfor %}
+    </div>
+</section>
+{% endblock %}

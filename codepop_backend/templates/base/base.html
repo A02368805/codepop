@@ -1,0 +1,56 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>{% block title %}FloatStack{% endblock %}</title>
+    <meta name="description" content="FloatStack is a polished soda ordering and operations platform for customers and regional teams.">
+    <link rel="icon" type="image/png" href="{% static 'images/floatstack-favicon.png' %}">
+    <link rel="stylesheet" href="{% static 'css/app.css' %}">
+    <script src="https://unpkg.com/htmx.org@1.9.12" defer></script>
+    <script src="{% static 'js/app.js' %}" defer></script>
+</head>
+<body>
+    <div class="page-shell">
+        <header class="topbar">
+            <a class="brandmark" href="{% url 'home' %}">
+                <img class="brandmark__logo" src="{% static 'images/floatstack-logo.png' %}" alt="FloatStack">
+                <span class="brandmark__wordmark">
+                    <span class="brandmark__text">FloatStack</span>
+                    <span class="brandmark__subtext">Ordering + Operations</span>
+                </span>
+            </a>
+            <nav class="topnav" aria-label="Primary">
+                {% for item in navigation_items %}
+                    {% if item.method == "post" %}
+                        <form action="{{ item.url }}" method="post" class="inline-form">
+                            {% csrf_token %}
+                            <button type="submit" class="nav-button">{{ item.label }}</button>
+                        </form>
+                    {% else %}
+                        <a href="{{ item.url }}">{{ item.label }}</a>
+                    {% endif %}
+                {% endfor %}
+            </nav>
+        </header>
+
+        {% if messages %}
+            <section class="flash-stack" aria-label="Messages">
+                {% for message in messages %}
+                    <div class="flash flash--{{ message.tags|default:'info' }}">{{ message }}</div>
+                {% endfor %}
+            </section>
+        {% endif %}
+
+        <main class="content">
+            {% block content %}{% endblock %}
+        </main>
+
+        <footer class="footer">
+            <p>FloatStack keeps customer ordering and operational workflows in one responsive web product.</p>
+            <p class="muted">Session auth, scoped dashboards, and server-side business rules stay aligned across the demo.</p>
+        </footer>
+    </div>
+</body>
+</html>

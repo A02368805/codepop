@@ -1,0 +1,291 @@
+{% extends "base/base.html" %}
+
+{% block title %}Supply Hubs | FloatStack{% endblock %}
+
+{% block content %}
+<section class="panel">
+    <div class="section-heading">
+        <div>
+            <p class="eyebrow">Regional Logistics</p>
+            <h1>Order supplies, route stock, and keep hub operations moving</h1>
+            <p class="lede-small">This workspace is the source of truth for regional transfer requests, supplier ordering, approvals, and stock receipts.</p>
+        </div>
+    </div>
+    <form method="get" class="filter-bar" id="supply-filters">
+        <select name="region">
+            <option value="">All regions</option>
+            {% for region in region_options %}
+                <option value="{{ region.id }}" {% if selected_region and selected_region.id == region.id %}selected{% endif %}>{{ region.name }}</option>
+            {% endfor %}
+        </select>
+        <select name="store">
+            <option value="">All stores</option>
+            {% for store in store_options %}
+                <option value="{{ store.id }}" {% if selected_store and selected_store.id == store.id %}selected{% endif %}>{{ store.name }}</option>
+            {% endfor %}
+        </select>
+        <select name="window">
+            <option value="week" {% if window == "week" %}selected{% endif %}>Week</option>
+            <option value="month" {% if window == "month" %}selected{% endif %}>Month</option>
+            <option value="custom" {% if window == "custom" %}selected{% endif %}>Custom</option>
+        </select>
+        <input type="date" name="date_from" value="{{ date_from }}">
+        <input type="date" name="date_to" value="{{ date_to }}">
+        <button class="button button--ghost" type="submit">Filter</button>
+    </form>
+    <div class="metric-grid">
+        <article class="metric">
+            <p>Transfers In Scope</p>
+            <strong>{{ transfers|length }}</strong>
+        </article>
+        <article class="metric metric--info">
+            <p>Supplier Orders</p>
+            <strong>{{ supplier_orders|length }}</strong>
+        </article>
+        <article class="metric">
+            <p>Draft Schedules</p>
+            <strong>{{ schedule_rows|length }}</strong>
+        </article>
+        <article class="metric metric--warning">
+            <p>Usage In Window</p>
+            <strong>{{ usage_total|default:"0" }}</strong>
+        </article>
+    </div>
+</section>
+
+<section class="page-grid">
+    <div class="panel">
+        <div class="section-heading">
+            <div>
+                <p class="eyebrow">Create Transfer</p>
+                <h2>Move stock between stores and hubs</h2>
+            </div>
+        </div>
+        <form method="post" action="{% url 'supply_hubs:create-transfer' %}" class="form-grid">
+            {% csrf_token %}
+            {{ transfer_form.non_field_errors }}
+            <div class="form-grid form-grid--two">
+                <div>
+                    <label for="{{ transfer_form.destination_store.id_for_label }}">Destination store</label>
+                    {{ transfer_form.destination_store }}
+                    {{ transfer_form.destination_store.errors }}
+                </div>
+                <div>
+                    <label for="{{ transfer_form.inventory_item.id_for_label }}">Inventory item</label>
+                    {{ transfer_form.inventory_item }}
+                    {{ transfer_form.inventory_item.errors }}
+                </div>
+                <div>
+                    <label for="{{ transfer_form.quantity_requested.id_for_label }}">Requested quantity</label>
+                    {{ transfer_form.quantity_requested }}
+                    {{ transfer_form.quantity_requested.errors }}
+                </div>
+                <div>
+                    <label for="{{ transfer_form.source_kind.id_for_label }}">Source strategy</label>
+                    {{ transfer_form.source_kind }}
+                    {{ transfer_form.source_kind.errors }}
+                </div>
+                <div>
+                    <label for="{{ transfer_form.source_store.id_for_label }}">Specific source store</label>
+                    {{ transfer_form.source_store }}
+                    {{ transfer_form.source_store.errors }}
+                </div>
+                <div>
+                    <label for="{{ transfer_form.source_hub.id_for_label }}">Specific source hub</label>
+                    {{ transfer_form.source_hub }}
+                    {{ transfer_form.source_hub.errors }}
+                </div>
+            </div>
+            <div>
+                <label for="{{ transfer_form.notes.id_for_label }}">Routing notes</label>
+                {{ transfer_form.notes }}
+                {{ transfer_form.notes.errors }}
+            </div>
+            <div class="callout">
+                Smart source automatically prefers same-region stores, then the regional hub, then any eligible hub within 1000 miles. If no internal source can cover the request, use the supplier order panel instead.
+            </div>
+            <div class="action-row">
+                <button class="button button--primary" type="submit">Request transfer</button>
+            </div>
+        </form>
+    </div>
+
+    <div class="panel">
+        <div class="section-heading">
+            <div>
+                <p class="eyebrow">Create Supplier Order</p>
+                <h2>Place a bulk replenishment order</h2>
+            </div>
+        </div>
+        <form method="post" action="{% url 'supply_hubs:create-supplier-order' %}" class="form-grid">
+            {% csrf_token %}
+            {{ supplier_order_form.non_field_errors }}
+            <div class="form-grid form-grid--two">
+                <div>
+                    <label for="{{ supplier_order_form.store.id_for_label }}">Store</label>
+                    {{ supplier_order_form.store }}
+                    {{ supplier_order_form.store.errors }}
+                </div>
+                <div>
+                    <label for="{{ supplier_order_form.supplier.id_for_label }}">Supplier</label>
+                    {{ supplier_order_form.supplier }}
+                    {{ supplier_order_form.supplier.errors }}
+                </div>
+                <div>
+                    <label for="{{ supplier_order_form.inventory_item.id_for_label }}">Inventory item</label>
+                    {{ supplier_order_form.inventory_item }}
+                    {{ supplier_order_form.inventory_item.errors }}
+                </div>
+                <div>
+                    <label for="{{ supplier_order_form.quantity_requested.id_for_label }}">Bulk quantity</label>
+                    {{ supplier_order_form.quantity_requested }}
+                    {{ supplier_order_form.quantity_requested.errors }}
+                </div>
+                <div>
+                    <label for="{{ supplier_order_form.expected_delivery_date.id_for_label }}">Expected delivery</label>
+                    {{ supplier_order_form.expected_delivery_date }}
+                    {{ supplier_order_form.expected_delivery_date.errors }}
+                </div>
+                <div>
+                    <label for="{{ supplier_order_form.unit_cost.id_for_label }}">Unit cost</label>
+                    {{ supplier_order_form.unit_cost }}
+                    {{ supplier_order_form.unit_cost.errors }}
+                </div>
+            </div>
+            <div>
+                <label for="{{ supplier_order_form.notes.id_for_label }}">Supplier notes</label>
+                {{ supplier_order_form.notes }}
+                {{ supplier_order_form.notes.errors }}
+            </div>
+            <div class="callout">
+                Supplier orders round up to practical operational pack sizes so the workflow stays realistic for bulk purchasing instead of tiny recurring top-offs.
+            </div>
+            <div class="action-row">
+                <button class="button button--primary" type="submit">Place supplier order</button>
+            </div>
+        </form>
+    </div>
+</section>
+
+<section class="page-grid page-grid--sidebar">
+    <div class="panel">
+        <div class="section-heading">
+            <div>
+                <p class="eyebrow">Transfer Queue</p>
+                <h2>Approve and move transfer requests</h2>
+            </div>
+        </div>
+        <div id="transfer-table">
+            {% include "supply_hubs/partials/transfer_table.html" %}
+        </div>
+    </div>
+    <div class="panel">
+        <div class="section-heading">
+            <div>
+                <p class="eyebrow">Supplier Orders</p>
+                <h2>Bulk replenishments waiting on receipt</h2>
+            </div>
+        </div>
+        <div id="supplier-order-table">
+            {% include "supply_hubs/partials/supplier_order_table.html" %}
+        </div>
+    </div>
+</section>
+
+<section class="page-grid page-grid--sidebar">
+    <div class="panel">
+        <div class="section-heading">
+            <div>
+                <p class="eyebrow">Supply Drafts</p>
+                <h2>Human approval required</h2>
+            </div>
+        </div>
+        <div id="schedule-list">
+            {% include "supply_hubs/partials/schedule_list.html" %}
+        </div>
+    </div>
+    <div class="panel">
+        <div class="section-heading">
+            <div>
+                <p class="eyebrow">Supplier Fallbacks</p>
+                <h2>Shortages that need vendor ordering</h2>
+            </div>
+        </div>
+        <div class="surface-list">
+            {% for recommendation in supplier_fallbacks %}
+                <article class="list-card">
+                    <div class="list-card__main">
+                        <h3>{{ recommendation.destination_store.name }} · {{ recommendation.inventory_item.name }}</h3>
+                        <p class="muted">{{ recommendation.explanation }}</p>
+                    </div>
+                    <div class="list-card__actions">
+                        <span class="pill pill--soft">{{ recommendation.quantity }}</span>
+                    </div>
+                </article>
+            {% empty %}
+                <div class="empty-state">
+                    <p>No supplier-only fallbacks are waiting right now.</p>
+                </div>
+            {% endfor %}
+        </div>
+    </div>
+</section>
+
+<section class="page-grid page-grid--sidebar">
+    <div class="panel">
+        <div class="section-heading">
+            <div>
+                <p class="eyebrow">Hub Inventory</p>
+                <h2>Balances by regional hub</h2>
+            </div>
+        </div>
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>Hub</th>
+                    <th>Item</th>
+                    <th>On Hand</th>
+                    <th>Reserved</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for balance in hub_balances|slice:":24" %}
+                    <tr>
+                        <td>{{ balance.hub.name }}</td>
+                        <td>{{ balance.inventory_item.name }}</td>
+                        <td>{{ balance.on_hand_quantity }}</td>
+                        <td>{{ balance.reserved_quantity }}</td>
+                    </tr>
+                {% empty %}
+                    <tr>
+                        <td colspan="4">No hub balances in scope.</td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    <div class="panel">
+        <div class="section-heading">
+            <div>
+                <p class="eyebrow">Local Suppliers</p>
+                <h2>Regional fallback partners</h2>
+            </div>
+        </div>
+        <ul class="mini-list">
+            {% for supplier in suppliers %}
+                <li>{{ supplier.name }} · {{ supplier.contact_name }} · {{ supplier.email }}</li>
+            {% empty %}
+                <li>No local suppliers in scope.</li>
+            {% endfor %}
+        </ul>
+        <p class="eyebrow">Visible Hubs</p>
+        <ul class="mini-list">
+            {% for hub in hubs %}
+                <li>{{ hub.name }}</li>
+            {% empty %}
+                <li>No hubs in scope.</li>
+            {% endfor %}
+        </ul>
+    </div>
+</section>
+{% endblock %}

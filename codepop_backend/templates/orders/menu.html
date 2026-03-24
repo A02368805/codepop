@@ -1,0 +1,60 @@
+{% extends "base/base.html" %}
+
+{% block title %}{{ store.name }} Menu | FloatStack{% endblock %}
+
+{% block content %}
+<section class="hero hero--dashboard">
+    <div>
+        <p class="eyebrow">Drink Menu</p>
+        <h1>{{ store.name }}</h1>
+        <p class="lede">{{ store.full_address }}. Build a drink, keep the cart tied to this store, and head to pickup when the order is ready.</p>
+        <div class="cta-row">
+            <a class="button button--primary" href="{% url 'orders:cart' %}">View cart{% if cart_item_count %} ({{ cart_item_count }}){% endif %}</a>
+            <a class="button button--ghost" href="{% url 'stores:index' %}">Choose another store</a>
+            {% if request.user.is_authenticated and request.user.role == "account_user" %}
+                <a class="button button--ghost" href="{% url 'orders:favorites' %}">Favorites</a>
+                <a class="button button--ghost" href="{% url 'account-preferences' %}">Taste Profile</a>
+            {% endif %}
+        </div>
+    </div>
+    <div class="hero-card">
+        <p class="eyebrow">Suggested For You</p>
+        <ul class="mini-list">
+            {% for recommendation in recommendations %}
+                <li><strong>{{ recommendation.name }}</strong>: {{ recommendation.explanation }}</li>
+            {% empty %}
+                <li>Open any signature drink to let FloatStack start helping with the build.</li>
+            {% endfor %}
+        </ul>
+    </div>
+</section>
+
+<section class="panel">
+    <div class="section-heading">
+        <div>
+            <p class="eyebrow">Signature Drinks</p>
+            <h2>Start with a signature, then customize the details.</h2>
+        </div>
+        <p class="lede-small">Menu prices stay customer-friendly, and the final order snapshot stays immutable after checkout.</p>
+    </div>
+    <div class="card-grid">
+        {% for item in menu_items %}
+            <article class="menu-card">
+                <div class="badge-row">
+                    {% for tag in item.tags %}
+                        <span class="pill pill--soft">{{ tag }}</span>
+                    {% endfor %}
+                </div>
+                <h3>{{ item.name }}</h3>
+                <p>{{ item.description }}</p>
+                <dl class="price-list">
+                    <div><dt>Small</dt><dd>${{ item.base_prices.small }}</dd></div>
+                    <div><dt>Medium</dt><dd>${{ item.base_prices.medium }}</dd></div>
+                    <div><dt>Large</dt><dd>${{ item.base_prices.large }}</dd></div>
+                </dl>
+                <a class="button button--primary" href="{% url 'orders:customize' store.store_code item.slug %}">Customize drink</a>
+            </article>
+        {% endfor %}
+    </div>
+</section>
+{% endblock %}

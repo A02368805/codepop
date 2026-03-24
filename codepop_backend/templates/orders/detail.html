@@ -1,0 +1,115 @@
+{% extends "base/base.html" %}
+
+{% block title %}{{ order.public_order_code }} | FloatStack{% endblock %}
+
+{% block content %}
+<section class="hero hero--dashboard">
+    <div>
+        <p class="eyebrow">Order Status</p>
+        <h1>{{ order.public_order_code }}</h1>
+        <p class="lede">Status updates are controlled on the server. Customers can cancel before preparation begins, and staff can move the queue from their scoped workspace.</p>
+    </div>
+    <div class="hero-card">
+        <p class="eyebrow">Current State</p>
+        <h2>{{ order.get_status_display }}</h2>
+        <p class="muted">{{ order.store.name }}</p>
+        <p class="muted">Placed {{ order.created_at|date:"M j, g:i A" }}</p>
+        {% if order.status == "ready" and order.locker_number %}
+            <div class="callout">
+                <strong>Pickup locker:</strong> {{ order.locker_number }}<br>
+                <strong>Locker code:</strong> {{ order.locker_code }}
+            </div>
+        {% endif %}
+    </div>
+</section>
+
+<section class="page-grid page-grid--sidebar">
+    <div class="panel">
+        <div class="section-heading">
+            <div>
+                <p class="eyebrow">Items</p>
+                <h2>Immutable order snapshot</h2>
+            </div>
+        </div>
+        <div class="surface-list">
+            {% for item in order.items.all %}
+                <article class="list-card">
+                    <div class="list-card__main">
+                        <h3>{{ item.quantity }} × {{ item.display_name_snapshot }}</h3>
+                        <p class="muted">{{ item.size_snapshot|title }}</p>
+                        <p>{{ item.customizations_json.soda|default:"" }} {{ item.customizations_json.syrups|join:", " }} {{ item.customizations_json.add_ins|join:", " }}</p>
+                    </div>
+                    <div class="list-card__actions">
+                        <strong>${{ item.line_total }}</strong>
+                    </div>
+                </article>
+            {% endfor %}
+        </div>
+    </div>
+    <div class="panel">
+        <p class="eyebrow">Order Meta</p>
+        <dl class="summary-list">
+            <div><dt>Subtotal</dt><dd>${{ order.subtotal_amount }}</dd></div>
+            <div><dt>Tax</dt><dd>${{ order.tax_amount }}</dd></div>
+            <div><dt>Total</dt><dd>${{ order.total_amount }}</dd></div>
+            <div><dt>Refund Status</dt><dd>{{ order.get_refund_status_display }}</dd></div>
+            {% if order.pickup_time_requested %}
+                <div><dt>Requested Pickup</dt><dd>{{ order.pickup_time_requested|date:"M j, g:i A" }}</dd></div>
+            {% endif %}
+        </dl>
+        {% if can_cancel %}
+            <form method="post" action="{% url 'orders:cancel' order.public_order_code %}">
+                {% csrf_token %}
+                <button class="button button--primary" type="submit">Cancel order</button>
+            </form>
+        {% else %}
+            <p class="muted">{{ cancel_reason }}</p>
+        {% endif %}
+        {% if can_manage %}
+            <div class="action-row">
+                {% if order.status == "queued" %}
+                    <form method="post" action="{% url 'orders:mark-preparing' order.id %}">
+                        {% csrf_token %}
+                        <button class="button button--ghost" type="submit">Mark preparing</button>
+                    </form>
+                {% elif order.status == "preparing" %}
+                    <form method="post" action="{% url 'orders:mark-ready' order.id %}">
+                        {% csrf_token %}
+                        <button class="button button--ghost" type="submit">Mark ready</button>
+                    </form>
+                {% elif order.status == "ready" %}
+                    <form method="post" action="{% url 'orders:mark-picked-up' order.id %}">
+                        {% csrf_token %}
+                        <button class="button button--ghost" type="submit">Mark picked up</button>
+                    </form>
+                {% endif %}
+            </div>
+        {% endif %}
+        {% if order.order_type == "guest" and order.guest_contact %}
+            <p class="muted">Guest lookup code: <strong>{{ order.guest_contact.lookup_code }}</strong></p>
+        {% endif %}
+    </div>
+</section>
+
+<section class="panel">
+    <div class="section-heading">
+        <div>
+            <p class="eyebrow">Pickup Location</p>
+            <h2>{{ order.store.name }}</h2>
+        </div>
+        <div class="action-row">
+            <a class="button button--ghost" href="{{ order.store.google_maps_url }}" target="_blank" rel="noreferrer">Open in Google Maps</a>
+            <a class="button button--ghost" href="{{ order.store.apple_maps_url }}" target="_blank" rel="noreferrer">Open in Apple Maps</a>
+        </div>
+    </div>
+    {% if order.store.mapbox_static_map_url %}
+        <a class="map-card" href="{{ order.store.google_maps_url }}" target="_blank" rel="noreferrer">
+            <img src="{{ order.store.mapbox_static_map_url }}" alt="Map for {{ order.store.name }}">
+        </a>
+    {% else %}
+        <div class="map-card map-card--fallback">
+            <p>{{ order.store.full_address }}</p>
+        </div>
+    {% endif %}
+</section>
+{% endblock %}

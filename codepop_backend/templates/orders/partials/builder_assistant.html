@@ -1,0 +1,45 @@
+<div class="assistant-card">
+    <div class="section-heading section-heading--tight">
+        <div>
+            <p class="eyebrow">{{ assistant.title }}</p>
+            <h2>{{ assistant.ai_button_label }}</h2>
+        </div>
+        {% if assistant.ai_applied %}
+            <span class="pill">Applied</span>
+        {% elif assistant.uses_preferences %}
+            <span class="pill pill--soft">Using saved preferences</span>
+        {% endif %}
+    </div>
+
+    <p>{{ assistant.summary }}</p>
+
+    <button class="button button--primary button--wide" type="button" data-builder-ai-trigger>
+        {{ assistant.ai_button_label }}
+    </button>
+
+    <div class="callout">
+        <strong>Current build:</strong>
+        {% if assistant.selected_snapshot %}
+            {{ assistant.selected_snapshot|join:", " }}
+        {% else %}
+            FloatStack can start from your current selections or build one from scratch.
+        {% endif %}
+    </div>
+
+    <div class="assistant-notes">
+        <h3>Why this works</h3>
+        <ul class="mini-list">
+            {% for tip in assistant.tips %}
+                <li>{{ tip }}</li>
+            {% empty %}
+                <li>Start with one syrup and one finishing touch to keep the cup balanced.</li>
+            {% endfor %}
+        </ul>
+    </div>
+
+    {% if assistant.uses_preferences %}
+        <p class="muted">This builder can use your stored soda, syrup, add-in, and dietary preferences directly while still leaving every choice editable.</p>
+    {% else %}
+        <p class="muted">AI fill still works without a saved profile, but adding preferences makes the suggestions much more personal.</p>
+    {% endif %}
+</div>
