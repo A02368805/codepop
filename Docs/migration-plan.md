@@ -12,7 +12,7 @@ The migration follows the rewritten documents, not the old starter assumptions:
 
 - The repository and design-document set
 - Django as the backend foundation
-- useful legacy CSV data copied into `codepop_backend/seed/csv/legacy_catalog/`
+- useful legacy CSV data copied into `server/seed/csv/legacy_catalog/`
 
 ## What Was Deleted From The Active Architecture
 
@@ -35,7 +35,7 @@ Archived starter code lives under `legacy/` instead of remaining active.
 
 - Django + HTMX is the primary UI architecture
 - session authentication is the default auth mechanism
-- the backend is organized as a modular monolith under `codepop_backend/apps/`
+- the backend is organized as a modular monolith under `server/apps/`
 - PostgreSQL is the primary database target, with SQLite fallback for fast local development
 - Celery + Redis power imports, outbox sync processing, retry scheduling, and recommendation hooks
 - role-aware navigation is generated on the server and backed by server-side RBAC and scoping checks

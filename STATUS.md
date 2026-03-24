@@ -46,7 +46,7 @@ python3.12 -m venv .venv
 source .venv/bin/activate
 pip install -r requirements.txt
 cp .env.example .env
-cd codepop_backend
+cd server
 ../.venv/bin/python manage.py migrate
 ../.venv/bin/python manage.py bootstrap_demo_data --reset
 ../.venv/bin/python manage.py runserver 127.0.0.1:8000
@@ -56,7 +56,7 @@ cd codepop_backend
 
 ```bash
 redis-server
-cd codepop_backend
+cd server
 CELERY_TASK_ALWAYS_EAGER=False ../.venv/bin/celery -A config worker -l info
 CELERY_TASK_ALWAYS_EAGER=False ../.venv/bin/celery -A config beat -l info
 ```

@@ -10,7 +10,7 @@ This folder holds scaffold-era seed assets for the new Django web application.
 
 ## Seed Command
 
-Run the demo seeder from `codepop_backend/`:
+Run the demo seeder from `server/`:
 
 ```bash
 python manage.py bootstrap_demo_data --reset

@@ -12,7 +12,7 @@ The old Expo/mobile starter is archived under `legacy/` and is no longer the pri
 
 ## Architecture Summary
 
-- Django 5 modular monolith under `codepop_backend/apps/`
+- Django 5 modular monolith under `server/apps/`
 - HTMX-driven server-rendered UI, not a SPA
 - Session authentication with a custom user model
 - Server-enforced role and scope boundaries for `account_user`, `manager`, `admin`, `logistics_manager`, `repair_staff`, and `super_admin`
@@ -24,7 +24,7 @@ The old Expo/mobile starter is archived under `legacy/` and is no longer the pri
 ## Repo Layout
 
 ```text
-codepop_backend/
+server/
 ├── apps/
 │   ├── analytics/
 │   ├── imports/
@@ -45,9 +45,7 @@ codepop_backend/
 ├── static/
 ├── templates/
 └── tests/
-legacy/
 Docs/
-docs/
 ```
 
 ## Quick Start With Docker
@@ -85,7 +83,7 @@ python3.12 -m venv .venv
 source .venv/bin/activate
 pip install -r requirements.txt
 cp .env.example .env
-cd codepop_backend
+cd server
 ../.venv/bin/python manage.py migrate
 ../.venv/bin/python manage.py bootstrap_demo_data --reset
 ../.venv/bin/python manage.py runserver 127.0.0.1:8000
@@ -99,7 +97,7 @@ When you want real async behavior locally, set `CELERY_TASK_ALWAYS_EAGER=False` 
 
 ```bash
 redis-server
-cd codepop_backend
+cd server
 ../.venv/bin/celery -A config worker -l info
 ../.venv/bin/celery -A config beat -l info
 ```
@@ -230,35 +228,35 @@ Seeded guest lookup example:
 Run migrations:
 
 ```bash
-cd codepop_backend
+cd server
 ../.venv/bin/python manage.py migrate
 ```
 
 Seed demo data:
 
 ```bash
-cd codepop_backend
+cd server
 ../.venv/bin/python manage.py bootstrap_demo_data --reset
 ```
 
 Run tests:
 
 ```bash
-cd codepop_backend
+cd server
 ../.venv/bin/python manage.py test
 ```
 
 Run Django checks:
 
 ```bash
-cd codepop_backend
+cd server
 ../.venv/bin/python manage.py check
 ```
 
 Run the dev server:
 
 ```bash
-cd codepop_backend
+cd server
 ../.venv/bin/python manage.py runserver 127.0.0.1:8000
 ```
 
