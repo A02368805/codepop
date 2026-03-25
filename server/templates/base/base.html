@@ -29,7 +29,12 @@
                             <button type="submit" class="nav-button">{{ item.label }}</button>
                         </form>
                     {% else %}
-                        <a href="{{ item.url }}">{{ item.label }}</a>
+                        <a href="{{ item.url }}">
+                            <span>{{ item.label }}</span>
+                            {% if item.badge_id %}
+                                <span id="{{ item.badge_id|default:'nav-badge' }}" class="nav-badge">{% if item.badge %}{{ item.badge }}{% endif %}</span>
+                            {% endif %}
+                        </a>
                     {% endif %}
                 {% endfor %}
             </nav>

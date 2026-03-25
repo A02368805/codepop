@@ -10,6 +10,7 @@
 
 - Imports queue through Celery tasks.
 - Outbox sync processing runs through worker tasks plus a beat schedule for retries.
+- The sync workspace now also shows simulated regional/store receiver projections and conflict logs.
 - Notification creation is immediate in-app, with a background dispatch hook for external channels.
 - Recommendation refreshes run after preference changes and queued account orders.
 
@@ -33,6 +34,7 @@
 - Logistics transfers/imports/sync through `logistics.c@floatstack.local`
 - Repair queue and maintenance imports through `repair.north@floatstack.local`
 - System-wide oversight through `superadmin@floatstack.local`
+- Seeded sync projections plus an ignored stale-event conflict for the sync dashboard
 
 ## Honest Gaps
 

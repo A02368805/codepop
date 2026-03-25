@@ -3,15 +3,7 @@
 {% block title %}Notifications | FloatStack{% endblock %}
 
 {% block content %}
-<section class="panel">
-    <div class="section-heading">
-        <div>
-            <p class="eyebrow">Notifications</p>
-            <h1>Unread and recent updates</h1>
-        </div>
-    </div>
-    <div id="notification-list">
-        {% include "notifications/partials/list.html" %}
-    </div>
-</section>
+<div id="notification-workspace">
+    {% include "notifications/partials/workspace.html" %}
+</div>
 {% endblock %}

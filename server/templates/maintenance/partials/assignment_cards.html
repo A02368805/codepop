@@ -1,0 +1,97 @@
+{% if assignments %}
+    <div class="surface-list">
+        {% for assignment in assignments %}
+            <article class="list-card" id="assignment-{{ assignment.id }}">
+                <div class="list-card__main">
+                    <div class="inline-cluster">
+                        <span class="pill">{{ assignment.get_status_display }}</span>
+                        <span class="pill pill--soft">{{ assignment.machine.get_current_status_display }}</span>
+                        {% if assignment.follow_up_required %}
+                            <span class="pill pill--warning">Follow-up required</span>
+                        {% endif %}
+                    </div>
+                    <h3>{{ assignment.machine.display_name }}</h3>
+                    <p class="muted">{{ assignment.store.name }} · {{ assignment.assigned_to.get_full_name|default:assignment.assigned_to.email }}</p>
+                    <p class="muted">Route batch: <code>{{ assignment.route_batch_key }}</code>{% if assignment.scheduled_for %} · {{ assignment.scheduled_for|date:"M j, g:i a" }}{% endif %}</p>
+                    {% if assignment.blocker_summary %}
+                        <p><strong>Current blocker:</strong> {{ assignment.blocker_summary }}</p>
+                    {% endif %}
+                    {% if assignment.notes %}
+                        <p>{{ assignment.notes }}</p>
+                    {% endif %}
+                    {% if assignment.recent_activity %}
+                        <ul class="mini-list">
+                            {% for event in assignment.recent_activity %}
+                                <li>
+                                    {{ event.label }}
+                                    {% if event.note %} · {{ event.note }}{% endif %}
+                                    {% if event.actor %} · {{ event.actor.email }}{% endif %}
+                                </li>
+                            {% endfor %}
+                        </ul>
+                    {% endif %}
+                </div>
+                <div class="list-card__actions">
+                    {% if request.user.role == "repair_staff" and request.user.id == assignment.assigned_to_id or request.user.role == "super_admin" %}
+                        <form
+                            method="post"
+                            hx-post="{% url 'maintenance:assignment-action' assignment.id %}"
+                            hx-target="#maintenance-workspace"
+                            hx-swap="innerHTML"
+                            class="panel-stack"
+                        >
+                            {% csrf_token %}
+                            <input type="hidden" name="status" value="{{ status_filter }}">
+                            <textarea name="note" rows="4" placeholder="Add notes, blockers, or completion detail."></textarea>
+                            <label class="field-inline">
+                                <input type="checkbox" name="follow_up_required">
+                                <span>Follow-up still required</span>
+                            </label>
+                            <div class="action-row">
+                                {% if assignment.status == "scheduled" %}
+                                    <button class="button button--ghost" type="submit" name="action" value="acknowledge">Acknowledge</button>
+                                    <button class="button button--primary" type="submit" name="action" value="start">Start repair</button>
+                                {% elif assignment.status == "acknowledged" %}
+                                    <button class="button button--primary" type="submit" name="action" value="start">Start repair</button>
+                                    <button class="button button--ghost" type="submit" name="action" value="block">Block</button>
+                                {% elif assignment.status == "in_progress" %}
+                                    <button class="button button--ghost" type="submit" name="action" value="update">Save update</button>
+                                    <button class="button button--ghost" type="submit" name="action" value="block">Block</button>
+                                    <button class="button button--primary" type="submit" name="action" value="complete">Complete</button>
+                                {% elif assignment.status == "blocked" %}
+                                    <button class="button button--ghost" type="submit" name="action" value="update">Save update</button>
+                                    <button class="button button--ghost" type="submit" name="action" value="acknowledge">Re-acknowledge</button>
+                                    <button class="button button--primary" type="submit" name="action" value="start">Resume</button>
+                                    <button class="button button--primary" type="submit" name="action" value="complete">Complete</button>
+                                {% elif assignment.status == "completed" %}
+                                    <button class="button button--primary" type="submit" name="action" value="close">Close assignment</button>
+                                {% endif %}
+                            </div>
+                        </form>
+                    {% elif request.user.role == "manager" or request.user.role == "admin" %}
+                        {% if assignment.status == "completed" %}
+                            <form
+                                method="post"
+                                hx-post="{% url 'maintenance:assignment-action' assignment.id %}"
+                                hx-target="#maintenance-workspace"
+                                hx-swap="innerHTML"
+                                class="panel-stack"
+                            >
+                                {% csrf_token %}
+                                <input type="hidden" name="status" value="{{ status_filter }}">
+                                <textarea name="note" rows="3" placeholder="Optional closure note."></textarea>
+                                <button class="button button--primary" type="submit" name="action" value="close">Close assignment</button>
+                            </form>
+                        {% else %}
+                            <p class="muted">Managers and admins keep oversight here, while the assigned repair technician owns active execution updates.</p>
+                        {% endif %}
+                    {% else %}
+                        <p class="muted">This assignment is visible for oversight only.</p>
+                    {% endif %}
+                </div>
+            </article>
+        {% endfor %}
+    </div>
+{% else %}
+    <div class="empty-state"><p>No assignments in this scope.</p></div>
+{% endif %}

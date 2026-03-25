@@ -21,15 +21,13 @@ The migration follows the rewritten documents, not the old starter assumptions:
 - token-first/mobile-first starter assumptions
 - unused placeholder dashboard base templates from the early scaffold
 
-Archived starter code lives under `legacy/` instead of remaining active.
+The archived starter application code is not present in this workspace. What remains are the rewritten docs, older design documents, and copied legacy CSV assets under `server/seed/csv/legacy_catalog/`.
 
 ## What Was Moved
 
-- `codepop/` -> `legacy/expo_starter/codepop/`
-- root `package.json` and `package-lock.json` -> `legacy/expo_starter/`
-- `codepop_backend/backend/` -> `legacy/django_starter_backend/backend/`
-- `codepop_backend/codepop_backend/` -> `legacy/django_starter_backend/codepop_backend/`
-- old cleanup scripts -> `legacy/django_starter_backend/`
+- The historical starter code was removed from the active repo tree during the Django cutover.
+- The useful parts that were intentionally preserved are the legacy catalog CSVs now stored in `server/seed/csv/legacy_catalog/`.
+- Old design documents remain in `Docs/OLD*.md` for reference only and are not the source of truth.
 
 ## Active Architecture Decisions
 
@@ -52,7 +50,7 @@ Archived starter code lives under `legacy/` instead of remaining active.
 
 ## Starter Reuse Rationale
 
-- The old Expo frontend did not fit the rewritten multi-dashboard web-first product, so it was archived.
+- The old Expo frontend did not fit the rewritten multi-dashboard web-first product, so it was retired from the active repo.
 - The old backend internals were too tightly coupled to the starter’s token/API assumptions, so a clean modular monolith was safer.
 - Legacy CSVs were still useful for seed references and import examples, so they were preserved in the new seed area.
 

@@ -16,6 +16,7 @@ from apps.inventory.selectors import (
     summarize_store_inventory_health,
 )
 from apps.maintenance.models import Machine, RepairAssignment
+from apps.maintenance.selectors import build_route_groups
 from apps.notifications.models import Notification
 from apps.orders.catalog import (
     ADD_IN_GROUPS,
@@ -41,12 +42,17 @@ from apps.stores.selectors import (
     stores_visible_to_user,
 )
 from apps.supply_hubs.models import HubInventoryBalance, SupplyHub, SupplyTransfer
-from apps.sync.models import AuditLog
+from apps.sync.models import (
+    AuditLog,
+    SyncConflictLog,
+    SyncOutboxEvent,
+    SyncProjectionState,
+)
 from django.contrib import messages
 from django.contrib.auth import login
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.contrib.auth.views import LoginView, LogoutView
-from django.db.models import Count, Sum
+from django.db.models import Count, Q, Sum
 from django.shortcuts import get_object_or_404, redirect
 from django.utils import timezone
 from django.views.generic import FormView, TemplateView, View
@@ -228,6 +234,9 @@ class ManagerDashboardView(BaseDashboardView):
             store__in=stores,
             status=RestockAlert.Status.OPEN,
         ).select_related("store", "inventory_item")[:8]
+        context["inventory_health_rows"] = summarize_store_inventory_health(
+            visible_stores=stores
+        )[:4]
         context["machine_summary"] = (
             Machine.objects.filter(store__in=stores)
             .values("current_status")
@@ -235,6 +244,10 @@ class ManagerDashboardView(BaseDashboardView):
         )
         context["gross_revenue"] = revenue_summary["gross"] or 0
         context["net_revenue"] = revenue_summary["net"] or 0
+        context["notifications"] = Notification.objects.filter(
+            user=self.request.user,
+            is_read=False,
+        ).order_by("-created_at")[:4]
         return context
 
 
@@ -245,6 +258,7 @@ class AdminDashboardView(BaseDashboardView):
         context = super().get_context_data(**kwargs)
         managed_store = stores_visible_to_user(self.request.user).first()
         scoped_users = _scoped_users_for_admin(self.request.user)
+        visible_stores = stores_visible_to_user(self.request.user)
         context["managed_store"] = managed_store
         context["scoped_users"] = scoped_users[:10]
         context["locked_count"] = scoped_users.filter(status=User.Status.LOCKED).count()
@@ -253,6 +267,30 @@ class AdminDashboardView(BaseDashboardView):
         ).count()
         context["pending_count"] = scoped_users.filter(
             status=User.Status.PENDING
+        ).count()
+        context["role_breakdown"] = [
+            {
+                "label": User.Role(row["role"]).label,
+                "count": row["count"],
+            }
+            for row in scoped_users.values("role")
+            .annotate(count=Count("id"))
+            .order_by("role")
+        ]
+        context["recent_audit_logs"] = AuditLog.objects.filter(
+            store__in=visible_stores
+        ).select_related("actor", "store", "region")[:8]
+        context["recent_notifications"] = Notification.objects.filter(
+            user=self.request.user,
+            is_read=False,
+        ).order_by("-created_at")[:4]
+        context["machine_issue_count"] = Machine.objects.filter(
+            store__in=visible_stores,
+            current_status__in=[
+                Machine.Status.WARNING,
+                Machine.Status.ERROR,
+                Machine.Status.OUT_OF_ORDER,
+            ],
         ).count()
         return context
 
@@ -395,12 +433,21 @@ class RepairDashboardView(BaseDashboardView):
                 Machine.Status.SCHEDULE_SERVICE,
             ],
         ).select_related("store", "machine_type")[:10]
-        context["assignments"] = RepairAssignment.objects.filter(
-            assigned_to=self.request.user
-        ).select_related("machine", "store")[:10]
-        context["recent_imports"] = ImportJob.objects.filter(
-            import_type=ImportJob.ImportType.REPAIR_STATUS
-        ).select_related("uploaded_by")[:8]
+        context["assignments"] = (
+            RepairAssignment.objects.filter(assigned_to=self.request.user)
+            .select_related("machine", "store")
+            .order_by("scheduled_for", "-priority_score")[:10]
+        )
+        context["route_groups"] = build_route_groups(context["assignments"])[:4]
+        context["recent_imports"] = (
+            ImportJob.objects.filter(import_type=ImportJob.ImportType.REPAIR_STATUS)
+            .select_related("uploaded_by")
+            .order_by("-created_at")[:8]
+        )
+        context["notifications"] = Notification.objects.filter(
+            user=self.request.user,
+            is_read=False,
+        ).order_by("-created_at")[:4]
         return context
 
 
@@ -421,6 +468,44 @@ class SuperAdminDashboardView(BaseDashboardView):
             "staff": User.objects.exclude(role=User.Role.ACCOUNT_USER).count(),
             "stores": stores_visible_to_user(self.request.user).count(),
         }
+        context["sync_summary"] = {
+            "pending": SyncOutboxEvent.objects.filter(
+                status=SyncOutboxEvent.Status.PENDING
+            ).count(),
+            "failed": SyncOutboxEvent.objects.filter(
+                status=SyncOutboxEvent.Status.FAILED
+            ).count(),
+            "conflicts": SyncConflictLog.objects.filter(
+                resolution_status=SyncConflictLog.ResolutionStatus.OPEN
+            ).count(),
+            "projections": SyncProjectionState.objects.count(),
+        }
+        context["pending_import_count"] = ImportJob.objects.filter(
+            status=ImportJob.Status.PENDING
+        ).count()
+        context["machine_issue_count"] = Machine.objects.filter(
+            current_status__in=[
+                Machine.Status.WARNING,
+                Machine.Status.ERROR,
+                Machine.Status.OUT_OF_ORDER,
+                Machine.Status.SCHEDULE_SERVICE,
+            ]
+        ).count()
+        context["region_operations"] = Region.objects.annotate(
+            transfer_count=Count("stores__inbound_transfers", distinct=True),
+            machine_issue_count=Count(
+                "stores__machines",
+                filter=Q(
+                    stores__machines__current_status__in=[
+                        Machine.Status.WARNING,
+                        Machine.Status.ERROR,
+                        Machine.Status.OUT_OF_ORDER,
+                        Machine.Status.SCHEDULE_SERVICE,
+                    ]
+                ),
+                distinct=True,
+            ),
+        ).order_by("code")
         return context
 
 

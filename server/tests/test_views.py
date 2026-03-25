@@ -4,12 +4,13 @@ from decimal import Decimal
 from apps.imports.models import ImportJob
 from apps.inventory.models import LocalSupplier, SupplierReplenishment
 from apps.inventory.services import get_store_balance, request_transfer
+from apps.maintenance.models import RepairAssignment
 from apps.notifications.models import Notification
 from apps.orders.cart import SESSION_CART_KEY
 from apps.orders.models import Order
 from apps.orders.pickup import pickup_time_choices
 from apps.orders.services import create_order, transition_order_status
-from apps.payments.models import PaymentTransaction
+from apps.payments.models import PaymentTransaction, RevenueLedgerEntry
 from apps.payments.services import record_payment_pending, record_payment_success
 from apps.supply_hubs.models import SupplyTransfer
 from apps.sync.models import AuditLog
@@ -24,6 +25,8 @@ from .helpers import (
     assign_region,
     assign_store,
     make_inventory_item,
+    make_machine,
+    make_machine_type,
     make_region,
     make_store,
     make_user,
@@ -457,6 +460,14 @@ class DashboardAndHtmxViewTests(TestCase):
             notes="Need more syrup",
             is_ai_draft=True,
         )
+        cls.machine_type = make_machine_type(code="MIXER_A")
+        cls.machine = make_machine(
+            store=cls.store_c1,
+            machine_type=cls.machine_type,
+        )
+        cls.machine.current_status = cls.machine.Status.WARNING
+        cls.machine.current_status_date = timezone.now().date()
+        cls.machine.save(update_fields=["current_status", "current_status_date"])
 
     def test_role_dashboards_render_expected_sections(self):
         dashboard_expectations = [
@@ -478,6 +489,31 @@ class DashboardAndHtmxViewTests(TestCase):
         response = self.client.get(reverse("admin-dashboard"))
         self.assertEqual(response.status_code, 403)
         self.assertIn("outside your current scope", response.content.decode())
+
+    def test_admin_dashboard_only_shows_scoped_audit_activity(self):
+        AuditLog.objects.create(
+            actor=self.admin,
+            action="admin.scoped.user_update",
+            entity_type="User",
+            entity_id="scoped-user",
+            store=self.store_c1,
+            region=self.region_c,
+        )
+        AuditLog.objects.create(
+            actor=self.super_admin,
+            action="admin.out_of_scope.user_update",
+            entity_type="User",
+            entity_id="other-user",
+            store=self.store_c2,
+            region=self.region_c,
+        )
+
+        self.client.force_login(self.admin)
+        response = self.client.get(reverse("admin-dashboard"))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "admin.scoped.user_update")
+        self.assertNotContains(response, "admin.out_of_scope.user_update")
 
     def test_inventory_adjust_htmx_updates_the_row(self):
         self.client.force_login(self.manager)
@@ -531,6 +567,31 @@ class DashboardAndHtmxViewTests(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertEqual(self.transfer.status, self.transfer.Status.APPROVED)
         self.assertContains(response, "Approved")
+
+    def test_analytics_workspace_stays_inside_logistics_region_scope(self):
+        RevenueLedgerEntry.objects.create(
+            store=self.store_c1,
+            entry_type=RevenueLedgerEntry.EntryType.SALE,
+            gross_amount=Decimal("12.00"),
+            net_amount=Decimal("12.00"),
+            notes="Scoped revenue",
+        )
+        RevenueLedgerEntry.objects.create(
+            store=self.store_g1,
+            entry_type=RevenueLedgerEntry.EntryType.SALE,
+            gross_amount=Decimal("88.00"),
+            net_amount=Decimal("88.00"),
+            notes="Out of scope revenue",
+        )
+
+        self.client.force_login(self.logistics)
+        response = self.client.get(reverse("analytics:index"))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, self.store_c1.name)
+        self.assertNotContains(response, self.store_g1.name)
+        self.assertContains(response, "Daily Revenue")
+        self.assertContains(response, "Order-Backed Financials")
 
     def test_logistics_can_create_transfer_request_from_workspace(self):
         self.client.force_login(self.logistics)
@@ -630,3 +691,28 @@ class DashboardAndHtmxViewTests(TestCase):
         )
         self.assertTrue(AuditLog.objects.filter(action="import.completed").exists())
         self.assertContains(response, "usage.csv")
+
+    def test_repair_staff_can_claim_and_progress_assignment_from_maintenance_workspace(
+        self,
+    ):
+        self.client.force_login(self.repair)
+
+        response = self.client.post(
+            reverse("maintenance:machine-assign", args=[self.machine.id]),
+            {"status": "warning"},
+            HTTP_HX_REQUEST="true",
+        )
+        assignment = RepairAssignment.objects.get(machine=self.machine)
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(assignment.assigned_to, self.repair)
+        self.assertContains(response, "Open assignment")
+
+        response = self.client.post(
+            reverse("maintenance:assignment-action", args=[assignment.id]),
+            {"action": "acknowledge", "note": "On my way.", "status": "warning"},
+            HTTP_HX_REQUEST="true",
+        )
+        assignment.refresh_from_db()
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(assignment.status, RepairAssignment.Status.ACKNOWLEDGED)
+        self.assertContains(response, "Acknowledged")

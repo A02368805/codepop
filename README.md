@@ -1,6 +1,6 @@
-# FloatStack
+# CodePop / FloatStack
 
-FloatStack is a Django-first, web-first implementation of the rewritten beverage-operations architecture. The active product uses server-rendered templates, HTMX partials, strict server-side RBAC, PostgreSQL-ready configuration, and background jobs for imports, notifications, sync processing, and recommendation refreshes.
+This repository contains the canonical Django workspace for the rewritten CodePop architecture. The seeded UI copy and demo accounts still use the `FloatStack` product name, but the active implementation path is the Django + HTMX application in `server/`.
 
 The rewritten design documents remain the source of truth:
 
@@ -8,7 +8,7 @@ The rewritten design documents remain the source of truth:
 - `Docs/CodePop_Low_Level_Design_Rewritten.md`
 - `Docs/RequirementsDoc_Rewritten.md`
 
-The old Expo/mobile starter is archived under `legacy/` and is no longer the primary architecture.
+This repo no longer ships an active `legacy/` application tree. Older migration notes still refer to archived starter code, but in this workspace only the rewritten docs, old design docs, and legacy CSV seed samples remain.
 
 ## Architecture Summary
 
@@ -19,7 +19,7 @@ The old Expo/mobile starter is archived under `legacy/` and is no longer the pri
 - PostgreSQL as the primary runtime target with SQLite fallback for quick local development
 - Celery + Redis for queued imports, outbox sync processing, notification dispatch hooks, and recommendation refreshes
 - Stripe-ready payment boundary with a robust `mock` demo mode
-- In-app notifications, analytics summaries, audit logs, and outbox sync visibility
+- In-app notifications, scoped dashboards, analytics summaries, audit logs, and observable outbox sync projections/conflicts
 
 ## Repo Layout
 
@@ -215,7 +215,7 @@ Seeded guest lookup example:
 2. Open Supply Hubs, Imports, Sync, and Analytics.
 3. Upload a supply usage CSV.
 4. Approve AI-generated supply schedule drafts.
-5. Review pending transfers and outbox visibility.
+5. Review pending transfers, sync projections, and conflict visibility.
 
 ### 5. Repair Workflow
 
@@ -228,7 +228,8 @@ Seeded guest lookup example:
 
 1. Sign in as `superadmin@floatstack.local`.
 2. Open the system-wide dashboard.
-3. Review analytics, scoped user oversight, audit visibility, sync health, and operations comparisons.
+3. Review analytics, scoped user oversight, sync health, and operations comparisons.
+4. Open the Sync workspace to inspect receiver projections and ignored/resolved conflicts.
 
 ## Commands
 
@@ -273,9 +274,9 @@ Implementation notes and migration details live in:
 
 - `Docs/migration-plan.md`
 - `Docs/demo-readiness.md`
+- `Docs/demo-runbook.md`
+- `Docs/acceptance-checklist.md`
 - `STATUS.md`
-
-Duplicate lowercase copies exist under `docs/` for compatibility with the original repo layout.
 
 ## Known Limitations
 
@@ -283,4 +284,5 @@ Duplicate lowercase copies exist under `docs/` for compatibility with the origin
 - Web push and FCM are exposed as hooks, not as a full subscription/device-management system.
 - Geolocation uses browser coordinates with server-side distance heuristics. Real map-provider features can be layered in later via `MAPBOX_PUBLIC_TOKEN`.
 - The sync pipeline is intentionally internal and observable, but it does not yet push to external downstream systems.
+- The sync workspace now simulates receiver projections and conflict logging, but it is still an internal demo of regional coordination rather than a real multi-node deployment.
 - Demo analytics are useful and seeded, but they are not a BI replacement.

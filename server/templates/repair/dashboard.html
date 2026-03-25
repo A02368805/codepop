@@ -21,21 +21,65 @@
 <section class="page-grid page-grid--sidebar">
     <div class="panel">
         <p class="eyebrow">Urgent Machines</p>
-        <ul class="mini-list">
+        <div class="surface-list">
             {% for machine in urgent_machines %}
-                <li>{{ machine.store.name }} · {{ machine.display_name }} · {{ machine.get_current_status_display }}</li>
+                <article class="list-card">
+                    <div class="list-card__main">
+                        <h3>{{ machine.store.name }}</h3>
+                        <p class="muted">{{ machine.display_name }}</p>
+                    </div>
+                    <div class="list-card__actions">
+                        <span class="pill {% if machine.current_status == 'out-of-order' %}pill--critical{% else %}pill--warning{% endif %}">{{ machine.get_current_status_display }}</span>
+                    </div>
+                </article>
             {% empty %}
-                <li>No urgent machines right now.</li>
+                <div class="empty-state"><p>No urgent machines right now.</p></div>
             {% endfor %}
-        </ul>
+        </div>
     </div>
     <div class="panel">
         <p class="eyebrow">Assigned Work</p>
-        <ul class="mini-list">
+        <div class="surface-list">
             {% for assignment in assignments %}
-                <li>{{ assignment.store.name }} · {{ assignment.machine.display_name }} · {{ assignment.get_status_display }}</li>
+                <article class="list-card">
+                    <div class="list-card__main">
+                        <h3>{{ assignment.store.name }} · {{ assignment.machine.display_name }}</h3>
+                        <p class="muted">{{ assignment.scheduled_for|date:"M j, g:i a"|default:"Scheduling next available slot" }}</p>
+                    </div>
+                    <div class="list-card__actions">
+                        <span class="pill">{{ assignment.get_status_display }}</span>
+                    </div>
+                </article>
             {% empty %}
-                <li>No assignments scheduled yet.</li>
+                <div class="empty-state"><p>No assignments scheduled yet.</p></div>
+            {% endfor %}
+        </div>
+    </div>
+</section>
+
+<section class="page-grid page-grid--sidebar">
+    <div class="panel">
+        <p class="eyebrow">Route Batches</p>
+        <div class="surface-list">
+            {% for group in route_groups %}
+                <article class="list-card">
+                    <div class="list-card__main">
+                        <h3>{{ group.label }}</h3>
+                        <p class="muted">{{ group.assignment_count }} job{{ group.assignment_count|pluralize }} · Priority {{ group.highest_priority }}</p>
+                    </div>
+                </article>
+            {% empty %}
+                <div class="empty-state"><p>No active route batches right now.</p></div>
+            {% endfor %}
+        </div>
+    </div>
+    <div class="panel">
+        <p class="eyebrow">Unread Notifications</p>
+        <ul class="mini-list">
+            {% for notification in notifications %}
+                <li>{{ notification.title }} · {{ notification.created_at|date:"M j, g:i a" }}</li>
+            {% empty %}
+                <li>No unread notifications.</li>
             {% endfor %}
         </ul>
     </div>
@@ -47,6 +91,7 @@
             <p class="eyebrow">Recent Imports</p>
             <h2>Repair and maintenance history</h2>
         </div>
+        <a href="{% url 'maintenance:index' %}">Open full repair workspace</a>
     </div>
     <ul class="mini-list">
         {% for job in recent_imports %}

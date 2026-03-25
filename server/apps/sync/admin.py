@@ -1,6 +1,6 @@
 from django.contrib import admin
 
-from .models import AuditLog, SyncOutboxEvent
+from .models import AuditLog, SyncConflictLog, SyncOutboxEvent, SyncProjectionState
 
 
 @admin.register(SyncOutboxEvent)
@@ -30,3 +30,31 @@ class AuditLogAdmin(admin.ModelAdmin):
     )
     list_filter = ("action", "region")
     search_fields = ("entity_type", "entity_id", "actor__email")
+
+
+@admin.register(SyncProjectionState)
+class SyncProjectionStateAdmin(admin.ModelAdmin):
+    list_display = (
+        "receiver_label",
+        "aggregate_type",
+        "aggregate_id",
+        "last_event_type",
+        "last_entity_version",
+        "updated_at",
+    )
+    list_filter = ("receiver_scope_type", "aggregate_type")
+    search_fields = ("receiver_label", "aggregate_type", "aggregate_id")
+
+
+@admin.register(SyncConflictLog)
+class SyncConflictLogAdmin(admin.ModelAdmin):
+    list_display = (
+        "receiver_label",
+        "aggregate_type",
+        "aggregate_id",
+        "conflict_type",
+        "resolution_status",
+        "created_at",
+    )
+    list_filter = ("conflict_type", "resolution_status", "receiver_scope_type")
+    search_fields = ("receiver_label", "aggregate_type", "aggregate_id", "message")
