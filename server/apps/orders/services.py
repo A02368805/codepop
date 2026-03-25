@@ -9,6 +9,7 @@ from django.db import transaction
 from django.utils import timezone
 
 from apps.sync.services import create_audit_log, create_outbox_event, serialize_instance
+from core.exceptions import ServiceError, ValidationError, ConflictError
 
 from .models import GuestOrderContact, Order, OrderItem
 
@@ -16,15 +17,15 @@ from .models import GuestOrderContact, Order, OrderItem
 DEFAULT_TAX_RATE = Decimal("0.0725")
 
 
-class OrderServiceError(Exception):
+class OrderServiceError(ServiceError):
     pass
 
 
-class PricingValidationError(OrderServiceError):
+class PricingValidationError(OrderServiceError, ValidationError):
     pass
 
 
-class OrderStateTransitionError(OrderServiceError):
+class OrderStateTransitionError(OrderServiceError, ConflictError):
     pass
 
 

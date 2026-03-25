@@ -10,12 +10,13 @@ from apps.inventory.services import InventoryServiceError
 from apps.orders.models import Order
 from apps.orders.services import ensure_refund_allowed, transition_order_status
 from apps.sync.services import create_audit_log, create_outbox_event, serialize_instance
+from core.exceptions import ServiceError
 
 from .gateway import PaymentMode, create_stripe_checkout_session, get_payment_mode, retrieve_checkout_session
 from .models import PaymentTransaction, RevenueLedgerEntry
 
 
-class PaymentServiceError(Exception):
+class PaymentServiceError(ServiceError):
     pass
 
 

@@ -15,6 +15,7 @@ from apps.users.permissions import (
     user_can_receive_transfer,
     user_can_request_transfer,
 )
+from core.exceptions import ServiceError
 
 from .models import (
     RestockAlert,
@@ -25,7 +26,7 @@ from .models import (
 from apps.supply_hubs.models import HubInventoryBalance, SupplyTransfer, SupplyTransferLineItem
 
 
-class InventoryServiceError(Exception):
+class InventoryServiceError(ServiceError):
     pass
 
 
