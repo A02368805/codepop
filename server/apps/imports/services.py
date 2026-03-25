@@ -6,21 +6,22 @@ from datetime import date
 from decimal import Decimal
 from io import StringIO
 
-from django.db import transaction
-from django.utils import timezone
-
-from apps.notifications.models import Notification
-from apps.notifications.services import notify_user
 from apps.inventory.models import InventoryItem, SupplyUsageRecord
 from apps.inventory.services import draft_supply_schedule_from_usage
 from apps.maintenance.models import Machine, MachineType
-from apps.maintenance.services import append_machine_status_event, evaluate_warning_escalation
+from apps.maintenance.services import (
+    append_machine_status_event,
+    evaluate_warning_escalation,
+)
+from apps.notifications.models import Notification
+from apps.notifications.services import notify_user
 from apps.stores.models import Store
 from apps.sync.services import create_audit_log, create_outbox_event, serialize_instance
 from apps.users.permissions import user_has_region_scope, user_has_store_scope
+from django.db import transaction
+from django.utils import timezone
 
 from .models import ImportJob
-
 
 SUPPLY_USAGE_HEADERS = ["store_code", "inventory_sku", "usage_date", "quantity_used"]
 REPAIR_STATUS_HEADERS = [
@@ -122,10 +123,15 @@ def parse_repair_status_csv(csv_text, *, uploaded_by):
                 for store in Store.objects.all()
                 if _build_store_address_lookup(store) == row["store_address"].lower()
             )
-            if not user_has_store_scope(uploaded_by, store) and uploaded_by.role != uploaded_by.Role.SUPER_ADMIN:
+            if (
+                not user_has_store_scope(uploaded_by, store)
+                and uploaded_by.role != uploaded_by.Role.SUPER_ADMIN
+            ):
                 raise ValueError("Store is outside the user's store scope.")
             machine_type = MachineType.objects.get(code=row["machine_type_code"])
-            operational_from_date = date.fromisoformat(row["machine_operational_from_date"])
+            operational_from_date = date.fromisoformat(
+                row["machine_operational_from_date"]
+            )
             status_date = date.fromisoformat(row["status_date"])
             machine_status = row["machine_status"]
             if machine_status not in valid_statuses:
@@ -173,7 +179,10 @@ def _finalize_job_success(job, *, row_count):
     create_outbox_event(
         event_type=f"import.{job.import_type}.succeeded",
         instance=job,
-        payload={"row_count": row_count, "uploaded_by_id": str(job.uploaded_by_id or "")},
+        payload={
+            "row_count": row_count,
+            "uploaded_by_id": str(job.uploaded_by_id or ""),
+        },
         source_scope={},
     )
     create_audit_log(
@@ -201,7 +210,10 @@ def _finalize_job_failure(job, exc):
     create_outbox_event(
         event_type=f"import.{job.import_type}.failed",
         instance=job,
-        payload={"error_count": job.error_count, "uploaded_by_id": str(job.uploaded_by_id or "")},
+        payload={
+            "error_count": job.error_count,
+            "uploaded_by_id": str(job.uploaded_by_id or ""),
+        },
         source_scope={},
     )
     create_audit_log(
@@ -261,7 +273,12 @@ def _process_repair_status_import(job, csv_text, *, allow_machine_create=True):
                 if machine is None:
                     if not allow_machine_create:
                         raise CSVImportError(
-                            [{"row": 0, "message": f"Machine {machine_uid} does not exist."}]
+                            [
+                                {
+                                    "row": 0,
+                                    "message": f"Machine {machine_uid} does not exist.",
+                                }
+                            ]
                         )
                     machine = Machine.objects.create(
                         machine_uid=machine_uid,
@@ -278,13 +295,17 @@ def _process_repair_status_import(job, csv_text, *, allow_machine_create=True):
                     source_import_job=job,
                     actor=job.uploaded_by,
                 )
-                evaluate_warning_escalation(machine, as_of_date=parsed_row.status_date, actor=job.uploaded_by)
+                evaluate_warning_escalation(
+                    machine, as_of_date=parsed_row.status_date, actor=job.uploaded_by
+                )
         return _finalize_job_success(job, row_count=len(parsed_rows))
     except CSVImportError as exc:
         _finalize_job_failure(job, exc)
 
 
-def import_supply_usage_csv(csv_text, *, uploaded_by, original_filename="supply_usage.csv"):
+def import_supply_usage_csv(
+    csv_text, *, uploaded_by, original_filename="supply_usage.csv"
+):
     job = _start_import_job(
         uploaded_by=uploaded_by,
         import_type=ImportJob.ImportType.SUPPLY_USAGE,
@@ -293,13 +314,21 @@ def import_supply_usage_csv(csv_text, *, uploaded_by, original_filename="supply_
     return _process_supply_usage_import(job, csv_text)
 
 
-def import_repair_status_csv(csv_text, *, uploaded_by, original_filename="repair_status.csv", allow_machine_create=True):
+def import_repair_status_csv(
+    csv_text,
+    *,
+    uploaded_by,
+    original_filename="repair_status.csv",
+    allow_machine_create=True,
+):
     job = _start_import_job(
         uploaded_by=uploaded_by,
         import_type=ImportJob.ImportType.REPAIR_STATUS,
         original_filename=original_filename,
     )
-    return _process_repair_status_import(job, csv_text, allow_machine_create=allow_machine_create)
+    return _process_repair_status_import(
+        job, csv_text, allow_machine_create=allow_machine_create
+    )
 
 
 def queue_import_job(*, uploaded_by, import_type, original_filename, csv_text):

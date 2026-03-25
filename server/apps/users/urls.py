@@ -17,7 +17,6 @@ from .views import (
     SuperAdminDashboardView,
 )
 
-
 urlpatterns = [
     path("", HomePageView.as_view(), name="home"),
     path("login/", FloatStackLoginView.as_view(), name="login"),
@@ -26,7 +25,11 @@ urlpatterns = [
     path("dashboard/", RoleAwareDashboardRedirectView.as_view(), name="dashboard"),
     path("account/preferences/", PreferenceView.as_view(), name="account-preferences"),
     path("admin/users/", AdminUserManagementView.as_view(), name="admin-users"),
-    path("admin/users/<uuid:user_id>/update/", AdminUserUpdateView.as_view(), name="admin-user-update"),
+    path(
+        "admin/users/<uuid:user_id>/update/",
+        AdminUserUpdateView.as_view(),
+        name="admin-user-update",
+    ),
     path(
         "dashboards/customer/",
         CustomerDashboardView.as_view(),

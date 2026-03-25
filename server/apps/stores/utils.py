@@ -1,7 +1,6 @@
 from decimal import Decimal
 from math import asin, cos, radians, sin, sqrt
 
-
 EARTH_RADIUS_MILES = 3958.7613
 
 

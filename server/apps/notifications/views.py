@@ -1,3 +1,5 @@
+from apps.users.models import User
+from apps.users.permissions import RoleRequiredMixin
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.http import HttpResponse
 from django.shortcuts import get_object_or_404
@@ -6,8 +8,6 @@ from django.views import View
 from django.views.generic import TemplateView
 
 from .models import Notification
-from apps.users.models import User
-from apps.users.permissions import RoleRequiredMixin
 
 
 class NotificationWorkspaceView(RoleRequiredMixin, TemplateView):
@@ -16,13 +16,17 @@ class NotificationWorkspaceView(RoleRequiredMixin, TemplateView):
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        context["notifications"] = self.request.user.notifications.order_by("-created_at")
+        context["notifications"] = self.request.user.notifications.order_by(
+            "-created_at"
+        )
         return context
 
 
 class NotificationMarkReadView(LoginRequiredMixin, View):
     def post(self, request, *args, **kwargs):
-        notification = get_object_or_404(Notification, pk=kwargs["notification_id"], user=request.user)
+        notification = get_object_or_404(
+            Notification, pk=kwargs["notification_id"], user=request.user
+        )
         notification.is_read = True
         notification.save(update_fields=["is_read"])
         html = render_to_string(

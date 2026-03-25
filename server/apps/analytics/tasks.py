@@ -1,10 +1,9 @@
 from __future__ import annotations
 
-from celery import shared_task
-
 from apps.notifications.models import Notification
 from apps.notifications.services import notify_user
 from apps.users.models import User
+from celery import shared_task
 
 from .recommendations import recommend_drinks_for_user
 

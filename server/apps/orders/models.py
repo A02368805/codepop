@@ -44,7 +44,9 @@ class Order(models.Model):
     order_type = models.CharField(
         max_length=16, choices=OrderType.choices, default=OrderType.ACCOUNT
     )
-    status = models.CharField(max_length=24, choices=Status.choices, default=Status.DRAFT)
+    status = models.CharField(
+        max_length=24, choices=Status.choices, default=Status.DRAFT
+    )
     pickup_time_requested = models.DateTimeField(null=True, blank=True)
     pickup_time_estimated = models.DateTimeField(null=True, blank=True)
     subtotal_amount = models.DecimalField(

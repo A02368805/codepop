@@ -1,18 +1,13 @@
 from datetime import timedelta
 from decimal import Decimal
 
-from django.core.files.uploadedfile import SimpleUploadedFile
-from django.test import Client, TestCase
-from django.urls import reverse
-from django.utils import timezone
-
 from apps.imports.models import ImportJob
 from apps.inventory.models import LocalSupplier, SupplierReplenishment
 from apps.inventory.services import get_store_balance, request_transfer
-from apps.orders.pickup import pickup_time_choices
 from apps.notifications.models import Notification
-from apps.orders.models import Order
 from apps.orders.cart import SESSION_CART_KEY
+from apps.orders.models import Order
+from apps.orders.pickup import pickup_time_choices
 from apps.orders.services import create_order, transition_order_status
 from apps.payments.models import PaymentTransaction
 from apps.payments.services import record_payment_pending, record_payment_success
@@ -20,6 +15,10 @@ from apps.supply_hubs.models import SupplyTransfer
 from apps.sync.models import AuditLog
 from apps.users.models import FavoriteDrink, TastePreference
 from apps.users.services import save_preference_profile
+from django.core.files.uploadedfile import SimpleUploadedFile
+from django.test import Client, TestCase
+from django.urls import reverse
+from django.utils import timezone
 
 from .helpers import (
     assign_region,
@@ -39,7 +38,9 @@ def seed_menu_inventory(store):
         ("LIDS-24OZ", "24oz Lids", "lids", "50.00"),
     ]
     for sku, name, category, threshold in inventory_rows:
-        item = make_inventory_item(sku=sku, name=name, category=category, threshold=threshold)
+        item = make_inventory_item(
+            sku=sku, name=name, category=category, threshold=threshold
+        )
         balance = get_store_balance(store, item)
         balance.on_hand_quantity = Decimal("250.00")
         balance.reorder_threshold = Decimal(threshold)
@@ -102,9 +103,17 @@ class CustomerOrderingViewTests(TestCase):
         self.assertEqual(order.order_type, Order.OrderType.ACCOUNT)
         self.assertEqual(order.store, self.store)
         self.assertEqual(order.status, Order.Status.QUEUED)
-        self.assertEqual(order.payment_transaction.provider, PaymentTransaction.Provider.MOCK)
-        self.assertEqual(order.payment_transaction.status, PaymentTransaction.Status.SUCCEEDED)
-        self.assertTrue(FavoriteDrink.objects.filter(user=self.customer, recipe_key="berry-burst").exists())
+        self.assertEqual(
+            order.payment_transaction.provider, PaymentTransaction.Provider.MOCK
+        )
+        self.assertEqual(
+            order.payment_transaction.status, PaymentTransaction.Status.SUCCEEDED
+        )
+        self.assertTrue(
+            FavoriteDrink.objects.filter(
+                user=self.customer, recipe_key="berry-burst"
+            ).exists()
+        )
         self.assertEqual(order.items.first().display_name_snapshot, "Berry Burst")
         self.assertContains(response, order.public_order_code)
 
@@ -132,7 +141,9 @@ class CustomerOrderingViewTests(TestCase):
             follow=True,
         )
         self.assertContains(response, order.public_order_code)
-        self.assertEqual(Order.objects.filter(order_type=Order.OrderType.GUEST).count(), 1)
+        self.assertEqual(
+            Order.objects.filter(order_type=Order.OrderType.GUEST).count(), 1
+        )
 
     def test_customer_status_page_hides_cancel_after_preparing(self):
         order = create_order(
@@ -159,12 +170,16 @@ class CustomerOrderingViewTests(TestCase):
             actor=self.customer,
         )
         record_payment_pending(order, payment_intent_id="pi_customer_status")
-        record_payment_success(order, payment_intent_id="pi_customer_status", actor=self.customer)
+        record_payment_success(
+            order, payment_intent_id="pi_customer_status", actor=self.customer
+        )
         transition_order_status(order, Order.Status.QUEUED, actor=self.customer)
         transition_order_status(order, Order.Status.PREPARING, actor=self.customer)
 
         self.client.force_login(self.customer)
-        response = self.client.get(reverse("orders:detail", args=[order.public_order_code]))
+        response = self.client.get(
+            reverse("orders:detail", args=[order.public_order_code])
+        )
         self.assertEqual(response.status_code, 200)
         self.assertNotContains(response, "Cancel order")
         self.assertContains(response, "Refunds are disallowed after preparation begins")
@@ -298,7 +313,9 @@ class DashboardAndHtmxViewTests(TestCase):
             latitude="43.615021",
             longitude="-116.202316",
         )
-        cls.store_c1 = make_store(store_code="C001", region=cls.region_c, name="Logan Main")
+        cls.store_c1 = make_store(
+            store_code="C001", region=cls.region_c, name="Logan Main"
+        )
         cls.store_c2 = make_store(
             store_code="C002",
             region=cls.region_c,
@@ -355,7 +372,9 @@ class DashboardAndHtmxViewTests(TestCase):
         assign_store(cls.repair, cls.store_c1)
         assign_region(cls.logistics, cls.region_c)
 
-        cls.inventory_item = make_inventory_item(sku="SYRUP-STRAWBERRY", name="Strawberry Syrup")
+        cls.inventory_item = make_inventory_item(
+            sku="SYRUP-STRAWBERRY", name="Strawberry Syrup"
+        )
         cls.cup_item = make_inventory_item(
             sku="CUPS-24OZ",
             name="24oz Cups",
@@ -391,13 +410,18 @@ class DashboardAndHtmxViewTests(TestCase):
                     "base_price": Decimal("5.00"),
                     "extras_total": Decimal("0.00"),
                     "quantity": 1,
-                    "customizations": {"extras_total": "0.00", "inventory_requirements": []},
+                    "customizations": {
+                        "extras_total": "0.00",
+                        "inventory_requirements": [],
+                    },
                 }
             ],
             actor=cls.manager,
         )
         record_payment_pending(cls.queue_order, payment_intent_id="pi_queue_test")
-        record_payment_success(cls.queue_order, payment_intent_id="pi_queue_test", actor=cls.manager)
+        record_payment_success(
+            cls.queue_order, payment_intent_id="pi_queue_test", actor=cls.manager
+        )
         transition_order_status(cls.queue_order, Order.Status.QUEUED, actor=cls.manager)
 
         cls.out_of_scope_order = create_order(
@@ -411,7 +435,10 @@ class DashboardAndHtmxViewTests(TestCase):
                     "base_price": Decimal("4.00"),
                     "extras_total": Decimal("0.00"),
                     "quantity": 1,
-                    "customizations": {"extras_total": "0.00", "inventory_requirements": []},
+                    "customizations": {
+                        "extras_total": "0.00",
+                        "inventory_requirements": [],
+                    },
                 }
             ],
             actor=cls.super_admin,
@@ -421,7 +448,12 @@ class DashboardAndHtmxViewTests(TestCase):
             requested_by=cls.manager,
             source_store=cls.store_c1,
             destination_store=cls.store_c2,
-            line_items=[{"inventory_item": cls.inventory_item, "quantity_requested": Decimal("2.00")}],
+            line_items=[
+                {
+                    "inventory_item": cls.inventory_item,
+                    "quantity_requested": Decimal("2.00"),
+                }
+            ],
             notes="Need more syrup",
             is_ai_draft=True,
         )
@@ -514,7 +546,9 @@ class DashboardAndHtmxViewTests(TestCase):
             follow=True,
         )
 
-        created_transfer = SupplyTransfer.objects.exclude(pk=self.transfer.id).latest("requested_at")
+        created_transfer = SupplyTransfer.objects.exclude(pk=self.transfer.id).latest(
+            "requested_at"
+        )
         self.assertEqual(response.status_code, 200)
         self.assertEqual(created_transfer.requested_by, self.logistics)
         self.assertEqual(created_transfer.destination_store, self.store_c2)
@@ -558,7 +592,9 @@ class DashboardAndHtmxViewTests(TestCase):
 
     def test_manager_cannot_view_other_store_order(self):
         self.client.force_login(self.manager)
-        response = self.client.get(reverse("orders:detail", args=[self.out_of_scope_order.public_order_code]))
+        response = self.client.get(
+            reverse("orders:detail", args=[self.out_of_scope_order.public_order_code])
+        )
         self.assertEqual(response.status_code, 403)
         self.assertIn("outside your current scope", response.content.decode())
 
@@ -582,7 +618,15 @@ class DashboardAndHtmxViewTests(TestCase):
                 HTTP_HX_REQUEST="true",
             )
         self.assertEqual(response.status_code, 200)
-        self.assertTrue(ImportJob.objects.filter(original_filename="usage.csv", status=ImportJob.Status.SUCCEEDED).exists())
-        self.assertTrue(Notification.objects.filter(user=self.logistics, title="Import completed").exists())
+        self.assertTrue(
+            ImportJob.objects.filter(
+                original_filename="usage.csv", status=ImportJob.Status.SUCCEEDED
+            ).exists()
+        )
+        self.assertTrue(
+            Notification.objects.filter(
+                user=self.logistics, title="Import completed"
+            ).exists()
+        )
         self.assertTrue(AuditLog.objects.filter(action="import.completed").exists())
         self.assertContains(response, "usage.csv")

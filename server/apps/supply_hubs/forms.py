@@ -1,11 +1,10 @@
 from decimal import Decimal
 
-from django import forms
-
 from apps.inventory.models import InventoryItem, LocalSupplier
 from apps.stores.models import Store
 from apps.stores.selectors import regions_visible_to_user, stores_visible_to_user
 from apps.stores.utils import haversine_miles
+from django import forms
 
 from .models import SupplyHub
 
@@ -27,9 +26,13 @@ class TransferRequestForm(forms.Form):
         max_digits=12,
         min_value=Decimal("1.00"),
     )
-    source_kind = forms.ChoiceField(choices=SOURCE_KIND_CHOICES, initial=SOURCE_KIND_AUTO)
+    source_kind = forms.ChoiceField(
+        choices=SOURCE_KIND_CHOICES, initial=SOURCE_KIND_AUTO
+    )
     source_store = forms.ModelChoiceField(queryset=Store.objects.none(), required=False)
-    source_hub = forms.ModelChoiceField(queryset=SupplyHub.objects.none(), required=False)
+    source_hub = forms.ModelChoiceField(
+        queryset=SupplyHub.objects.none(), required=False
+    )
     notes = forms.CharField(
         required=False,
         widget=forms.Textarea(attrs={"rows": 3}),
@@ -37,18 +40,26 @@ class TransferRequestForm(forms.Form):
 
     def __init__(self, *args, user, **kwargs):
         super().__init__(*args, **kwargs)
-        visible_stores = list(stores_visible_to_user(user).select_related("region").order_by("name"))
+        visible_stores = list(
+            stores_visible_to_user(user).select_related("region").order_by("name")
+        )
         visible_store_ids = [store.id for store in visible_stores]
         visible_regions = list(regions_visible_to_user(user).order_by("name"))
         visible_region_ids = {region.id for region in visible_regions}
 
         hub_ids = []
-        for hub in SupplyHub.objects.filter(is_active=True).select_related("region").order_by("name"):
+        for hub in (
+            SupplyHub.objects.filter(is_active=True)
+            .select_related("region")
+            .order_by("name")
+        ):
             if hub.region_id in visible_region_ids:
                 hub_ids.append(hub.id)
                 continue
             if any(
-                haversine_miles(hub.latitude, hub.longitude, store.latitude, store.longitude)
+                haversine_miles(
+                    hub.latitude, hub.longitude, store.latitude, store.longitude
+                )
                 <= Decimal("1000")
                 for store in visible_stores
             ):
@@ -86,8 +97,14 @@ class TransferRequestForm(forms.Form):
         if source_kind == self.SOURCE_KIND_HUB and not source_hub:
             self.add_error("source_hub", "Choose a source hub.")
         if destination_store and source_store and destination_store == source_store:
-            self.add_error("source_store", "Source and destination must be different stores.")
-        if destination_store and source_store and destination_store.region_id != source_store.region_id:
+            self.add_error(
+                "source_store", "Source and destination must be different stores."
+            )
+        if (
+            destination_store
+            and source_store
+            and destination_store.region_id != source_store.region_id
+        ):
             self.add_error(
                 "source_store",
                 "Direct store transfers must stay within the same region.",
@@ -139,7 +156,12 @@ class SupplierOrderForm(forms.Form):
         cleaned_data = super().clean()
         store = cleaned_data.get("store")
         supplier = cleaned_data.get("supplier")
-        if store and supplier and supplier.service_region_id and supplier.service_region_id != store.region_id:
+        if (
+            store
+            and supplier
+            and supplier.service_region_id
+            and supplier.service_region_id != store.region_id
+        ):
             self.add_error(
                 "supplier",
                 "That supplier is not configured for the selected store region.",

@@ -46,7 +46,9 @@ class StoreInventoryBalance(models.Model):
         "stores.Store", related_name="inventory_balances", on_delete=models.CASCADE
     )
     inventory_item = models.ForeignKey(
-        "inventory.InventoryItem", related_name="store_balances", on_delete=models.CASCADE
+        "inventory.InventoryItem",
+        related_name="store_balances",
+        on_delete=models.CASCADE,
     )
     on_hand_quantity = models.DecimalField(
         max_digits=12, decimal_places=2, default=Decimal("0.00")
@@ -183,10 +185,14 @@ class RestockAlert(models.Model):
         "stores.Store", related_name="restock_alerts", on_delete=models.CASCADE
     )
     inventory_item = models.ForeignKey(
-        "inventory.InventoryItem", related_name="restock_alerts", on_delete=models.CASCADE
+        "inventory.InventoryItem",
+        related_name="restock_alerts",
+        on_delete=models.CASCADE,
     )
     severity = models.CharField(max_length=16, choices=Severity.choices)
-    status = models.CharField(max_length=16, choices=Status.choices, default=Status.OPEN)
+    status = models.CharField(
+        max_length=16, choices=Status.choices, default=Status.OPEN
+    )
     triggered_by = models.CharField(max_length=32)
     created_at = models.DateTimeField(auto_now_add=True)
     resolved_at = models.DateTimeField(null=True, blank=True)
@@ -222,7 +228,9 @@ class SupplyUsageRecord(models.Model):
         ordering = ("-usage_date", "store__store_code")
 
     def __str__(self):
-        return f"{self.store.store_code} / {self.inventory_item.sku} / {self.usage_date}"
+        return (
+            f"{self.store.store_code} / {self.inventory_item.sku} / {self.usage_date}"
+        )
 
 
 class SupplySchedule(models.Model):
@@ -241,7 +249,9 @@ class SupplySchedule(models.Model):
         "stores.Store", related_name="supply_schedules", on_delete=models.CASCADE
     )
     inventory_item = models.ForeignKey(
-        "inventory.InventoryItem", related_name="supply_schedules", on_delete=models.CASCADE
+        "inventory.InventoryItem",
+        related_name="supply_schedules",
+        on_delete=models.CASCADE,
     )
     recommended_source_type = models.CharField(
         max_length=24, choices=RecommendedSourceType.choices
@@ -257,7 +267,9 @@ class SupplySchedule(models.Model):
         null=True,
         blank=True,
     )
-    status = models.CharField(max_length=16, choices=Status.choices, default=Status.DRAFT)
+    status = models.CharField(
+        max_length=16, choices=Status.choices, default=Status.DRAFT
+    )
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 

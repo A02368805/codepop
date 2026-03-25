@@ -3,9 +3,8 @@ from __future__ import annotations
 from datetime import timedelta
 from decimal import Decimal
 
-from django.db import transaction
-
 from apps.sync.services import create_audit_log, create_outbox_event, serialize_instance
+from django.db import transaction
 
 from .models import Machine, MachineStatusEvent, MaintenancePolicy, RepairAssignment
 
@@ -17,7 +16,9 @@ class MaintenanceServiceError(Exception):
 def resolve_effective_policy(machine):
     policy = (
         MaintenancePolicy.objects.filter(
-            machine_type=machine.machine_type, region=machine.store.region, is_active=True
+            machine_type=machine.machine_type,
+            region=machine.store.region,
+            is_active=True,
         )
         .order_by("-region_id")
         .first()
@@ -36,7 +37,9 @@ def resolve_effective_policy(machine):
 
 
 @transaction.atomic
-def append_machine_status_event(machine, *, status, status_date, notes="", source_import_job=None, actor=None):
+def append_machine_status_event(
+    machine, *, status, status_date, notes="", source_import_job=None, actor=None
+):
     before = serialize_instance(machine)
     event = MachineStatusEvent.objects.create(
         machine=machine,
@@ -55,12 +58,19 @@ def append_machine_status_event(machine, *, status, status_date, notes="", sourc
         )
     machine.save()
 
-    if status in {Machine.Status.WARNING, Machine.Status.ERROR, Machine.Status.OUT_OF_ORDER}:
+    if status in {
+        Machine.Status.WARNING,
+        Machine.Status.ERROR,
+        Machine.Status.OUT_OF_ORDER,
+    }:
         create_outbox_event(
             event_type=f"machine.{status}",
             instance=machine,
             payload={"status": status, "status_date": status_date.isoformat()},
-            source_scope={"store_id": str(machine.store_id), "region_code": machine.store.region.code},
+            source_scope={
+                "store_id": str(machine.store_id),
+                "region_code": machine.store.region.code,
+            },
         )
     create_audit_log(
         actor=actor,
@@ -74,7 +84,10 @@ def append_machine_status_event(machine, *, status, status_date, notes="", sourc
 
 @transaction.atomic
 def evaluate_warning_escalation(machine, *, as_of_date, actor=None):
-    if machine.current_status != Machine.Status.WARNING or not machine.current_status_date:
+    if (
+        machine.current_status != Machine.Status.WARNING
+        or not machine.current_status_date
+    ):
         return None
     policy = resolve_effective_policy(machine)
     elapsed_days = (as_of_date - machine.current_status_date).days
@@ -90,9 +103,19 @@ def evaluate_warning_escalation(machine, *, as_of_date, actor=None):
 
 
 @transaction.atomic
-def create_repair_assignment(machine, *, assigned_to, priority_score=Decimal("0.00"), scheduled_for=None, created_by_system=True, notes=""):
+def create_repair_assignment(
+    machine,
+    *,
+    assigned_to,
+    priority_score=Decimal("0.00"),
+    scheduled_for=None,
+    created_by_system=True,
+    notes="",
+):
     if assigned_to.role != assigned_to.Role.REPAIR_STAFF:
-        raise MaintenanceServiceError("Repair assignments may only target repair staff users.")
+        raise MaintenanceServiceError(
+            "Repair assignments may only target repair staff users."
+        )
     assignment = RepairAssignment.objects.create(
         assigned_to=assigned_to,
         machine=machine,

@@ -1,7 +1,11 @@
 from django.urls import path
 
-from .views import SyncPanelView, SyncProcessPendingView, SyncRetryFailedView, SyncWorkspaceView
-
+from .views import (
+    SyncPanelView,
+    SyncProcessPendingView,
+    SyncRetryFailedView,
+    SyncWorkspaceView,
+)
 
 app_name = "sync"
 

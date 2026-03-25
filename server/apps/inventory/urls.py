@@ -2,7 +2,6 @@ from django.urls import path
 
 from .views import InventoryAdjustView, InventoryWorkspaceView
 
-
 app_name = "inventory"
 
 urlpatterns = [

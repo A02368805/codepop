@@ -7,7 +7,6 @@ from .views import (
     SupplyUsageImportView,
 )
 
-
 app_name = "imports"
 
 urlpatterns = [

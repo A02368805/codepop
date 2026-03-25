@@ -3,10 +3,9 @@ from __future__ import annotations
 from collections import OrderedDict
 from decimal import Decimal
 
-from django.db.models import Count, F, Q, Sum
-
 from apps.supply_hubs.models import HubInventoryBalance
 from apps.users.permissions import user_can_manage_store, user_has_global_access
+from django.db.models import Count, F, Q, Sum
 
 from .models import RestockAlert, StoreInventoryBalance
 
@@ -52,7 +51,10 @@ def build_transfer_recommendations(*, visible_stores, limit=6):
         RestockAlert.objects.filter(
             store__in=visible_stores,
             status=RestockAlert.Status.OPEN,
-            severity__in=[RestockAlert.Severity.WARNING, RestockAlert.Severity.CRITICAL],
+            severity__in=[
+                RestockAlert.Severity.WARNING,
+                RestockAlert.Severity.CRITICAL,
+            ],
         )
         .select_related("store", "inventory_item", "store__region")
         .order_by("-created_at")[: limit * 2]
@@ -71,7 +73,8 @@ def build_transfer_recommendations(*, visible_stores, limit=6):
             continue
 
         suggested_quantity = max(
-            destination_balance.reorder_threshold - destination_balance.on_hand_quantity,
+            destination_balance.reorder_threshold
+            - destination_balance.on_hand_quantity,
             Decimal("1.00"),
         )
         source_balance = (
@@ -81,7 +84,10 @@ def build_transfer_recommendations(*, visible_stores, limit=6):
                 store__in=visible_stores,
             )
             .exclude(store=alert.store)
-            .filter(on_hand_quantity__gt=destination_balance.reorder_threshold * Decimal("1.5"))
+            .filter(
+                on_hand_quantity__gt=destination_balance.reorder_threshold
+                * Decimal("1.5")
+            )
             .select_related("store")
             .order_by("-on_hand_quantity")
             .first()

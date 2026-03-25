@@ -1,9 +1,8 @@
 from __future__ import annotations
 
+from apps.users.models import User
 from django.db import transaction
 from django.db.models import Q
-
-from apps.users.models import User
 
 from .models import Notification
 
@@ -19,7 +18,9 @@ def create_notification(*, user, title, message, category=Notification.Category.
     )
     from .tasks import dispatch_notification_async
 
-    transaction.on_commit(lambda: dispatch_notification_async.delay(str(notification.pk)))
+    transaction.on_commit(
+        lambda: dispatch_notification_async.delay(str(notification.pk))
+    )
     return notification
 
 
@@ -62,7 +63,9 @@ def users_for_region_roles(region, roles):
     ).distinct()
 
 
-def notify_store_roles(*, store, roles, title, message, category=Notification.Category.ALERT):
+def notify_store_roles(
+    *, store, roles, title, message, category=Notification.Category.ALERT
+):
     return notify_users(
         users=users_for_store_roles(store, roles),
         title=title,
@@ -71,7 +74,9 @@ def notify_store_roles(*, store, roles, title, message, category=Notification.Ca
     )
 
 
-def notify_region_roles(*, region, roles, title, message, category=Notification.Category.ALERT):
+def notify_region_roles(
+    *, region, roles, title, message, category=Notification.Category.ALERT
+):
     return notify_users(
         users=users_for_region_roles(region, roles),
         title=title,

@@ -1,12 +1,23 @@
 from datetime import date
 from decimal import Decimal
 
+from apps.maintenance.models import Machine, MachineStatusEvent, MaintenancePolicy
+from apps.maintenance.services import (
+    MaintenanceServiceError,
+    append_machine_status_event,
+    create_repair_assignment,
+    evaluate_warning_escalation,
+)
 from django.test import TestCase
 
-from apps.maintenance.models import Machine, MachineStatusEvent, MaintenancePolicy
-from apps.maintenance.services import MaintenanceServiceError, append_machine_status_event, create_repair_assignment, evaluate_warning_escalation
-
-from .helpers import assign_store, make_machine, make_machine_type, make_region, make_store, make_user
+from .helpers import (
+    assign_store,
+    make_machine,
+    make_machine_type,
+    make_region,
+    make_store,
+    make_user,
+)
 
 
 class MaintenancePolicyTests(TestCase):
@@ -14,8 +25,14 @@ class MaintenancePolicyTests(TestCase):
     def setUpTestData(cls):
         cls.region = make_region(code="C", name="Logan, UT")
         cls.store = make_store(store_code="C001", region=cls.region, name="Logan Main")
-        cls.machine_type = make_machine_type(code="MIXER_A", warning_max_operational_days=2)
-        cls.machine = make_machine(store=cls.store, machine_type=cls.machine_type, operational_from_date=date(2025, 7, 1))
+        cls.machine_type = make_machine_type(
+            code="MIXER_A", warning_max_operational_days=2
+        )
+        cls.machine = make_machine(
+            store=cls.store,
+            machine_type=cls.machine_type,
+            operational_from_date=date(2025, 7, 1),
+        )
         cls.repair_staff = make_user(
             email="repair@test.local",
             role="repair_staff",
@@ -54,7 +71,9 @@ class MaintenancePolicyTests(TestCase):
         self.assertIsNotNone(escalation)
         self.assertEqual(self.machine.current_status, Machine.Status.OUT_OF_ORDER)
         self.assertTrue(
-            MachineStatusEvent.objects.filter(machine=self.machine, status=Machine.Status.OUT_OF_ORDER).exists()
+            MachineStatusEvent.objects.filter(
+                machine=self.machine, status=Machine.Status.OUT_OF_ORDER
+            ).exists()
         )
 
     def test_repair_assignments_only_allow_repair_staff_targets(self):

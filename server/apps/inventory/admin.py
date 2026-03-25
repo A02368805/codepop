@@ -20,7 +20,13 @@ class InventoryItemAdmin(admin.ModelAdmin):
 
 @admin.register(StoreInventoryBalance)
 class StoreInventoryBalanceAdmin(admin.ModelAdmin):
-    list_display = ("store", "inventory_item", "on_hand_quantity", "reserved_quantity", "reorder_threshold")
+    list_display = (
+        "store",
+        "inventory_item",
+        "on_hand_quantity",
+        "reserved_quantity",
+        "reorder_threshold",
+    )
     list_filter = ("store__region", "store")
     search_fields = ("store__store_code", "inventory_item__sku", "inventory_item__name")
 
@@ -50,20 +56,40 @@ class SupplierReplenishmentAdmin(admin.ModelAdmin):
 
 @admin.register(RestockAlert)
 class RestockAlertAdmin(admin.ModelAdmin):
-    list_display = ("store", "inventory_item", "severity", "status", "triggered_by", "created_at")
+    list_display = (
+        "store",
+        "inventory_item",
+        "severity",
+        "status",
+        "triggered_by",
+        "created_at",
+    )
     list_filter = ("severity", "status", "store__region")
     search_fields = ("store__store_code", "inventory_item__sku")
 
 
 @admin.register(SupplyUsageRecord)
 class SupplyUsageRecordAdmin(admin.ModelAdmin):
-    list_display = ("store", "inventory_item", "usage_date", "quantity_used", "source_import_job")
+    list_display = (
+        "store",
+        "inventory_item",
+        "usage_date",
+        "quantity_used",
+        "source_import_job",
+    )
     list_filter = ("usage_date", "store__region")
     search_fields = ("store__store_code", "inventory_item__sku")
 
 
 @admin.register(SupplySchedule)
 class SupplyScheduleAdmin(admin.ModelAdmin):
-    list_display = ("store", "inventory_item", "recommended_source_type", "recommended_quantity", "status", "created_by_ai")
+    list_display = (
+        "store",
+        "inventory_item",
+        "recommended_source_type",
+        "recommended_quantity",
+        "status",
+        "created_by_ai",
+    )
     list_filter = ("status", "recommended_source_type", "created_by_ai")
     search_fields = ("store__store_code", "inventory_item__sku")

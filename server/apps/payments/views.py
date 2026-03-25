@@ -1,5 +1,10 @@
 from datetime import date
 
+from apps.orders.models import Order
+from apps.orders.selectors import authorize_guest_lookup
+from apps.stores.selectors import scoped_region_store_options, stores_visible_to_user
+from apps.users.models import User
+from apps.users.permissions import RoleRequiredMixin
 from django.contrib import messages
 from django.db.models import Sum
 from django.http import HttpResponse, HttpResponseBadRequest
@@ -9,15 +14,19 @@ from django.views import View
 from django.views.decorators.csrf import csrf_exempt
 from django.views.generic import TemplateView
 
-from apps.orders.models import Order
-from apps.orders.selectors import authorize_guest_lookup
-from apps.stores.selectors import scoped_region_store_options, stores_visible_to_user
-from apps.users.models import User
-from apps.users.permissions import RoleRequiredMixin
-
-from .gateway import PaymentMode, construct_webhook_event, get_payment_mode, stripe_is_configured
+from .gateway import (
+    PaymentMode,
+    construct_webhook_event,
+    get_payment_mode,
+    stripe_is_configured,
+)
 from .models import PaymentTransaction, RevenueLedgerEntry
-from .services import PaymentGatewayError, finalize_stripe_checkout, record_payment_failure, record_refund
+from .services import (
+    PaymentGatewayError,
+    finalize_stripe_checkout,
+    record_payment_failure,
+    record_refund,
+)
 
 
 def _parse_date(value):
@@ -48,9 +57,13 @@ class PaymentWorkspaceView(RoleRequiredMixin, TemplateView):
         search = self.request.GET.get("q", "").strip()
         date_from = _parse_date(self.request.GET.get("date_from", "").strip())
         date_to = _parse_date(self.request.GET.get("date_to", "").strip())
-        transactions = PaymentTransaction.objects.filter(store__in=visible_stores).select_related("order", "store")
+        transactions = PaymentTransaction.objects.filter(
+            store__in=visible_stores
+        ).select_related("order", "store")
         if search:
-            transactions = transactions.filter(order__public_order_code__icontains=search)
+            transactions = transactions.filter(
+                order__public_order_code__icontains=search
+            )
         if date_from:
             transactions = transactions.filter(created_at__date__gte=date_from)
         if date_to:
@@ -99,7 +112,9 @@ class CheckoutSuccessView(View):
         except PaymentGatewayError as exc:
             messages.error(request, str(exc))
             return redirect("orders:guest-lookup")
-        if order.order_type == Order.OrderType.GUEST and hasattr(order, "guest_contact"):
+        if order.order_type == Order.OrderType.GUEST and hasattr(
+            order, "guest_contact"
+        ):
             authorize_guest_lookup(request.session, order.guest_contact.lookup_code)
         messages.success(request, "Payment completed successfully.")
         return redirect("orders:confirmation", order_code=order.public_order_code)
@@ -109,7 +124,9 @@ class CheckoutCancelView(View):
     def get(self, request, *args, **kwargs):
         order_code = request.GET.get("order_code", "").strip()
         order = get_object_or_404(Order, public_order_code=order_code)
-        if order.order_type == Order.OrderType.GUEST and hasattr(order, "guest_contact"):
+        if order.order_type == Order.OrderType.GUEST and hasattr(
+            order, "guest_contact"
+        ):
             authorize_guest_lookup(request.session, order.guest_contact.lookup_code)
         if order.status == Order.Status.PAYMENT_PENDING:
             record_payment_failure(
@@ -143,13 +160,21 @@ class StripeWebhookView(View):
             if order_code:
                 order = Order.objects.filter(public_order_code=order_code).first()
                 if order:
-                    record_payment_failure(order, reason="Stripe checkout session expired.")
+                    record_payment_failure(
+                        order, reason="Stripe checkout session expired."
+                    )
         elif event_type == "charge.refunded":
             payment_intent_id = data_object.get("payment_intent", "")
-            payment = PaymentTransaction.objects.filter(
-                stripe_payment_intent_id=payment_intent_id
-            ).select_related("order").first()
+            payment = (
+                PaymentTransaction.objects.filter(
+                    stripe_payment_intent_id=payment_intent_id
+                )
+                .select_related("order")
+                .first()
+            )
             if payment:
-                record_refund(payment.order, notes="Stripe webhook refund confirmation.")
+                record_refund(
+                    payment.order, notes="Stripe webhook refund confirmation."
+                )
 
         return HttpResponse(status=200)

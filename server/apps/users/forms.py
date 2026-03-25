@@ -1,7 +1,3 @@
-from django import forms
-from django.contrib.auth import password_validation
-from django.contrib.auth.forms import AuthenticationForm
-
 from apps.orders.catalog import (
     ADD_IN_OPTIONS,
     ADVENTUROUSNESS_PREFERENCE_CHOICES,
@@ -13,6 +9,9 @@ from apps.orders.catalog import (
     combined_ingredient_choices,
 )
 from apps.stores.models import Store
+from django import forms
+from django.contrib.auth import password_validation
+from django.contrib.auth.forms import AuthenticationForm
 
 from .models import User
 
@@ -133,10 +132,7 @@ class PreferenceProfileForm(forms.Form):
         favorite_ice_creams = set(cleaned_data.get("favorite_ice_creams") or [])
         disliked_ingredients = set(cleaned_data.get("disliked_ingredients") or [])
         overlap = (
-            favorite_sodas
-            | favorite_syrups
-            | favorite_add_ins
-            | favorite_ice_creams
+            favorite_sodas | favorite_syrups | favorite_add_ins | favorite_ice_creams
         ) & disliked_ingredients
         if overlap:
             raise forms.ValidationError(

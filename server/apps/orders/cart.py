@@ -2,7 +2,6 @@ import uuid
 
 from .services import validate_pricing
 
-
 SESSION_CART_KEY = "codepop_cart"
 
 

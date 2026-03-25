@@ -1,11 +1,9 @@
-from django.db.models import Count, Sum
-
 from apps.stores.selectors import stores_visible_to_user
 from apps.users.models import User
 from apps.users.permissions import user_can_manage_store, user_has_global_access
+from django.db.models import Count, Sum
 
 from .models import Order
-
 
 GUEST_LOOKUP_SESSION_KEY = "codepop_guest_lookup_codes"
 
@@ -25,7 +23,13 @@ def staff_order_queue(user):
         Order.objects.filter(store__in=visible_stores)
         .select_related("store", "customer", "payment_transaction")
         .prefetch_related("items")
-        .exclude(status__in=[Order.Status.REFUNDED, Order.Status.CANCELED, Order.Status.PICKED_UP])
+        .exclude(
+            status__in=[
+                Order.Status.REFUNDED,
+                Order.Status.CANCELED,
+                Order.Status.PICKED_UP,
+            ]
+        )
         .order_by("pickup_time_requested", "-created_at")
     )
 
@@ -45,7 +49,11 @@ def session_can_view_guest_order(session, order):
 
 
 def user_can_view_order(user, order, *, session=None):
-    if order.order_type == Order.OrderType.GUEST and session and session_can_view_guest_order(session, order):
+    if (
+        order.order_type == Order.OrderType.GUEST
+        and session
+        and session_can_view_guest_order(session, order)
+    ):
         return True
     if not getattr(user, "is_authenticated", False):
         return False

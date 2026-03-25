@@ -2,11 +2,13 @@ from __future__ import annotations
 
 from decimal import Decimal
 
-from django.db import transaction
-from django.utils import timezone
-
 from apps.inventory.models import InventoryItem
 from apps.stores.utils import haversine_miles
+from apps.supply_hubs.models import (
+    HubInventoryBalance,
+    SupplyTransfer,
+    SupplyTransferLineItem,
+)
 from apps.sync.services import create_audit_log, create_outbox_event, serialize_instance
 from apps.users.permissions import (
     user_can_approve_transfer,
@@ -16,6 +18,8 @@ from apps.users.permissions import (
     user_can_request_transfer,
 )
 from core.exceptions import ServiceError
+from django.db import transaction
+from django.utils import timezone
 
 from .models import (
     RestockAlert,
@@ -23,7 +27,6 @@ from .models import (
     SupplierReplenishment,
     SupplySchedule,
 )
-from apps.supply_hubs.models import HubInventoryBalance, SupplyTransfer, SupplyTransferLineItem
 
 
 class InventoryServiceError(ServiceError):
@@ -91,11 +94,15 @@ def available_quantity(balance) -> Decimal:
     return balance.on_hand_quantity - balance.reserved_quantity
 
 
-def apply_balance_change(balance, *, on_hand_delta=Decimal("0.00"), reserved_delta=Decimal("0.00")):
+def apply_balance_change(
+    balance, *, on_hand_delta=Decimal("0.00"), reserved_delta=Decimal("0.00")
+):
     new_on_hand = balance.on_hand_quantity + _as_decimal(on_hand_delta)
     new_reserved = balance.reserved_quantity + _as_decimal(reserved_delta)
     if new_on_hand < 0 or new_reserved < 0 or new_reserved > new_on_hand:
-        raise InventoryServiceError("Inventory mutation would result in invalid quantities.")
+        raise InventoryServiceError(
+            "Inventory mutation would result in invalid quantities."
+        )
     balance.on_hand_quantity = new_on_hand
     balance.reserved_quantity = new_reserved
     balance.save()
@@ -163,7 +170,9 @@ def determine_transfer_scope(*, source_store=None, source_hub=None, destination_
 
     if source_store:
         if source_store.region_id != destination_store.region_id:
-            raise InventoryServiceError("Direct store-to-store transfers are only allowed within the same region.")
+            raise InventoryServiceError(
+                "Direct store-to-store transfers are only allowed within the same region."
+            )
         return (
             SupplyTransfer.TransferScope.SAME_REGION_STORE,
             haversine_miles(
@@ -184,10 +193,14 @@ def determine_transfer_scope(*, source_store=None, source_hub=None, destination_
         return SupplyTransfer.TransferScope.HUB_TO_STORE, distance
     if distance <= Decimal("1000"):
         return SupplyTransfer.TransferScope.CROSS_REGION_HUB, distance
-    raise InventoryServiceError("Cross-region hub deliveries are limited to destinations within 1000 miles.")
+    raise InventoryServiceError(
+        "Cross-region hub deliveries are limited to destinations within 1000 miles."
+    )
 
 
-def choose_internal_transfer_source(*, destination_store, inventory_item, quantity_requested):
+def choose_internal_transfer_source(
+    *, destination_store, inventory_item, quantity_requested
+):
     quantity_requested = _as_decimal(quantity_requested)
     if quantity_requested <= 0:
         raise InventoryServiceError("Transfer quantities must be positive.")
@@ -202,7 +215,10 @@ def choose_internal_transfer_source(*, destination_store, inventory_item, quanti
         .order_by("-on_hand_quantity")
         .first()
     )
-    if source_store_balance and available_quantity(source_store_balance) >= quantity_requested:
+    if (
+        source_store_balance
+        and available_quantity(source_store_balance) >= quantity_requested
+    ):
         return {
             "source_store": source_store_balance.store,
             "source_hub": None,
@@ -218,7 +234,10 @@ def choose_internal_transfer_source(*, destination_store, inventory_item, quanti
         .order_by("-on_hand_quantity")
         .first()
     )
-    if regional_hub_balance and available_quantity(regional_hub_balance) >= quantity_requested:
+    if (
+        regional_hub_balance
+        and available_quantity(regional_hub_balance) >= quantity_requested
+    ):
         return {
             "source_store": None,
             "source_hub": regional_hub_balance.hub,
@@ -272,7 +291,9 @@ def create_transfer_request(
     is_ai_draft=False,
 ):
     if not user_can_request_transfer(actor, destination_store):
-        raise InventoryServiceError("You cannot request a transfer for that destination store.")
+        raise InventoryServiceError(
+            "You cannot request a transfer for that destination store."
+        )
 
     quantity_requested = _as_decimal(quantity_requested)
     if quantity_requested <= 0:
@@ -302,7 +323,9 @@ def create_transfer_request(
     else:
         source_balance = get_hub_balance(source_hub, inventory_item)
     if available_quantity(source_balance) < quantity_requested:
-        raise InventoryServiceError("The chosen source does not have enough available stock.")
+        raise InventoryServiceError(
+            "The chosen source does not have enough available stock."
+        )
 
     combined_notes = "\n".join(
         [part for part in [summary_note, (notes or "").strip()] if part]
@@ -324,14 +347,27 @@ def create_transfer_request(
 
 
 @transaction.atomic
-def request_transfer(*, requested_by, destination_store, line_items, source_store=None, source_hub=None, notes="", is_ai_draft=False):
+def request_transfer(
+    *,
+    requested_by,
+    destination_store,
+    line_items,
+    source_store=None,
+    source_hub=None,
+    notes="",
+    is_ai_draft=False,
+):
     transfer_scope, distance_miles = determine_transfer_scope(
         source_store=source_store,
         source_hub=source_hub,
         destination_store=destination_store,
     )
     transfer = SupplyTransfer.objects.create(
-        source_type=SupplyTransfer.SourceType.STORE if source_store else SupplyTransfer.SourceType.HUB,
+        source_type=(
+            SupplyTransfer.SourceType.STORE
+            if source_store
+            else SupplyTransfer.SourceType.HUB
+        ),
         source_store=source_store,
         source_hub=source_hub,
         destination_store=destination_store,
@@ -376,7 +412,9 @@ def approve_transfer(transfer, *, approver, approved_quantities=None):
     approved_quantities = approved_quantities or {}
     for line_item in transfer.line_items.all():
         line_item.quantity_approved = _as_decimal(
-            approved_quantities.get(str(line_item.inventory_item_id), line_item.quantity_requested)
+            approved_quantities.get(
+                str(line_item.inventory_item_id), line_item.quantity_requested
+            )
         )
         line_item.save()
 
@@ -413,7 +451,9 @@ def reserve_transfer_inventory(transfer):
         else:
             balance = get_hub_balance(transfer.source_hub, line_item.inventory_item)
         if available_quantity(balance) < quantity:
-            raise InventoryServiceError("Transfer would oversubscribe source inventory.")
+            raise InventoryServiceError(
+                "Transfer would oversubscribe source inventory."
+            )
         apply_balance_change(balance, reserved_delta=quantity)
 
     before = serialize_instance(transfer)
@@ -494,7 +534,9 @@ def receive_transfer(transfer, *, actor=None):
         raise InventoryServiceError("Only delivered transfers can be received.")
     for line_item in transfer.line_items.all():
         quantity = line_item.quantity_received or line_item.quantity_approved
-        balance = get_store_balance(transfer.destination_store, line_item.inventory_item)
+        balance = get_store_balance(
+            transfer.destination_store, line_item.inventory_item
+        )
         apply_balance_change(balance, on_hand_delta=quantity)
         evaluate_restock_alert(balance)
 
@@ -541,8 +583,13 @@ def progress_transfer(transfer, *, actor, action):
 
 
 def approve_supply_schedule(schedule, *, approver):
-    if approver.role not in {approver.Role.LOGISTICS_MANAGER, approver.Role.SUPER_ADMIN}:
-        raise InventoryServiceError("Only logistics managers or super admins can approve supply schedules.")
+    if approver.role not in {
+        approver.Role.LOGISTICS_MANAGER,
+        approver.Role.SUPER_ADMIN,
+    }:
+        raise InventoryServiceError(
+            "Only logistics managers or super admins can approve supply schedules."
+        )
     schedule.status = SupplySchedule.Status.APPROVED
     schedule.approved_by = approver
     schedule.save()
@@ -564,9 +611,13 @@ def create_supplier_replenishment_order(
     if not user_can_manage_supplier_order(actor, store):
         raise InventoryServiceError("You cannot order supplies for that store.")
     if supplier.service_region_id and supplier.service_region_id != store.region_id:
-        raise InventoryServiceError("Supplier must service the destination store region.")
+        raise InventoryServiceError(
+            "Supplier must service the destination store region."
+        )
 
-    quantity_requested = normalize_bulk_order_quantity(inventory_item, quantity_requested)
+    quantity_requested = normalize_bulk_order_quantity(
+        inventory_item, quantity_requested
+    )
     replenishment = SupplierReplenishment.objects.create(
         supplier=supplier,
         store=store,
@@ -584,7 +635,10 @@ def create_supplier_replenishment_order(
     create_outbox_event(
         event_type="supplier_replenishment.ordered",
         instance=replenishment,
-        payload={"status": replenishment.status, "quantity_requested": str(quantity_requested)},
+        payload={
+            "status": replenishment.status,
+            "quantity_requested": str(quantity_requested),
+        },
         source_scope={"region_code": store.region.code},
     )
     create_audit_log(
@@ -607,9 +661,13 @@ def receive_supplier_replenishment(
     if not user_can_manage_supplier_order(actor, replenishment.store):
         raise InventoryServiceError("You cannot receive supplies for that store.")
     if replenishment.status != SupplierReplenishment.Status.ORDERED:
-        raise InventoryServiceError("Only ordered supplier replenishments can be received.")
+        raise InventoryServiceError(
+            "Only ordered supplier replenishments can be received."
+        )
 
-    quantity_received = _as_decimal(quantity_received or replenishment.quantity_requested)
+    quantity_received = _as_decimal(
+        quantity_received or replenishment.quantity_requested
+    )
     if quantity_received <= 0:
         raise InventoryServiceError("Received quantity must be positive.")
 
@@ -628,7 +686,10 @@ def receive_supplier_replenishment(
     create_outbox_event(
         event_type="supplier_replenishment.received",
         instance=replenishment,
-        payload={"status": replenishment.status, "quantity_received": str(quantity_received)},
+        payload={
+            "status": replenishment.status,
+            "quantity_received": str(quantity_received),
+        },
         source_scope={"region_code": replenishment.store.region.code},
     )
     create_audit_log(
@@ -646,7 +707,9 @@ def cancel_supplier_replenishment(replenishment, *, actor):
     if not user_can_manage_supplier_order(actor, replenishment.store):
         raise InventoryServiceError("You cannot cancel supplies for that store.")
     if replenishment.status != SupplierReplenishment.Status.ORDERED:
-        raise InventoryServiceError("Only ordered supplier replenishments can be canceled.")
+        raise InventoryServiceError(
+            "Only ordered supplier replenishments can be canceled."
+        )
 
     before = serialize_instance(replenishment)
     replenishment.status = SupplierReplenishment.Status.CANCELED
@@ -667,7 +730,9 @@ def cancel_supplier_replenishment(replenishment, *, actor):
     return replenishment
 
 
-def draft_supply_schedule_from_usage(*, store, inventory_item, quantity_used, source_type, source_reference):
+def draft_supply_schedule_from_usage(
+    *, store, inventory_item, quantity_used, source_type, source_reference
+):
     recommended_quantity = recommended_bulk_quantity(inventory_item, quantity_used)
     recommended_frequency_days = 21 if inventory_item.is_perishable else 30
     schedule, _ = SupplySchedule.objects.update_or_create(

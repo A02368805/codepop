@@ -6,23 +6,52 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('users', '0002_favoritedrink_tastepreference'),
+        ("users", "0002_favoritedrink_tastepreference"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='user',
-            name='adventurousness_preference',
-            field=models.CharField(choices=[('classic', 'Keep It Classic'), ('balanced', 'Balanced'), ('adventurous', 'Adventurous')], default='balanced', max_length=24),
+            model_name="user",
+            name="adventurousness_preference",
+            field=models.CharField(
+                choices=[
+                    ("classic", "Keep It Classic"),
+                    ("balanced", "Balanced"),
+                    ("adventurous", "Adventurous"),
+                ],
+                default="balanced",
+                max_length=24,
+            ),
         ),
         migrations.AddField(
-            model_name='user',
-            name='sweetness_preference',
-            field=models.CharField(choices=[('light', 'Light Sweetness'), ('balanced', 'Balanced Sweetness'), ('sweet', 'Sweet'), ('extra_sweet', 'Extra Sweet')], default='balanced', max_length=24),
+            model_name="user",
+            name="sweetness_preference",
+            field=models.CharField(
+                choices=[
+                    ("light", "Light Sweetness"),
+                    ("balanced", "Balanced Sweetness"),
+                    ("sweet", "Sweet"),
+                    ("extra_sweet", "Extra Sweet"),
+                ],
+                default="balanced",
+                max_length=24,
+            ),
         ),
         migrations.AlterField(
-            model_name='tastepreference',
-            name='preference_type',
-            field=models.CharField(choices=[('like', 'Like'), ('dislike', 'Dislike'), ('favorite_soda', 'Favorite Soda'), ('favorite_syrup', 'Favorite Syrup'), ('favorite_add_in', 'Favorite Add-In'), ('favorite_ice_cream', 'Favorite Ice Cream'), ('dietary', 'Dietary Preference')], default='like', max_length=32),
+            model_name="tastepreference",
+            name="preference_type",
+            field=models.CharField(
+                choices=[
+                    ("like", "Like"),
+                    ("dislike", "Dislike"),
+                    ("favorite_soda", "Favorite Soda"),
+                    ("favorite_syrup", "Favorite Syrup"),
+                    ("favorite_add_in", "Favorite Add-In"),
+                    ("favorite_ice_cream", "Favorite Ice Cream"),
+                    ("dietary", "Dietary Preference"),
+                ],
+                default="like",
+                max_length=32,
+            ),
         ),
     ]

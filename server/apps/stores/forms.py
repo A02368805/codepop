@@ -1,7 +1,6 @@
+from apps.orders.pickup import parse_pickup_choice, pickup_time_choices
 from django import forms
 from django.utils import timezone
-
-from apps.orders.pickup import parse_pickup_choice, pickup_time_choices
 
 from .location import geocode_location_query
 

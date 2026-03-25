@@ -10,18 +10,27 @@ class Migration(migrations.Migration):
     initial = True
 
     dependencies = [
-        ('imports', '0001_initial'),
+        ("imports", "0001_initial"),
         migrations.swappable_dependency(settings.AUTH_USER_MODEL),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='importjob',
-            name='uploaded_by',
-            field=models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.SET_NULL, related_name='import_jobs', to=settings.AUTH_USER_MODEL),
+            model_name="importjob",
+            name="uploaded_by",
+            field=models.ForeignKey(
+                blank=True,
+                null=True,
+                on_delete=django.db.models.deletion.SET_NULL,
+                related_name="import_jobs",
+                to=settings.AUTH_USER_MODEL,
+            ),
         ),
         migrations.AddIndex(
-            model_name='importjob',
-            index=models.Index(fields=['import_type', 'status', '-created_at'], name='imports_imp_import__df79cc_idx'),
+            model_name="importjob",
+            index=models.Index(
+                fields=["import_type", "status", "-created_at"],
+                name="imports_imp_import__df79cc_idx",
+            ),
         ),
     ]

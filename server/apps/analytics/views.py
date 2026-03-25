@@ -1,12 +1,5 @@
 from datetime import date, timedelta
 
-from django.contrib.auth.mixins import LoginRequiredMixin
-from django.db.models import Count, Sum
-from django.http import HttpResponse
-from django.template.loader import render_to_string
-from django.utils import timezone
-from django.views.generic import TemplateView, View
-
 from apps.inventory.models import RestockAlert, SupplyUsageRecord
 from apps.maintenance.models import Machine, MachineStatusEvent
 from apps.payments.models import RevenueLedgerEntry
@@ -15,6 +8,12 @@ from apps.stores.selectors import scoped_region_store_options
 from apps.sync.models import AuditLog
 from apps.users.models import User
 from apps.users.permissions import RoleRequiredMixin
+from django.contrib.auth.mixins import LoginRequiredMixin
+from django.db.models import Count, Sum
+from django.http import HttpResponse
+from django.template.loader import render_to_string
+from django.utils import timezone
+from django.views.generic import TemplateView, View
 
 from .selectors import build_dashboard_payload
 
@@ -49,7 +48,10 @@ class AnalyticsWorkspaceView(RoleRequiredMixin, TemplateView):
         date_from = _parse_date(self.request.GET.get("date_from", "").strip()) or (
             timezone.now().date() - timedelta(days=30)
         )
-        date_to = _parse_date(self.request.GET.get("date_to", "").strip()) or timezone.now().date()
+        date_to = (
+            _parse_date(self.request.GET.get("date_to", "").strip())
+            or timezone.now().date()
+        )
         revenue_entries = RevenueLedgerEntry.objects.filter(
             store__in=visible_stores,
             posted_at__date__gte=date_from,
@@ -60,8 +62,7 @@ class AnalyticsWorkspaceView(RoleRequiredMixin, TemplateView):
             net=Sum("net_amount"),
         )
         revenue_by_store = (
-            revenue_entries
-            .values("store__store_code", "store__name")
+            revenue_entries.values("store__store_code", "store__name")
             .annotate(gross=Sum("gross_amount"), net=Sum("net_amount"))
             .order_by("-net")[:10]
         )
@@ -72,13 +73,20 @@ class AnalyticsWorkspaceView(RoleRequiredMixin, TemplateView):
                 usage_date__lte=date_to,
             )
             .values("inventory_item__name")
-            .annotate(total_used=Sum("quantity_used"), store_count=Count("store", distinct=True))
+            .annotate(
+                total_used=Sum("quantity_used"),
+                store_count=Count("store", distinct=True),
+            )
             .order_by("-total_used")[:10]
         )
         machine_failure_trends = (
             MachineStatusEvent.objects.filter(
                 machine__store__in=visible_stores,
-                status__in=[Machine.Status.WARNING, Machine.Status.ERROR, Machine.Status.OUT_OF_ORDER],
+                status__in=[
+                    Machine.Status.WARNING,
+                    Machine.Status.ERROR,
+                    Machine.Status.OUT_OF_ORDER,
+                ],
                 status_date__gte=date_from,
                 status_date__lte=date_to,
             )
@@ -101,17 +109,29 @@ class AnalyticsWorkspaceView(RoleRequiredMixin, TemplateView):
                 "selected_store": scope["selected_store"],
                 "date_from": date_from.isoformat(),
                 "date_to": date_to.isoformat(),
-                "open_alerts": RestockAlert.objects.filter(store__in=visible_stores, status=RestockAlert.Status.OPEN).count(),
+                "open_alerts": RestockAlert.objects.filter(
+                    store__in=visible_stores, status=RestockAlert.Status.OPEN
+                ).count(),
                 "machine_issues": Machine.objects.filter(
                     store__in=visible_stores,
-                    current_status__in=[Machine.Status.WARNING, Machine.Status.ERROR, Machine.Status.OUT_OF_ORDER],
+                    current_status__in=[
+                        Machine.Status.WARNING,
+                        Machine.Status.ERROR,
+                        Machine.Status.OUT_OF_ORDER,
+                    ],
                 ).count(),
-                "audit_logs": AuditLog.objects.filter(
-                    store__in=visible_stores
-                ).select_related("actor", "store", "region")[:20]
-                if self.request.user.role != User.Role.SUPER_ADMIN
-                else AuditLog.objects.select_related("actor", "store", "region")[:20],
-                "region_rows": Region.objects.filter(id__in=visible_regions.values("id")).annotate(
+                "audit_logs": (
+                    AuditLog.objects.filter(store__in=visible_stores).select_related(
+                        "actor", "store", "region"
+                    )[:20]
+                    if self.request.user.role != User.Role.SUPER_ADMIN
+                    else AuditLog.objects.select_related("actor", "store", "region")[
+                        :20
+                    ]
+                ),
+                "region_rows": Region.objects.filter(
+                    id__in=visible_regions.values("id")
+                ).annotate(
                     store_count=Count("stores"),
                     hub_count=Count("supply_hubs"),
                 ),

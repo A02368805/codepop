@@ -1,10 +1,9 @@
+from apps.users.models import User
+from apps.users.permissions import RoleRequiredMixin
 from django.http import HttpResponse
 from django.template.loader import render_to_string
 from django.views import View
 from django.views.generic import TemplateView
-
-from apps.users.models import User
-from apps.users.permissions import RoleRequiredMixin
 
 from .models import SyncOutboxEvent
 from .services import retry_failed_outbox_events
@@ -16,16 +15,22 @@ def _sync_context():
     return {
         "event_counts": {
             "pending": queryset.filter(status=SyncOutboxEvent.Status.PENDING).count(),
-            "processing": queryset.filter(status=SyncOutboxEvent.Status.PROCESSING).count(),
+            "processing": queryset.filter(
+                status=SyncOutboxEvent.Status.PROCESSING
+            ).count(),
             "failed": queryset.filter(status=SyncOutboxEvent.Status.FAILED).count(),
-            "dispatched": queryset.filter(status=SyncOutboxEvent.Status.DISPATCHED).count(),
+            "dispatched": queryset.filter(
+                status=SyncOutboxEvent.Status.DISPATCHED
+            ).count(),
         },
         "events": queryset[:40],
     }
 
 
 def _render_sync_panel(request):
-    html = render_to_string("sync/partials/event_table.html", _sync_context(), request=request)
+    html = render_to_string(
+        "sync/partials/event_table.html", _sync_context(), request=request
+    )
     return HttpResponse(html)
 
 

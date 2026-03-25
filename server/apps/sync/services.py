@@ -4,15 +4,14 @@ from datetime import date, datetime, timedelta
 from decimal import Decimal
 from uuid import UUID
 
-from django.db import transaction
-from django.forms.models import model_to_dict
-from django.utils import timezone
-
 from apps.notifications.models import Notification
 from apps.notifications.services import notify_store_roles, notify_user
 from apps.orders.models import Order
 from apps.supply_hubs.models import SupplyTransfer
 from apps.users.models import User
+from django.db import transaction
+from django.forms.models import model_to_dict
+from django.utils import timezone
 
 from .models import AuditLog, SyncOutboxEvent
 
@@ -41,7 +40,9 @@ def serialize_instance(instance, *, fields=None):
     return _serialize_value(payload)
 
 
-def create_outbox_event(*, event_type, instance, payload=None, source_scope=None, entity_version=1):
+def create_outbox_event(
+    *, event_type, instance, payload=None, source_scope=None, entity_version=1
+):
     event = SyncOutboxEvent.objects.create(
         event_type=event_type,
         aggregate_type=instance.__class__.__name__,
@@ -54,7 +55,9 @@ def create_outbox_event(*, event_type, instance, payload=None, source_scope=None
     return event
 
 
-def create_audit_log(*, actor=None, action, instance, before=None, after=None, store=None, region=None):
+def create_audit_log(
+    *, actor=None, action, instance, before=None, after=None, store=None, region=None
+):
     resolved_store = store or getattr(instance, "store", None)
     resolved_region = region or getattr(instance, "region", None)
     if resolved_region is None and resolved_store is not None:
@@ -80,7 +83,11 @@ def _enqueue_outbox_processing():
 
 def _dispatch_outbox_event(event):
     if event.event_type == "order.ready":
-        order = Order.objects.select_related("customer", "store").filter(pk=event.aggregate_id).first()
+        order = (
+            Order.objects.select_related("customer", "store")
+            .filter(pk=event.aggregate_id)
+            .first()
+        )
         if order and order.customer_id:
             notify_user(
                 user=order.customer,
@@ -89,7 +96,11 @@ def _dispatch_outbox_event(event):
                 category=Notification.Category.TASK,
             )
     elif event.event_type == "order.refunded":
-        order = Order.objects.select_related("customer").filter(pk=event.aggregate_id).first()
+        order = (
+            Order.objects.select_related("customer")
+            .filter(pk=event.aggregate_id)
+            .first()
+        )
         if order and order.customer_id:
             notify_user(
                 user=order.customer,
@@ -98,7 +109,11 @@ def _dispatch_outbox_event(event):
                 category=Notification.Category.INFO,
             )
     elif event.event_type == "order.failed":
-        order = Order.objects.select_related("customer").filter(pk=event.aggregate_id).first()
+        order = (
+            Order.objects.select_related("customer")
+            .filter(pk=event.aggregate_id)
+            .first()
+        )
         if order and order.customer_id:
             notify_user(
                 user=order.customer,
@@ -107,9 +122,11 @@ def _dispatch_outbox_event(event):
                 category=Notification.Category.ALERT,
             )
     elif event.event_type == "transfer.approved":
-        transfer = SupplyTransfer.objects.select_related("requested_by", "destination_store").filter(
-            pk=event.aggregate_id
-        ).first()
+        transfer = (
+            SupplyTransfer.objects.select_related("requested_by", "destination_store")
+            .filter(pk=event.aggregate_id)
+            .first()
+        )
         if transfer:
             notify_user(
                 user=transfer.requested_by,
@@ -121,7 +138,9 @@ def _dispatch_outbox_event(event):
         aggregate_store_id = event.source_scope.get("store_id")
         from apps.stores.models import Store
 
-        store = Store.objects.select_related("region").filter(pk=aggregate_store_id).first()
+        store = (
+            Store.objects.select_related("region").filter(pk=aggregate_store_id).first()
+        )
         if store:
             notify_store_roles(
                 store=store,
@@ -150,7 +169,9 @@ def process_outbox_event(event):
         event.status = SyncOutboxEvent.Status.FAILED
         event.last_error = str(exc)
         event.next_attempt_at = timezone.now() + timedelta(minutes=5)
-        event.save(update_fields=["status", "last_error", "next_attempt_at", "updated_at"])
+        event.save(
+            update_fields=["status", "last_error", "next_attempt_at", "updated_at"]
+        )
     create_audit_log(
         action="sync.outbox_processed",
         instance=event,
@@ -162,8 +183,9 @@ def process_outbox_event(event):
 
 def process_pending_outbox_events(*, limit=25):
     events = list(
-        SyncOutboxEvent.objects.filter(status=SyncOutboxEvent.Status.PENDING)
-        .order_by("created_at")[:limit]
+        SyncOutboxEvent.objects.filter(status=SyncOutboxEvent.Status.PENDING).order_by(
+            "created_at"
+        )[:limit]
     )
     for event in events:
         process_outbox_event(event)
@@ -171,7 +193,9 @@ def process_pending_outbox_events(*, limit=25):
 
 
 def retry_failed_outbox_events(*, limit=25):
-    events = SyncOutboxEvent.objects.filter(status=SyncOutboxEvent.Status.FAILED).order_by("created_at")[:limit]
+    events = SyncOutboxEvent.objects.filter(
+        status=SyncOutboxEvent.Status.FAILED
+    ).order_by("created_at")[:limit]
     event_ids = list(events.values_list("id", flat=True))
     if event_ids:
         SyncOutboxEvent.objects.filter(id__in=event_ids).update(

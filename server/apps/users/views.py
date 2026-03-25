@@ -1,17 +1,7 @@
 from datetime import timedelta
 
-from django.contrib import messages
-from django.contrib.auth import login
-from django.contrib.auth.views import LoginView, LogoutView
-from django.contrib.auth.mixins import LoginRequiredMixin
-from django.db.models import Count, Sum
-from django.shortcuts import get_object_or_404
-from django.shortcuts import redirect
-from django.utils import timezone
-from django.views.generic import FormView, TemplateView, View
-
-from apps.analytics.selectors import build_dashboard_payload
 from apps.analytics.recommendations import recommend_drinks_for_user
+from apps.analytics.selectors import build_dashboard_payload
 from apps.imports.models import ImportJob
 from apps.inventory.models import (
     LocalSupplier,
@@ -21,7 +11,10 @@ from apps.inventory.models import (
     SupplySchedule,
     SupplyUsageRecord,
 )
-from apps.inventory.selectors import build_transfer_recommendations, summarize_store_inventory_health
+from apps.inventory.selectors import (
+    build_transfer_recommendations,
+    summarize_store_inventory_health,
+)
 from apps.maintenance.models import Machine, RepairAssignment
 from apps.notifications.models import Notification
 from apps.orders.catalog import (
@@ -42,13 +35,34 @@ from apps.orders.models import Order
 from apps.orders.selectors import staff_order_queue
 from apps.payments.models import RevenueLedgerEntry
 from apps.stores.models import Region
-from apps.stores.selectors import regions_visible_to_user, scoped_region_store_options, stores_visible_to_user
+from apps.stores.selectors import (
+    regions_visible_to_user,
+    scoped_region_store_options,
+    stores_visible_to_user,
+)
 from apps.supply_hubs.models import HubInventoryBalance, SupplyHub, SupplyTransfer
 from apps.sync.models import AuditLog
+from django.contrib import messages
+from django.contrib.auth import login
+from django.contrib.auth.mixins import LoginRequiredMixin
+from django.contrib.auth.views import LoginView, LogoutView
+from django.db.models import Count, Sum
+from django.shortcuts import get_object_or_404, redirect
+from django.utils import timezone
+from django.views.generic import FormView, TemplateView, View
 
-from .forms import EmailAuthenticationForm, PreferenceProfileForm, RegistrationForm, ScopedUserUpdateForm
+from .forms import (
+    EmailAuthenticationForm,
+    PreferenceProfileForm,
+    RegistrationForm,
+    ScopedUserUpdateForm,
+)
 from .models import User
-from .permissions import RoleRequiredMixin, user_can_use_customer_ordering, user_has_global_access
+from .permissions import (
+    RoleRequiredMixin,
+    user_can_use_customer_ordering,
+    user_has_global_access,
+)
 from .selectors import get_dashboard_template, get_role_cards
 from .services import get_post_login_url, save_preference_profile, update_scoped_user
 
@@ -144,7 +158,10 @@ class RegisterView(FormView):
     def form_valid(self, form):
         user = form.save()
         login(self.request, user)
-        messages.success(self.request, "Your account is ready. Start with your store and preferences.")
+        messages.success(
+            self.request,
+            "Your account is ready. Start with your store and preferences.",
+        )
         return redirect(get_post_login_url(user))
 
 
@@ -176,11 +193,21 @@ class CustomerDashboardView(BaseDashboardView):
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        context["recent_orders"] = self.request.user.orders.select_related("store").order_by("-created_at")[:5]
-        context["favorite_drinks"] = self.request.user.favorite_drinks.order_by("name")[:4]
-        context["taste_preferences"] = self.request.user.taste_preferences.order_by("ingredient_name")
-        context["recommended_drinks"] = recommend_drinks_for_user(self.request.user, limit=3)
-        context["notifications"] = Notification.objects.filter(user=self.request.user, is_read=False)[:4]
+        context["recent_orders"] = self.request.user.orders.select_related(
+            "store"
+        ).order_by("-created_at")[:5]
+        context["favorite_drinks"] = self.request.user.favorite_drinks.order_by("name")[
+            :4
+        ]
+        context["taste_preferences"] = self.request.user.taste_preferences.order_by(
+            "ingredient_name"
+        )
+        context["recommended_drinks"] = recommend_drinks_for_user(
+            self.request.user, limit=3
+        )
+        context["notifications"] = Notification.objects.filter(
+            user=self.request.user, is_read=False
+        )[:4]
         return context
 
 
@@ -201,8 +228,10 @@ class ManagerDashboardView(BaseDashboardView):
             store__in=stores,
             status=RestockAlert.Status.OPEN,
         ).select_related("store", "inventory_item")[:8]
-        context["machine_summary"] = Machine.objects.filter(store__in=stores).values("current_status").annotate(
-            count=Count("id")
+        context["machine_summary"] = (
+            Machine.objects.filter(store__in=stores)
+            .values("current_status")
+            .annotate(count=Count("id"))
         )
         context["gross_revenue"] = revenue_summary["gross"] or 0
         context["net_revenue"] = revenue_summary["net"] or 0
@@ -219,8 +248,12 @@ class AdminDashboardView(BaseDashboardView):
         context["managed_store"] = managed_store
         context["scoped_users"] = scoped_users[:10]
         context["locked_count"] = scoped_users.filter(status=User.Status.LOCKED).count()
-        context["disabled_count"] = scoped_users.filter(status=User.Status.DISABLED).count()
-        context["pending_count"] = scoped_users.filter(status=User.Status.PENDING).count()
+        context["disabled_count"] = scoped_users.filter(
+            status=User.Status.DISABLED
+        ).count()
+        context["pending_count"] = scoped_users.filter(
+            status=User.Status.PENDING
+        ).count()
         return context
 
 
@@ -258,9 +291,13 @@ class LogisticsDashboardView(BaseDashboardView):
             "source_hub",
         )
         if date_from:
-            pending_transfers = pending_transfers.filter(requested_at__date__gte=date_from)
+            pending_transfers = pending_transfers.filter(
+                requested_at__date__gte=date_from
+            )
         if date_to:
-            pending_transfers = pending_transfers.filter(requested_at__date__lte=date_to)
+            pending_transfers = pending_transfers.filter(
+                requested_at__date__lte=date_to
+            )
 
         low_stock_alerts = RestockAlert.objects.filter(
             store__in=visible_stores,
@@ -293,10 +330,14 @@ class LogisticsDashboardView(BaseDashboardView):
         context.update(
             {
                 "visible_regions": scope["region_options"],
-                "hubs": SupplyHub.objects.filter(region__in=scoped_regions).order_by("hub_code"),
+                "hubs": SupplyHub.objects.filter(region__in=scoped_regions).order_by(
+                    "hub_code"
+                ),
                 "hub_balances": HubInventoryBalance.objects.filter(
                     hub__region__in=scoped_regions
-                ).select_related("hub", "inventory_item").order_by("hub__name", "inventory_item__name")[:12],
+                )
+                .select_related("hub", "inventory_item")
+                .order_by("hub__name", "inventory_item__name")[:12],
                 "pending_transfers": pending_transfers.order_by("-requested_at")[:8],
                 "low_stock_alerts": low_stock_alerts.order_by("-created_at")[:8],
                 "critical_alert_count": low_stock_alerts.filter(
@@ -304,12 +345,16 @@ class LogisticsDashboardView(BaseDashboardView):
                 ).count(),
                 "recent_imports": ImportJob.objects.filter(
                     import_type=ImportJob.ImportType.SUPPLY_USAGE
-                ).select_related("uploaded_by").order_by("-created_at")[:8],
+                )
+                .select_related("uploaded_by")
+                .order_by("-created_at")[:8],
                 "draft_schedules": SupplySchedule.objects.filter(
                     store__in=visible_stores,
                     created_by_ai=True,
                     status=SupplySchedule.Status.DRAFT,
-                ).select_related("store", "inventory_item").order_by("-created_at")[:8],
+                )
+                .select_related("store", "inventory_item")
+                .order_by("-created_at")[:8],
                 "transfer_recommendations": build_transfer_recommendations(
                     visible_stores=visible_stores,
                     limit=6,
@@ -320,7 +365,9 @@ class LogisticsDashboardView(BaseDashboardView):
                 "usage_rows": usage_rows,
                 "supplier_orders": supplier_orders.order_by("-ordered_at")[:8],
                 "inventory_category_rows": inventory_category_rows[:6],
-                "suppliers": LocalSupplier.objects.filter(service_region__in=scoped_regions).order_by("name")[:8],
+                "suppliers": LocalSupplier.objects.filter(
+                    service_region__in=scoped_regions
+                ).order_by("name")[:8],
                 "window": window,
                 "date_from": date_from.isoformat() if date_from else "",
                 "date_to": date_to.isoformat() if date_to else "",
@@ -366,7 +413,9 @@ class SuperAdminDashboardView(BaseDashboardView):
             store_count=Count("stores"),
             hub_count=Count("supply_hubs"),
         ).order_by("code")
-        context["recent_audit_logs"] = AuditLog.objects.select_related("actor", "store", "region")[:12]
+        context["recent_audit_logs"] = AuditLog.objects.select_related(
+            "actor", "store", "region"
+        )[:12]
         context["account_summary"] = {
             "customers": User.objects.filter(role=User.Role.ACCOUNT_USER).count(),
             "staff": User.objects.exclude(role=User.Role.ACCOUNT_USER).count(),
@@ -467,7 +516,10 @@ class PreferenceView(RoleRequiredMixin, LoginRequiredMixin, FormView):
                             "description": "Finishing touches to keep out of AI suggestions.",
                             "items": [
                                 {"value": key, **value}
-                                for key, value in {**ADD_IN_OPTIONS, **ICE_CREAM_OPTIONS}.items()
+                                for key, value in {
+                                    **ADD_IN_OPTIONS,
+                                    **ICE_CREAM_OPTIONS,
+                                }.items()
                             ],
                         },
                     ],
@@ -479,7 +531,8 @@ class PreferenceView(RoleRequiredMixin, LoginRequiredMixin, FormView):
                         "name": "dietary_preferences",
                         "value": value,
                         "label": label,
-                        "checked": value in set(_form_list_value(form, "dietary_preferences")),
+                        "checked": value
+                        in set(_form_list_value(form, "dietary_preferences")),
                     }
                     for value, label in DIETARY_PREFERENCE_OPTIONS
                 ],
@@ -487,7 +540,8 @@ class PreferenceView(RoleRequiredMixin, LoginRequiredMixin, FormView):
                     {
                         "value": value,
                         "label": label,
-                        "checked": value == _form_scalar_value(form, "sweetness_preference"),
+                        "checked": value
+                        == _form_scalar_value(form, "sweetness_preference"),
                     }
                     for value, label in SWEETNESS_PREFERENCE_CHOICES
                 ],
@@ -495,7 +549,8 @@ class PreferenceView(RoleRequiredMixin, LoginRequiredMixin, FormView):
                     {
                         "value": value,
                         "label": label,
-                        "checked": value == _form_scalar_value(form, "adventurousness_preference"),
+                        "checked": value
+                        == _form_scalar_value(form, "adventurousness_preference"),
                     }
                     for value, label in ADVENTUROUSNESS_PREFERENCE_CHOICES
                 ],
@@ -527,9 +582,13 @@ def _scoped_users_for_admin(user):
     if not managed_store:
         return User.objects.none()
     return (
-        User.objects.filter(preferred_store=managed_store)
-        | User.objects.filter(store_assignments__store=managed_store)
-    ).distinct().order_by("email")
+        (
+            User.objects.filter(preferred_store=managed_store)
+            | User.objects.filter(store_assignments__store=managed_store)
+        )
+        .distinct()
+        .order_by("email")
+    )
 
 
 class AdminUserManagementView(RoleRequiredMixin, LoginRequiredMixin, TemplateView):
@@ -538,7 +597,11 @@ class AdminUserManagementView(RoleRequiredMixin, LoginRequiredMixin, TemplateVie
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        context["managed_store"] = None if user_has_global_access(self.request.user) else stores_visible_to_user(self.request.user).first()
+        context["managed_store"] = (
+            None
+            if user_has_global_access(self.request.user)
+            else stores_visible_to_user(self.request.user).first()
+        )
         context["scoped_users"] = _scoped_users_for_admin(self.request.user)
         context["user_form"] = ScopedUserUpdateForm()
         return context

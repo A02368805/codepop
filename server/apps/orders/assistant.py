@@ -2,7 +2,13 @@ from __future__ import annotations
 
 from apps.users.models import User
 
-from .catalog import ADD_IN_OPTIONS, ICE_CREAM_OPTIONS, SODA_OPTIONS, SYRUP_OPTIONS, ingredient_label
+from .catalog import (
+    ADD_IN_OPTIONS,
+    ICE_CREAM_OPTIONS,
+    SODA_OPTIONS,
+    SYRUP_OPTIONS,
+    ingredient_label,
+)
 from .personalization import build_user_taste_profile, recommend_builder_configuration
 
 
@@ -32,16 +38,24 @@ def build_drink_builder_assistance(
     )
 
     selected_soda_label = SODA_OPTIONS[soda]["label"]
-    selected_syrups = [SYRUP_OPTIONS[token]["label"] for token in syrups if token in SYRUP_OPTIONS]
-    selected_add_ins = [ADD_IN_OPTIONS[token]["label"] for token in add_ins if token in ADD_IN_OPTIONS]
-    selected_ice_cream = ICE_CREAM_OPTIONS[ice_cream]["label"] if ice_cream in ICE_CREAM_OPTIONS else ""
+    selected_syrups = [
+        SYRUP_OPTIONS[token]["label"] for token in syrups if token in SYRUP_OPTIONS
+    ]
+    selected_add_ins = [
+        ADD_IN_OPTIONS[token]["label"] for token in add_ins if token in ADD_IN_OPTIONS
+    ]
+    selected_ice_cream = (
+        ICE_CREAM_OPTIONS[ice_cream]["label"] if ice_cream in ICE_CREAM_OPTIONS else ""
+    )
 
     if ai_applied and ai_reasons:
         summary = "FloatStack AI filled the builder with a recommendation you can still edit freely."
         tips = list(ai_reasons)
     elif selected_ice_cream:
         summary = f"This build leans into float territory with {selected_soda_label} and {selected_ice_cream.lower()} ice cream."
-        tips = ["You can still lighten the cup by swapping to a zero-sugar or citrus base."]
+        tips = [
+            "You can still lighten the cup by swapping to a zero-sugar or citrus base."
+        ]
     elif selected_syrups or selected_add_ins:
         summary = f"Your current cup starts with {selected_soda_label} and already has a clear flavor direction."
         tips = []
@@ -63,10 +77,14 @@ def build_drink_builder_assistance(
                 f"If you want more float energy, {ingredient_label(suggested_fill['ice_cream'])} ice cream fits this build well."
             )
         if "dairy-free" in profile["dietary_preferences"]:
-            tips.append("Your dairy-free preference is active, so creamy dairy add-ins stay out of AI suggestions.")
+            tips.append(
+                "Your dairy-free preference is active, so creamy dairy add-ins stay out of AI suggestions."
+            )
         elif profile["favorite_add_ins"] and not selected_add_ins:
             next_add_in = sorted(profile["favorite_add_ins"])[0]
-            tips.append(f"You often lean toward {ingredient_label(next_add_in)} in saved preferences.")
+            tips.append(
+                f"You often lean toward {ingredient_label(next_add_in)} in saved preferences."
+            )
 
     selected_snapshot = [selected_soda_label]
     selected_snapshot.extend(selected_syrups)
@@ -82,9 +100,7 @@ def build_drink_builder_assistance(
         "selected_snapshot": selected_snapshot,
         "ai_button_label": "Refine with AI" if ai_applied else "AI Help Me Build It",
         "ai_applied": ai_applied,
-        "uses_preferences": bool(
-            _authenticated_preferences(user)
-        ),
+        "uses_preferences": bool(_authenticated_preferences(user)),
     }
 
 

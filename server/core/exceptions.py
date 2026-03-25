@@ -18,6 +18,7 @@ class AppError(Exception):
     Carries a user-facing message accessible via str(exception).
     Each error type has a code for programmatic handling.
     """
+
     code = "error"
 
 
@@ -27,6 +28,7 @@ class ServiceError(AppError):
     Indicates that a requested operation could not be completed due to
     the current state or data constraints, not due to system/code errors.
     """
+
     code = "service_error"
 
 
@@ -35,6 +37,7 @@ class ValidationError(ServiceError):
 
     Raised when user-provided or calculated data does not meet constraints.
     """
+
     code = "validation_error"
 
 
@@ -43,9 +46,11 @@ class ConflictError(ServiceError):
 
     Examples: duplicate resource, state machine violation, race condition.
     """
+
     code = "conflict"
 
 
 class NotFoundError(AppError):
     """Requested resource does not exist or is not accessible to caller."""
+
     code = "not_found"

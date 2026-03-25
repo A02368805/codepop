@@ -1,12 +1,20 @@
 from decimal import Decimal
 
-from django.test import TestCase
-
 from apps.inventory.services import get_store_balance
 from apps.orders.models import Order
-from apps.orders.services import RefundEligibilityError, create_order, ensure_refund_allowed, transition_order_status
+from apps.orders.services import (
+    RefundEligibilityError,
+    create_order,
+    ensure_refund_allowed,
+    transition_order_status,
+)
 from apps.payments.models import PaymentTransaction, RevenueLedgerEntry
-from apps.payments.services import record_payment_pending, record_payment_success, record_refund
+from apps.payments.services import (
+    record_payment_pending,
+    record_payment_success,
+    record_refund,
+)
+from django.test import TestCase
 
 from .helpers import make_inventory_item, make_region, make_store, make_user
 
@@ -73,13 +81,19 @@ class OrderWorkflowTests(TestCase):
         self.assertEqual(order.status, Order.Status.PRICING_VALIDATED)
 
         record_payment_pending(order, payment_intent_id="pi_test_001")
-        self.assertEqual(order.payment_transaction.status, PaymentTransaction.Status.PENDING)
+        self.assertEqual(
+            order.payment_transaction.status, PaymentTransaction.Status.PENDING
+        )
 
-        record_payment_success(order, payment_intent_id="pi_test_001", actor=self.customer)
+        record_payment_success(
+            order, payment_intent_id="pi_test_001", actor=self.customer
+        )
         order.refresh_from_db()
         self.assertEqual(order.status, Order.Status.PAID)
         self.assertEqual(
-            RevenueLedgerEntry.objects.filter(order=order, entry_type=RevenueLedgerEntry.EntryType.SALE).count(),
+            RevenueLedgerEntry.objects.filter(
+                order=order, entry_type=RevenueLedgerEntry.EntryType.SALE
+            ).count(),
             1,
         )
 
@@ -102,7 +116,9 @@ class OrderWorkflowTests(TestCase):
     def test_refund_cutoff_blocks_customers_after_preparing(self):
         order = self._create_order()
         record_payment_pending(order, payment_intent_id="pi_test_002")
-        record_payment_success(order, payment_intent_id="pi_test_002", actor=self.customer)
+        record_payment_success(
+            order, payment_intent_id="pi_test_002", actor=self.customer
+        )
         transition_order_status(order, Order.Status.QUEUED, actor=self.customer)
         transition_order_status(order, Order.Status.PREPARING, actor=self.customer)
 
@@ -112,16 +128,22 @@ class OrderWorkflowTests(TestCase):
     def test_privileged_refund_override_allows_refund_after_preparing(self):
         order = self._create_order()
         record_payment_pending(order, payment_intent_id="pi_test_003")
-        record_payment_success(order, payment_intent_id="pi_test_003", actor=self.customer)
+        record_payment_success(
+            order, payment_intent_id="pi_test_003", actor=self.customer
+        )
         transition_order_status(order, Order.Status.QUEUED, actor=self.customer)
         transition_order_status(order, Order.Status.PREPARING, actor=self.customer)
 
-        payment = record_refund(order, actor=self.admin, notes="Admin override for store issue.")
+        payment = record_refund(
+            order, actor=self.admin, notes="Admin override for store issue."
+        )
         order.refresh_from_db()
         self.assertEqual(order.status, Order.Status.REFUNDED)
         self.assertEqual(order.refund_status, Order.RefundStatus.REFUNDED)
         self.assertEqual(payment.status, PaymentTransaction.Status.REFUNDED)
         self.assertEqual(
-            RevenueLedgerEntry.objects.filter(order=order, entry_type=RevenueLedgerEntry.EntryType.REFUND).count(),
+            RevenueLedgerEntry.objects.filter(
+                order=order, entry_type=RevenueLedgerEntry.EntryType.REFUND
+            ).count(),
             1,
         )

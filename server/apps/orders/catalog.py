@@ -1,7 +1,6 @@
 from copy import deepcopy
 from decimal import Decimal
 
-
 SIZE_LABELS = {
     "small": "Small",
     "medium": "Medium",
@@ -256,31 +255,138 @@ SODA_GROUPS = [
 ]
 
 SYRUP_OPTIONS = {
-    "vanilla": _option("Vanilla", inventory_sku="SYRUP-VANILLA", price="0.25", tags=("vanilla", "dessert")),
-    "french-vanilla": _option("French Vanilla", inventory_sku="SYRUP-FRENCH-VANILLA", price="0.25", tags=("vanilla", "dessert")),
-    "cherry": _option("Cherry", inventory_sku="SYRUP-CHERRY", price="0.25", tags=("fruit", "bright")),
-    "coconut": _option("Coconut", inventory_sku="SYRUP-COCONUT", price="0.30", tags=("tropical", "creamy")),
-    "lime": _option("Lime", inventory_sku="SYRUP-LIME", price="0.25", tags=("citrus", "bright")),
-    "lemon": _option("Lemon", inventory_sku="SYRUP-LEMON", price="0.25", tags=("citrus", "bright")),
-    "raspberry": _option("Raspberry", inventory_sku="SYRUP-RASPBERRY", price="0.25", tags=("berry", "fruit")),
-    "strawberry": _option("Strawberry", inventory_sku="SYRUP-STRAWBERRY", price="0.25", tags=("berry", "fruit")),
-    "peach": _option("Peach", inventory_sku="SYRUP-PEACH", price="0.25", tags=("stone-fruit", "fruit")),
-    "mango": _option("Mango", inventory_sku="SYRUP-MANGO", price="0.30", tags=("tropical", "fruit")),
-    "blackberry": _option("Blackberry", inventory_sku="SYRUP-BLACKBERRY", price="0.30", tags=("berry", "fruit")),
-    "watermelon": _option("Watermelon", inventory_sku="SYRUP-WATERMELON", price="0.25", tags=("fruit", "melon")),
-    "pineapple": _option("Pineapple", inventory_sku="SYRUP-PINEAPPLE", price="0.30", tags=("tropical", "fruit")),
-    "blue-raspberry": _option("Blue Raspberry", inventory_sku="SYRUP-BLUE-RASPBERRY", price="0.30", tags=("berry", "fruit", "playful")),
-    "passion-fruit": _option("Passion Fruit", inventory_sku="SYRUP-PASSION-FRUIT", price="0.30", tags=("tropical", "fruit")),
-    "pomegranate": _option("Pomegranate", inventory_sku="SYRUP-POMEGRANATE", price="0.30", tags=("fruit", "tart")),
-    "hazelnut": _option("Hazelnut", inventory_sku="SYRUP-HAZELNUT", price="0.30", tags=("nutty", "dessert")),
-    "butterscotch": _option("Butterscotch", inventory_sku="SYRUP-BUTTERSCOTCH", price="0.30", tags=("dessert", "caramelized")),
-    "caramel": _option("Caramel", inventory_sku="SYRUP-CARAMEL", price="0.30", tags=("dessert", "caramelized")),
-    "brown-sugar-cinnamon": _option("Brown Sugar Cinnamon", inventory_sku="SYRUP-BROWN-SUGAR-CINNAMON", price="0.30", tags=("spiced", "dessert")),
-    "grapefruit": _option("Grapefruit", inventory_sku="SYRUP-GRAPEFRUIT", price="0.25", tags=("citrus", "tart")),
-    "guava": _option("Guava", inventory_sku="SYRUP-GUAVA", price="0.30", tags=("tropical", "fruit")),
-    "orange": _option("Orange", inventory_sku="SYRUP-ORANGE", price="0.25", tags=("citrus", "fruit")),
-    "lavender": _option("Lavender", inventory_sku="SYRUP-LAVENDER", price="0.30", tags=("floral", "aromatic")),
-    "cinnamon": _option("Cinnamon", inventory_sku="SYRUP-CINNAMON", price="0.25", tags=("spiced", "warm")),
+    "vanilla": _option(
+        "Vanilla",
+        inventory_sku="SYRUP-VANILLA",
+        price="0.25",
+        tags=("vanilla", "dessert"),
+    ),
+    "french-vanilla": _option(
+        "French Vanilla",
+        inventory_sku="SYRUP-FRENCH-VANILLA",
+        price="0.25",
+        tags=("vanilla", "dessert"),
+    ),
+    "cherry": _option(
+        "Cherry", inventory_sku="SYRUP-CHERRY", price="0.25", tags=("fruit", "bright")
+    ),
+    "coconut": _option(
+        "Coconut",
+        inventory_sku="SYRUP-COCONUT",
+        price="0.30",
+        tags=("tropical", "creamy"),
+    ),
+    "lime": _option(
+        "Lime", inventory_sku="SYRUP-LIME", price="0.25", tags=("citrus", "bright")
+    ),
+    "lemon": _option(
+        "Lemon", inventory_sku="SYRUP-LEMON", price="0.25", tags=("citrus", "bright")
+    ),
+    "raspberry": _option(
+        "Raspberry",
+        inventory_sku="SYRUP-RASPBERRY",
+        price="0.25",
+        tags=("berry", "fruit"),
+    ),
+    "strawberry": _option(
+        "Strawberry",
+        inventory_sku="SYRUP-STRAWBERRY",
+        price="0.25",
+        tags=("berry", "fruit"),
+    ),
+    "peach": _option(
+        "Peach",
+        inventory_sku="SYRUP-PEACH",
+        price="0.25",
+        tags=("stone-fruit", "fruit"),
+    ),
+    "mango": _option(
+        "Mango", inventory_sku="SYRUP-MANGO", price="0.30", tags=("tropical", "fruit")
+    ),
+    "blackberry": _option(
+        "Blackberry",
+        inventory_sku="SYRUP-BLACKBERRY",
+        price="0.30",
+        tags=("berry", "fruit"),
+    ),
+    "watermelon": _option(
+        "Watermelon",
+        inventory_sku="SYRUP-WATERMELON",
+        price="0.25",
+        tags=("fruit", "melon"),
+    ),
+    "pineapple": _option(
+        "Pineapple",
+        inventory_sku="SYRUP-PINEAPPLE",
+        price="0.30",
+        tags=("tropical", "fruit"),
+    ),
+    "blue-raspberry": _option(
+        "Blue Raspberry",
+        inventory_sku="SYRUP-BLUE-RASPBERRY",
+        price="0.30",
+        tags=("berry", "fruit", "playful"),
+    ),
+    "passion-fruit": _option(
+        "Passion Fruit",
+        inventory_sku="SYRUP-PASSION-FRUIT",
+        price="0.30",
+        tags=("tropical", "fruit"),
+    ),
+    "pomegranate": _option(
+        "Pomegranate",
+        inventory_sku="SYRUP-POMEGRANATE",
+        price="0.30",
+        tags=("fruit", "tart"),
+    ),
+    "hazelnut": _option(
+        "Hazelnut",
+        inventory_sku="SYRUP-HAZELNUT",
+        price="0.30",
+        tags=("nutty", "dessert"),
+    ),
+    "butterscotch": _option(
+        "Butterscotch",
+        inventory_sku="SYRUP-BUTTERSCOTCH",
+        price="0.30",
+        tags=("dessert", "caramelized"),
+    ),
+    "caramel": _option(
+        "Caramel",
+        inventory_sku="SYRUP-CARAMEL",
+        price="0.30",
+        tags=("dessert", "caramelized"),
+    ),
+    "brown-sugar-cinnamon": _option(
+        "Brown Sugar Cinnamon",
+        inventory_sku="SYRUP-BROWN-SUGAR-CINNAMON",
+        price="0.30",
+        tags=("spiced", "dessert"),
+    ),
+    "grapefruit": _option(
+        "Grapefruit",
+        inventory_sku="SYRUP-GRAPEFRUIT",
+        price="0.25",
+        tags=("citrus", "tart"),
+    ),
+    "guava": _option(
+        "Guava", inventory_sku="SYRUP-GUAVA", price="0.30", tags=("tropical", "fruit")
+    ),
+    "orange": _option(
+        "Orange", inventory_sku="SYRUP-ORANGE", price="0.25", tags=("citrus", "fruit")
+    ),
+    "lavender": _option(
+        "Lavender",
+        inventory_sku="SYRUP-LAVENDER",
+        price="0.30",
+        tags=("floral", "aromatic"),
+    ),
+    "cinnamon": _option(
+        "Cinnamon",
+        inventory_sku="SYRUP-CINNAMON",
+        price="0.25",
+        tags=("spiced", "warm"),
+    ),
 }
 
 SYRUP_GROUPS = [
@@ -593,8 +699,7 @@ ALL_INGREDIENT_OPTIONS = {
 }
 
 INGREDIENT_LABELS = {
-    key: option["label"]
-    for key, option in ALL_INGREDIENT_OPTIONS.items()
+    key: option["label"] for key, option in ALL_INGREDIENT_OPTIONS.items()
 }
 
 
@@ -626,7 +731,13 @@ def grouped_options(option_map, group_definitions):
     ]
 
 
-def combined_ingredient_choices(*, include_sodas=True, include_syrups=True, include_add_ins=True, include_ice_cream=True):
+def combined_ingredient_choices(
+    *,
+    include_sodas=True,
+    include_syrups=True,
+    include_add_ins=True,
+    include_ice_cream=True,
+):
     choices = []
     if include_sodas:
         choices.extend((key, option["label"]) for key, option in SODA_OPTIONS.items())
@@ -635,7 +746,9 @@ def combined_ingredient_choices(*, include_sodas=True, include_syrups=True, incl
     if include_add_ins:
         choices.extend((key, option["label"]) for key, option in ADD_IN_OPTIONS.items())
     if include_ice_cream:
-        choices.extend((key, option["label"]) for key, option in ICE_CREAM_OPTIONS.items())
+        choices.extend(
+            (key, option["label"]) for key, option in ICE_CREAM_OPTIONS.items()
+        )
     return choices
 
 
@@ -760,7 +873,9 @@ def build_inventory_requirements(*, size, soda, syrups, add_ins, ice_cream=""):
 def calculate_extras_total(*, syrups, add_ins, ice_cream=""):
     syrup_total = sum(SYRUP_OPTIONS[syrup]["price"] for syrup in syrups)
     add_in_total = sum(ADD_IN_OPTIONS[add_in]["price"] for add_in in add_ins)
-    ice_cream_total = ICE_CREAM_OPTIONS[ice_cream]["price"] if ice_cream else Decimal("0.00")
+    ice_cream_total = (
+        ICE_CREAM_OPTIONS[ice_cream]["price"] if ice_cream else Decimal("0.00")
+    )
     return syrup_total + add_in_total + ice_cream_total
 
 

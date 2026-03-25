@@ -4,7 +4,6 @@ from datetime import timedelta
 
 from django.utils import timezone
 
-
 MIN_PREP_BUFFER_MINUTES = 12
 SUGGESTED_SLOT_SPACING_MINUTES = 15
 DISPLAY_SLOT_COUNT = 2
@@ -31,7 +30,9 @@ def pickup_time_choices(*, now=None):
     asap_time = compute_asap_pickup_time(now=now)
     choices = [("asap", "ASAP")]
     for offset_index in range(DISPLAY_SLOT_COUNT):
-        slot = asap_time + timedelta(minutes=SUGGESTED_SLOT_SPACING_MINUTES * offset_index)
+        slot = asap_time + timedelta(
+            minutes=SUGGESTED_SLOT_SPACING_MINUTES * offset_index
+        )
         choices.append((slot.isoformat(), format_pickup_time(slot)))
     return choices
 

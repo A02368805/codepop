@@ -6,23 +6,27 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('payments', '0001_initial'),
+        ("payments", "0001_initial"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='paymenttransaction',
-            name='checkout_session_id',
+            model_name="paymenttransaction",
+            name="checkout_session_id",
             field=models.CharField(blank=True, max_length=120),
         ),
         migrations.AddField(
-            model_name='paymenttransaction',
-            name='failure_reason',
+            model_name="paymenttransaction",
+            name="failure_reason",
             field=models.TextField(blank=True),
         ),
         migrations.AlterField(
-            model_name='paymenttransaction',
-            name='provider',
-            field=models.CharField(choices=[('mock', 'Mock'), ('stripe', 'Stripe')], default='stripe', max_length=24),
+            model_name="paymenttransaction",
+            name="provider",
+            field=models.CharField(
+                choices=[("mock", "Mock"), ("stripe", "Stripe")],
+                default="stripe",
+                max_length=24,
+            ),
         ),
     ]

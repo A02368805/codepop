@@ -1,14 +1,4 @@
 from datetime import date
-from django.contrib import messages
-from django.contrib.auth.mixins import LoginRequiredMixin
-from django.core.exceptions import PermissionDenied
-from django.http import HttpResponse, JsonResponse
-from django.shortcuts import get_object_or_404, redirect, render
-from django.template.loader import render_to_string
-from django.urls import reverse
-from django.utils import timezone
-from django.views import View
-from django.views.generic import FormView, TemplateView
 
 from apps.analytics.recommendations import recommend_drinks_for_user
 from apps.payments.gateway import PaymentMode, get_payment_mode
@@ -20,9 +10,24 @@ from apps.payments.services import (
 from apps.stores.models import Store
 from apps.stores.selectors import scoped_region_store_options
 from apps.users.models import User
-from apps.users.permissions import CustomerOrderingRequiredMixin, RoleRequiredMixin, user_can_use_customer_ordering
+from apps.users.permissions import (
+    CustomerOrderingRequiredMixin,
+    RoleRequiredMixin,
+    user_can_use_customer_ordering,
+)
 from apps.users.services import remove_favorite_drink, save_favorite_drink
+from django.contrib import messages
+from django.contrib.auth.mixins import LoginRequiredMixin
+from django.core.exceptions import PermissionDenied
+from django.http import HttpResponse, JsonResponse
+from django.shortcuts import get_object_or_404, redirect, render
+from django.template.loader import render_to_string
+from django.urls import reverse
+from django.utils import timezone
+from django.views import View
+from django.views.generic import FormView, TemplateView
 
+from .assistant import build_drink_builder_assistance
 from .cart import (
     add_cart_item,
     build_cart_pricing,
@@ -32,10 +37,9 @@ from .cart import (
     remove_cart_item,
     update_cart_item,
 )
-from .assistant import build_drink_builder_assistance
 from .catalog import (
-    ADD_IN_OPTIONS,
     ADD_IN_GROUPS,
+    ADD_IN_OPTIONS,
     ICE_CREAM_GROUPS,
     ICE_CREAM_OPTIONS,
     SIZE_LABELS,
@@ -48,7 +52,12 @@ from .catalog import (
     get_menu_items,
     grouped_options,
 )
-from .forms import CartQuantityForm, CheckoutForm, DrinkCustomizationForm, GuestLookupForm
+from .forms import (
+    CartQuantityForm,
+    CheckoutForm,
+    DrinkCustomizationForm,
+    GuestLookupForm,
+)
 from .models import Order
 from .personalization import recommend_builder_configuration
 from .selectors import (
@@ -114,12 +123,18 @@ def _build_builder_context(*, form, menu_item):
     selected_soda = _bound_value(form, "soda", menu_item["default_soda"])
     selected_syrups = _bound_list(form, "syrups", menu_item["default_syrups"])
     selected_add_ins = _bound_list(form, "add_ins", menu_item["default_add_ins"])
-    selected_ice_cream = _bound_value(form, "ice_cream", menu_item.get("default_ice_cream", ""))
+    selected_ice_cream = _bound_value(
+        form, "ice_cream", menu_item.get("default_ice_cream", "")
+    )
     builder_pricing = {
         "base_prices": menu_item["base_prices"],
         "syrups": {key: str(option["price"]) for key, option in SYRUP_OPTIONS.items()},
-        "add_ins": {key: str(option["price"]) for key, option in ADD_IN_OPTIONS.items()},
-        "ice_cream": {key: str(option["price"]) for key, option in ICE_CREAM_OPTIONS.items()},
+        "add_ins": {
+            key: str(option["price"]) for key, option in ADD_IN_OPTIONS.items()
+        },
+        "ice_cream": {
+            key: str(option["price"]) for key, option in ICE_CREAM_OPTIONS.items()
+        },
     }
     size_cards = [
         {
@@ -201,7 +216,9 @@ class MenuView(CustomerOrderingRequiredMixin, TemplateView):
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        store = get_object_or_404(Store, store_code=self.kwargs["store_code"], is_active=True)
+        store = get_object_or_404(
+            Store, store_code=self.kwargs["store_code"], is_active=True
+        )
         cart = get_cart(self.request.session)
         context.update(
             {
@@ -222,13 +239,17 @@ class CustomizeDrinkView(CustomerOrderingRequiredMixin, TemplateView):
     template_name = "orders/customize.html"
 
     def dispatch(self, request, *args, **kwargs):
-        self.store = get_object_or_404(Store, store_code=kwargs["store_code"], is_active=True)
+        self.store = get_object_or_404(
+            Store, store_code=kwargs["store_code"], is_active=True
+        )
         self.menu_item = get_menu_item(kwargs["drink_slug"])
         return super().dispatch(request, *args, **kwargs)
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        form = kwargs.get("form") or DrinkCustomizationForm(drink_slug=self.menu_item["slug"])
+        form = kwargs.get("form") or DrinkCustomizationForm(
+            drink_slug=self.menu_item["slug"]
+        )
         builder_context = _build_builder_context(form=form, menu_item=self.menu_item)
         context.update(
             {
@@ -270,8 +291,15 @@ class CustomizeDrinkView(CustomerOrderingRequiredMixin, TemplateView):
             item=cart_item,
         )
         if replaced_store:
-            messages.warning(request, "Your cart was reset because each order must stay tied to one store.")
-        if request.user.is_authenticated and request.user.role == User.Role.ACCOUNT_USER and request.POST.get("save_favorite"):
+            messages.warning(
+                request,
+                "Your cart was reset because each order must stay tied to one store.",
+            )
+        if (
+            request.user.is_authenticated
+            and request.user.role == User.Role.ACCOUNT_USER
+            and request.POST.get("save_favorite")
+        ):
             save_favorite_drink(
                 user=request.user,
                 name=f"{self.menu_item['name']} ({form.cleaned_data['size'].title()})",
@@ -292,7 +320,11 @@ class CartView(CustomerOrderingRequiredMixin, TemplateView):
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         cart = get_cart(self.request.session)
-        store = Store.objects.filter(store_code=cart["store_code"]).first() if cart["store_code"] else None
+        store = (
+            Store.objects.filter(store_code=cart["store_code"]).first()
+            if cart["store_code"]
+            else None
+        )
         pricing = build_cart_pricing(cart=cart, store=store) if store else None
         context.update(
             {
@@ -309,13 +341,24 @@ class CartItemUpdateView(CustomerOrderingRequiredMixin, View):
     def post(self, request, *args, **kwargs):
         form = CartQuantityForm(request.POST)
         if form.is_valid():
-            update_cart_item(request.session, kwargs["item_id"], form.cleaned_data["quantity"])
+            update_cart_item(
+                request.session, kwargs["item_id"], form.cleaned_data["quantity"]
+            )
         cart = get_cart(request.session)
-        store = Store.objects.filter(store_code=cart["store_code"]).first() if cart["store_code"] else None
+        store = (
+            Store.objects.filter(store_code=cart["store_code"]).first()
+            if cart["store_code"]
+            else None
+        )
         pricing = build_cart_pricing(cart=cart, store=store) if store else None
         html = render_to_string(
             "orders/partials/cart_panel.html",
-            {"cart": cart, "store": store, "pricing": pricing, "cart_quantity_form": CartQuantityForm()},
+            {
+                "cart": cart,
+                "store": store,
+                "pricing": pricing,
+                "cart_quantity_form": CartQuantityForm(),
+            },
             request=request,
         )
         return HttpResponse(html)
@@ -325,11 +368,20 @@ class CartItemRemoveView(CustomerOrderingRequiredMixin, View):
     def post(self, request, *args, **kwargs):
         remove_cart_item(request.session, kwargs["item_id"])
         cart = get_cart(request.session)
-        store = Store.objects.filter(store_code=cart["store_code"]).first() if cart["store_code"] else None
+        store = (
+            Store.objects.filter(store_code=cart["store_code"]).first()
+            if cart["store_code"]
+            else None
+        )
         pricing = build_cart_pricing(cart=cart, store=store) if store else None
         html = render_to_string(
             "orders/partials/cart_panel.html",
-            {"cart": cart, "store": store, "pricing": pricing, "cart_quantity_form": CartQuantityForm()},
+            {
+                "cart": cart,
+                "store": store,
+                "pricing": pricing,
+                "cart_quantity_form": CartQuantityForm(),
+            },
             request=request,
         )
         return HttpResponse(html)
@@ -341,7 +393,11 @@ class CheckoutView(CustomerOrderingRequiredMixin, TemplateView):
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         cart = get_cart(self.request.session)
-        store = get_object_or_404(Store, store_code=cart["store_code"]) if cart["store_code"] else None
+        store = (
+            get_object_or_404(Store, store_code=cart["store_code"])
+            if cart["store_code"]
+            else None
+        )
         pricing = build_cart_pricing(cart=cart, store=store) if store else None
         context.update(
             {
@@ -365,8 +421,14 @@ class CheckoutView(CustomerOrderingRequiredMixin, TemplateView):
         if not form.is_valid():
             return self.render_to_response(self.get_context_data(form=form))
         if not request.user.is_authenticated:
-            if not form.cleaned_data["guest_name"] or not form.cleaned_data["guest_email"]:
-                form.add_error("guest_name", "Guest name and email are required for guest checkout.")
+            if (
+                not form.cleaned_data["guest_name"]
+                or not form.cleaned_data["guest_email"]
+            ):
+                form.add_error(
+                    "guest_name",
+                    "Guest name and email are required for guest checkout.",
+                )
                 return self.render_to_response(self.get_context_data(form=form))
             customer = None
             guest_contact = {
@@ -375,7 +437,9 @@ class CheckoutView(CustomerOrderingRequiredMixin, TemplateView):
                 "phone_number": form.cleaned_data["guest_phone_number"],
             }
         else:
-            customer = request.user if request.user.role == User.Role.ACCOUNT_USER else None
+            customer = (
+                request.user if request.user.role == User.Role.ACCOUNT_USER else None
+            )
             guest_contact = None
 
         pickup_time_requested = form.cleaned_data.get("pickup_time_requested")
@@ -384,7 +448,11 @@ class CheckoutView(CustomerOrderingRequiredMixin, TemplateView):
                 pickup_time_requested, timezone.get_current_timezone()
             )
 
-        actor = customer if customer else (request.user if request.user.is_authenticated else None)
+        actor = (
+            customer
+            if customer
+            else (request.user if request.user.is_authenticated else None)
+        )
         order = create_order(
             store=store,
             items=cart["items"],
@@ -393,10 +461,14 @@ class CheckoutView(CustomerOrderingRequiredMixin, TemplateView):
             pickup_time_requested=pickup_time_requested,
             actor=actor,
         )
-        if order.order_type == Order.OrderType.GUEST and hasattr(order, "guest_contact"):
+        if order.order_type == Order.OrderType.GUEST and hasattr(
+            order, "guest_contact"
+        ):
             authorize_guest_lookup(request.session, order.guest_contact.lookup_code)
         try:
-            payment_flow = initialize_order_checkout(order, request=request, actor=actor)
+            payment_flow = initialize_order_checkout(
+                order, request=request, actor=actor
+            )
         except PaymentGatewayError as exc:
             messages.error(request, str(exc))
             return redirect("orders:detail", order_code=order.public_order_code)
@@ -408,7 +480,11 @@ class CheckoutView(CustomerOrderingRequiredMixin, TemplateView):
 class CheckoutValidateView(CustomerOrderingRequiredMixin, View):
     def post(self, request, *args, **kwargs):
         cart = get_cart(request.session)
-        store = get_object_or_404(Store, store_code=cart["store_code"]) if cart["store_code"] else None
+        store = (
+            get_object_or_404(Store, store_code=cart["store_code"])
+            if cart["store_code"]
+            else None
+        )
         pricing = build_cart_pricing(cart=cart, store=store) if store else None
         html = render_to_string(
             "orders/partials/checkout_summary.html",
@@ -423,8 +499,13 @@ class OrderConfirmationView(TemplateView):
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        order = get_object_or_404(Order.objects.select_related("store").prefetch_related("items"), public_order_code=kwargs["order_code"])
-        if not user_can_view_order(self.request.user, order, session=self.request.session):
+        order = get_object_or_404(
+            Order.objects.select_related("store").prefetch_related("items"),
+            public_order_code=kwargs["order_code"],
+        )
+        if not user_can_view_order(
+            self.request.user, order, session=self.request.session
+        ):
             raise PermissionDenied("This order is outside your access scope.")
         context["order"] = order
         return context
@@ -436,17 +517,25 @@ class OrderDetailView(TemplateView):
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         order = get_object_or_404(
-            Order.objects.select_related("store", "customer", "payment_transaction").prefetch_related("items"),
+            Order.objects.select_related(
+                "store", "customer", "payment_transaction"
+            ).prefetch_related("items"),
             public_order_code=kwargs["order_code"],
         )
-        if not user_can_view_order(self.request.user, order, session=self.request.session):
+        if not user_can_view_order(
+            self.request.user, order, session=self.request.session
+        ):
             raise PermissionDenied("This order is outside your access scope.")
         actor = self.request.user if self.request.user.is_authenticated else None
         refund_allowed, refund_message = get_refund_eligibility(order, actor=actor)
-        can_cancel = order.status in {
-            Order.Status.PRICING_VALIDATED,
-            Order.Status.PAYMENT_PENDING,
-        } or refund_allowed
+        can_cancel = (
+            order.status
+            in {
+                Order.Status.PRICING_VALIDATED,
+                Order.Status.PAYMENT_PENDING,
+            }
+            or refund_allowed
+        )
         context.update(
             {
                 "order": order,
@@ -469,10 +558,19 @@ class OrderCancelView(View):
             if not allowed:
                 messages.error(request, reason)
                 return redirect("orders:detail", order_code=order.public_order_code)
-            record_refund(order, actor=actor, notes="Canceled from the order status page.")
-            messages.success(request, "Your order was canceled and the refund flow has started.")
+            record_refund(
+                order, actor=actor, notes="Canceled from the order status page."
+            )
+            messages.success(
+                request, "Your order was canceled and the refund flow has started."
+            )
         else:
-            transition_order_status(order, Order.Status.CANCELED, actor=actor, reason="Canceled before payment completion.")
+            transition_order_status(
+                order,
+                Order.Status.CANCELED,
+                actor=actor,
+                reason="Canceled before payment completion.",
+            )
             messages.success(request, "Your draft order was canceled.")
         return redirect("orders:detail", order_code=order.public_order_code)
 
@@ -482,7 +580,10 @@ class GuestLookupView(FormView):
     form_class = GuestLookupForm
 
     def form_valid(self, form):
-        order = get_object_or_404(Order.objects.select_related("guest_contact"), guest_contact__lookup_code=form.cleaned_data["lookup_code"].strip())
+        order = get_object_or_404(
+            Order.objects.select_related("guest_contact"),
+            guest_contact__lookup_code=form.cleaned_data["lookup_code"].strip(),
+        )
         authorize_guest_lookup(self.request.session, order.guest_contact.lookup_code)
         return redirect("orders:detail", order_code=order.public_order_code)
 
@@ -511,7 +612,9 @@ class FavoriteRemoveView(RoleRequiredMixin, LoginRequiredMixin, View):
     allowed_roles = (User.Role.ACCOUNT_USER,)
 
     def post(self, request, *args, **kwargs):
-        favorite = get_object_or_404(request.user.favorite_drinks, pk=kwargs["favorite_id"])
+        favorite = get_object_or_404(
+            request.user.favorite_drinks, pk=kwargs["favorite_id"]
+        )
         remove_favorite_drink(user=request.user, favorite=favorite)
         messages.success(request, "Favorite removed.")
         return redirect("orders:favorites")
@@ -521,19 +624,29 @@ class FavoriteAddToCartView(RoleRequiredMixin, LoginRequiredMixin, View):
     allowed_roles = (User.Role.ACCOUNT_USER,)
 
     def post(self, request, *args, **kwargs):
-        favorite = get_object_or_404(request.user.favorite_drinks, pk=kwargs["favorite_id"])
-        menu_key = favorite.recipe_key or favorite.customizations_json.get("menu_key") or "berry-burst"
+        favorite = get_object_or_404(
+            request.user.favorite_drinks, pk=kwargs["favorite_id"]
+        )
+        menu_key = (
+            favorite.recipe_key
+            or favorite.customizations_json.get("menu_key")
+            or "berry-burst"
+        )
         cart_item = {
             "menu_key": menu_key,
             "display_name": favorite.name,
             "size": favorite.size_snapshot,
             "base_price": str(favorite.base_price_snapshot),
-            "extras_total": str(favorite.customizations_json.get("extras_total", "0.00")),
+            "extras_total": str(
+                favorite.customizations_json.get("extras_total", "0.00")
+            ),
             "quantity": 1,
             "description": favorite.description,
             "customizations": favorite.customizations_json,
         }
-        store_code = request.POST.get("store_code") or getattr(request.user.preferred_store, "store_code", "")
+        store_code = request.POST.get("store_code") or getattr(
+            request.user.preferred_store, "store_code", ""
+        )
         if not store_code:
             messages.error(request, "Pick a store before reordering a favorite.")
             return redirect("stores:index")

@@ -1,25 +1,24 @@
 from decimal import Decimal
 
-from django.test import TestCase
-
 from apps.inventory.models import LocalSupplier, SupplierReplenishment, SupplySchedule
 from apps.inventory.services import (
     InventoryServiceError,
     approve_supply_schedule,
+    approve_transfer,
     create_supplier_replenishment_order,
     create_transfer_request,
+    deliver_transfer,
     determine_transfer_scope,
     get_hub_balance,
     get_store_balance,
     receive_supplier_replenishment,
+    receive_transfer,
     request_transfer,
-    approve_transfer,
     reserve_transfer_inventory,
     ship_transfer,
-    deliver_transfer,
-    receive_transfer,
 )
 from apps.supply_hubs.models import SupplyTransfer
+from django.test import TestCase
 
 from .helpers import (
     assign_region,
@@ -53,7 +52,9 @@ class InventoryWorkflowTests(TestCase):
             longitude="-87.629799",
         )
 
-        cls.store_c1 = make_store(store_code="C001", region=cls.region_c, name="Logan Main")
+        cls.store_c1 = make_store(
+            store_code="C001", region=cls.region_c, name="Logan Main"
+        )
         cls.store_c2 = make_store(
             store_code="C002",
             region=cls.region_c,
@@ -114,7 +115,9 @@ class InventoryWorkflowTests(TestCase):
         assign_store(cls.manager, cls.store_c1)
         assign_region(cls.logistics, cls.region_c)
 
-        cls.inventory_item = make_inventory_item(sku="SYRUP-VANILLA", name="Vanilla Syrup")
+        cls.inventory_item = make_inventory_item(
+            sku="SYRUP-VANILLA", name="Vanilla Syrup"
+        )
         cls.cup_item = make_inventory_item(
             sku="CUPS-24OZ",
             name="24oz Cups",
@@ -165,13 +168,18 @@ class InventoryWorkflowTests(TestCase):
             source_store=self.store_c1,
             destination_store=self.store_c2,
             line_items=[
-                {"inventory_item": self.inventory_item, "quantity_requested": Decimal("5.00")}
+                {
+                    "inventory_item": self.inventory_item,
+                    "quantity_requested": Decimal("5.00"),
+                }
             ],
             notes="test same-region transfer",
             is_ai_draft=True,
         )
 
-        self.assertEqual(transfer.transfer_scope, SupplyTransfer.TransferScope.SAME_REGION_STORE)
+        self.assertEqual(
+            transfer.transfer_scope, SupplyTransfer.TransferScope.SAME_REGION_STORE
+        )
         self.assertTrue(transfer.is_ai_draft)
 
         approve_transfer(transfer, approver=self.logistics)
@@ -194,7 +202,10 @@ class InventoryWorkflowTests(TestCase):
                 source_store=self.store_c1,
                 destination_store=self.store_g1,
                 line_items=[
-                    {"inventory_item": self.inventory_item, "quantity_requested": Decimal("1.00")}
+                    {
+                        "inventory_item": self.inventory_item,
+                        "quantity_requested": Decimal("1.00"),
+                    }
                 ],
                 notes="invalid cross-region store transfer",
             )
@@ -208,7 +219,9 @@ class InventoryWorkflowTests(TestCase):
         self.assertLess(distance, Decimal("1000"))
 
         with self.assertRaises(InventoryServiceError):
-            determine_transfer_scope(source_hub=self.hub_a, destination_store=self.store_c1)
+            determine_transfer_scope(
+                source_hub=self.hub_a, destination_store=self.store_c1
+            )
 
     def test_ai_supply_schedules_require_logistics_or_super_admin_approval(self):
         schedule = SupplySchedule.objects.create(

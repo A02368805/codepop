@@ -1,13 +1,16 @@
 from datetime import date
 
-from django.test import TestCase
-
 from apps.imports.models import ImportJob
-from apps.imports.services import CSVImportError, import_repair_status_csv, import_supply_usage_csv
+from apps.imports.services import (
+    CSVImportError,
+    import_repair_status_csv,
+    import_supply_usage_csv,
+)
 from apps.inventory.models import SupplySchedule, SupplyUsageRecord
 from apps.maintenance.models import Machine, MachineStatusEvent
 from apps.notifications.models import Notification
 from apps.sync.models import AuditLog
+from django.test import TestCase
 
 from .helpers import (
     assign_region,
@@ -32,7 +35,9 @@ class CSVImportTests(TestCase):
             latitude="43.615021",
             longitude="-116.202316",
         )
-        cls.store_c1 = make_store(store_code="C001", region=cls.region_c, name="Logan Main")
+        cls.store_c1 = make_store(
+            store_code="C001", region=cls.region_c, name="Logan Main"
+        )
         cls.store_c2 = make_store(
             store_code="C002",
             region=cls.region_c,
@@ -156,10 +161,16 @@ class CSVImportTests(TestCase):
             original_filename="repair.csv",
         )
 
-        machine = Machine.objects.get(store=self.store_c1, machine_type=self.machine_type)
+        machine = Machine.objects.get(
+            store=self.store_c1, machine_type=self.machine_type
+        )
         self.assertEqual(job.status, ImportJob.Status.SUCCEEDED)
         self.assertEqual(machine.current_status, Machine.Status.WARNING)
-        self.assertTrue(MachineStatusEvent.objects.filter(machine=machine, status=Machine.Status.WARNING).exists())
+        self.assertTrue(
+            MachineStatusEvent.objects.filter(
+                machine=machine, status=Machine.Status.WARNING
+            ).exists()
+        )
         self.assertTrue(
             Notification.objects.filter(
                 user=self.repair,

@@ -1,9 +1,9 @@
 from __future__ import annotations
 
+import json
 from decimal import Decimal
 from urllib.parse import quote_plus
 from urllib.request import urlopen
-import json
 
 from django.conf import settings
 

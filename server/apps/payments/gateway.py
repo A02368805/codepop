@@ -4,6 +4,7 @@ from dataclasses import dataclass
 
 from django.conf import settings
 
+
 class PaymentMode:
     MOCK = "mock"
     STRIPE = "stripe"
@@ -18,7 +19,9 @@ class CheckoutSessionResult:
 
 def get_payment_mode():
     configured_mode = getattr(settings, "PAYMENT_MODE", PaymentMode.MOCK).lower()
-    if configured_mode == PaymentMode.STRIPE and getattr(settings, "STRIPE_SECRET_KEY", ""):
+    if configured_mode == PaymentMode.STRIPE and getattr(
+        settings, "STRIPE_SECRET_KEY", ""
+    ):
         return PaymentMode.STRIPE
     return PaymentMode.MOCK
 

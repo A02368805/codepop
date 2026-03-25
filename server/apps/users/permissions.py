@@ -1,11 +1,10 @@
 from functools import wraps
 
+from apps.stores.models import Region, Store
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.core.exceptions import PermissionDenied
 from django.shortcuts import get_object_or_404
 from django.views.generic.base import ContextMixin
-
-from apps.stores.models import Region, Store
 
 from .models import User, UserRegionAssignment, UserStoreAssignment
 
@@ -67,7 +66,9 @@ def store_scope_required(store_kwarg="store_id"):
         def wrapped(request, *args, **kwargs):
             store = get_object_or_404(Store, pk=kwargs[store_kwarg])
             if not user_has_store_scope(request.user, store):
-                raise PermissionDenied("You do not have store access for this resource.")
+                raise PermissionDenied(
+                    "You do not have store access for this resource."
+                )
             return view_func(request, *args, **kwargs)
 
         return wrapped
@@ -81,7 +82,9 @@ def region_scope_required(region_kwarg="region_id"):
         def wrapped(request, *args, **kwargs):
             region = get_object_or_404(Region, pk=kwargs[region_kwarg])
             if not user_has_region_scope(request.user, region):
-                raise PermissionDenied("You do not have regional access for this resource.")
+                raise PermissionDenied(
+                    "You do not have regional access for this resource."
+                )
             return view_func(request, *args, **kwargs)
 
         return wrapped
@@ -101,8 +104,7 @@ def global_access_required(view_func):
 
 def user_has_global_access(user) -> bool:
     return bool(
-        getattr(user, "is_authenticated", False)
-        and user.role == User.Role.SUPER_ADMIN
+        getattr(user, "is_authenticated", False) and user.role == User.Role.SUPER_ADMIN
     )
 
 
@@ -125,9 +127,7 @@ def user_has_region_scope(user, region) -> bool:
         return False
     if user_has_global_access(user):
         return True
-    return UserRegionAssignment.objects.filter(
-        user=user, region=region
-    ).exists()
+    return UserRegionAssignment.objects.filter(user=user, region=region).exists()
 
 
 def user_can_manage_store(user, store) -> bool:
@@ -152,7 +152,9 @@ def user_can_manage_machine(user, machine) -> bool:
     if user.role in {User.Role.MANAGER, User.Role.ADMIN}:
         return user_can_manage_store(user, machine.store)
     if user.role == User.Role.REPAIR_STAFF:
-        return UserStoreAssignment.objects.filter(user=user, store=machine.store).exists()
+        return UserStoreAssignment.objects.filter(
+            user=user, store=machine.store
+        ).exists()
     return False
 
 
@@ -161,9 +163,8 @@ def user_can_approve_transfer(user, transfer) -> bool:
         return False
     if user_has_global_access(user):
         return True
-    return (
-        user.role == User.Role.LOGISTICS_MANAGER
-        and user_has_region_scope(user, transfer.destination_region)
+    return user.role == User.Role.LOGISTICS_MANAGER and user_has_region_scope(
+        user, transfer.destination_region
     )
 
 
@@ -185,14 +186,20 @@ def user_can_progress_transfer(user, transfer) -> bool:
     if user.role == User.Role.LOGISTICS_MANAGER:
         destination_allowed = user_has_region_scope(user, transfer.destination_region)
         source_allowed = (
-            (transfer.source_store and user_has_region_scope(user, transfer.source_store.region))
-            or (transfer.source_hub and user_has_region_scope(user, transfer.source_hub.region))
+            transfer.source_store
+            and user_has_region_scope(user, transfer.source_store.region)
+        ) or (
+            transfer.source_hub
+            and user_has_region_scope(user, transfer.source_hub.region)
         )
         return bool(destination_allowed or source_allowed)
     if user.role in {User.Role.MANAGER, User.Role.ADMIN}:
         return bool(
             user_can_manage_store(user, transfer.destination_store)
-            or (transfer.source_store and user_can_manage_store(user, transfer.source_store))
+            or (
+                transfer.source_store
+                and user_can_manage_store(user, transfer.source_store)
+            )
         )
     return False
 
@@ -212,7 +219,6 @@ def user_can_manage_supplier_order(user, store) -> bool:
         return False
     if user_has_global_access(user):
         return True
-    return (
-        user.role == User.Role.LOGISTICS_MANAGER
-        and user_has_region_scope(user, store.region)
+    return user.role == User.Role.LOGISTICS_MANAGER and user_has_region_scope(
+        user, store.region
     )

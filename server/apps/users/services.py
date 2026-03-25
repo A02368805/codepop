@@ -1,14 +1,13 @@
 from __future__ import annotations
 
-from django.urls import reverse
+from apps.sync.services import create_audit_log, serialize_instance
 from django.core.exceptions import PermissionDenied
 from django.db import transaction
-
-from apps.sync.services import create_audit_log, serialize_instance
+from django.urls import reverse
 
 from .models import FavoriteDrink, TastePreference, User, UserStoreAssignment
-from .selectors import get_dashboard_route_name
 from .permissions import user_can_manage_store, user_has_global_access
+from .selectors import get_dashboard_route_name
 
 
 def get_effective_role(user):
@@ -123,7 +122,16 @@ def save_preference_profile(
     )
 
 
-def save_favorite_drink(*, user, name, recipe_key, size_snapshot, base_price_snapshot, customizations_json, description=""):
+def save_favorite_drink(
+    *,
+    user,
+    name,
+    recipe_key,
+    size_snapshot,
+    base_price_snapshot,
+    customizations_json,
+    description="",
+):
     favorite, _ = FavoriteDrink.objects.update_or_create(
         user=user,
         name=name,
@@ -160,7 +168,9 @@ def update_scoped_user(*, actor, target_user, role, status):
     if not allowed:
         raise PermissionDenied("This user is outside your management scope.")
     if role not in {User.Role.ACCOUNT_USER, User.Role.MANAGER, User.Role.ADMIN}:
-        raise PermissionDenied("This role cannot be assigned from the store admin panel.")
+        raise PermissionDenied(
+            "This role cannot be assigned from the store admin panel."
+        )
 
     before = serialize_instance(target_user)
     target_user.role = role
@@ -187,7 +197,9 @@ def update_scoped_user(*, actor, target_user, role, status):
         target_user.preferred_store = target_user.preferred_store or scoped_store
         target_user.default_region = target_user.default_region or scoped_store.region
     elif scoped_store and role == User.Role.ACCOUNT_USER:
-        UserStoreAssignment.objects.filter(user=target_user, store=scoped_store).delete()
+        UserStoreAssignment.objects.filter(
+            user=target_user, store=scoped_store
+        ).delete()
     target_user.save()
     create_audit_log(
         actor=actor,

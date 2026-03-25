@@ -1,18 +1,16 @@
 from __future__ import annotations
 
+import secrets
 import uuid
 from datetime import timedelta
-from decimal import Decimal, ROUND_HALF_UP
-import secrets
+from decimal import ROUND_HALF_UP, Decimal
 
+from apps.sync.services import create_audit_log, create_outbox_event, serialize_instance
+from core.exceptions import ConflictError, ServiceError, ValidationError
 from django.db import transaction
 from django.utils import timezone
 
-from apps.sync.services import create_audit_log, create_outbox_event, serialize_instance
-from core.exceptions import ServiceError, ValidationError, ConflictError
-
 from .models import GuestOrderContact, Order, OrderItem
-
 
 DEFAULT_TAX_RATE = Decimal("0.0725")
 
@@ -35,7 +33,10 @@ class RefundEligibilityError(OrderServiceError):
 
 ALLOWED_ORDER_TRANSITIONS = {
     Order.Status.DRAFT: {Order.Status.PRICING_VALIDATED, Order.Status.CANCELED},
-    Order.Status.PRICING_VALIDATED: {Order.Status.PAYMENT_PENDING, Order.Status.CANCELED},
+    Order.Status.PRICING_VALIDATED: {
+        Order.Status.PAYMENT_PENDING,
+        Order.Status.CANCELED,
+    },
     Order.Status.PAYMENT_PENDING: {Order.Status.PAID, Order.Status.CANCELED},
     Order.Status.PAID: {
         Order.Status.QUEUED,
@@ -105,8 +106,12 @@ def validate_pricing(*, store, items, tax_rate=DEFAULT_TAX_RATE):
             raise PricingValidationError("Item quantity must be positive.")
 
         base_price = _money(item.get("base_price", 0))
-        customizations = item.get("customizations") or item.get("customizations_json") or {}
-        extras_total = _money(item.get("extras_total", customizations.get("extras_total", 0)))
+        customizations = (
+            item.get("customizations") or item.get("customizations_json") or {}
+        )
+        extras_total = _money(
+            item.get("extras_total", customizations.get("extras_total", 0))
+        )
         line_total = _money((base_price + extras_total) * quantity)
         subtotal += line_total
 
@@ -114,7 +119,9 @@ def validate_pricing(*, store, items, tax_rate=DEFAULT_TAX_RATE):
             {
                 "template_reference_id": item.get("template_reference_id"),
                 "display_name_snapshot": display_name,
-                "size_snapshot": item.get("size") or item.get("size_snapshot") or "medium",
+                "size_snapshot": item.get("size")
+                or item.get("size_snapshot")
+                or "medium",
                 "base_price_snapshot": base_price,
                 "customizations_json": customizations,
                 "quantity": quantity,
@@ -178,7 +185,10 @@ def create_order(
         event_type="order.created",
         instance=order,
         payload={"status": order.status, "store_id": str(order.store_id)},
-        source_scope={"store_id": str(order.store_id), "region_code": order.store.region.code},
+        source_scope={
+            "store_id": str(order.store_id),
+            "region_code": order.store.region.code,
+        },
     )
 
     create_audit_log(
@@ -230,7 +240,10 @@ def transition_order_status(order, new_status, *, actor=None, reason=""):
         event_type=f"order.{new_status}",
         instance=order,
         payload={"status": new_status, "store_id": str(order.store_id)},
-        source_scope={"store_id": str(order.store_id), "region_code": order.store.region.code},
+        source_scope={
+            "store_id": str(order.store_id),
+            "region_code": order.store.region.code,
+        },
     )
     create_audit_log(
         actor=actor,
@@ -258,11 +271,18 @@ def get_refund_eligibility(order, *, actor=None):
         and actor.role in {actor.Role.ADMIN, actor.Role.SUPER_ADMIN}
     )
 
-    if order.status in {Order.Status.PAID, Order.Status.QUEUED, Order.Status.PAYMENT_PENDING}:
+    if order.status in {
+        Order.Status.PAID,
+        Order.Status.QUEUED,
+        Order.Status.PAYMENT_PENDING,
+    }:
         return True, "Refund is allowed before preparation begins."
     if order.status == Order.Status.PREPARING and privileged:
         return True, "Privileged override allows refund after preparation started."
-    return False, "Refunds are disallowed after preparation begins unless a privileged override is used."
+    return (
+        False,
+        "Refunds are disallowed after preparation begins unless a privileged override is used.",
+    )
 
 
 def ensure_refund_allowed(order, *, actor=None):

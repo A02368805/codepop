@@ -1,10 +1,6 @@
 from datetime import timedelta
 from decimal import Decimal
 
-from django.test import Client, TestCase
-from django.urls import reverse
-from django.utils import timezone
-
 from apps.inventory.services import get_store_balance
 from apps.notifications.models import Notification
 from apps.orders.models import Order
@@ -13,8 +9,18 @@ from apps.orders.services import create_order, transition_order_status
 from apps.payments.models import PaymentTransaction
 from apps.payments.services import record_payment_pending, record_payment_success
 from apps.sync.models import AuditLog, SyncOutboxEvent
+from django.test import Client, TestCase
+from django.urls import reverse
+from django.utils import timezone
 
-from .helpers import assign_region, assign_store, make_inventory_item, make_region, make_store, make_user
+from .helpers import (
+    assign_region,
+    assign_store,
+    make_inventory_item,
+    make_region,
+    make_store,
+    make_user,
+)
 
 
 def seed_menu_inventory(store):
@@ -25,7 +31,9 @@ def seed_menu_inventory(store):
         ("LIDS-24OZ", "24oz Lids", "lids", "50.00"),
     ]
     for sku, name, category, threshold in inventory_rows:
-        item = make_inventory_item(sku=sku, name=name, category=category, threshold=threshold)
+        item = make_inventory_item(
+            sku=sku, name=name, category=category, threshold=threshold
+        )
         balance = get_store_balance(store, item)
         balance.on_hand_quantity = Decimal("250.00")
         balance.reorder_threshold = Decimal(threshold)
@@ -60,7 +68,9 @@ class PromptFourIntegrationTests(TestCase):
     def _future_pickup_value(self):
         return pickup_time_choices(now=timezone.now())[1][0]
 
-    def test_mock_checkout_creates_mock_transaction_and_recommendation_notification(self):
+    def test_mock_checkout_creates_mock_transaction_and_recommendation_notification(
+        self,
+    ):
         self.client.force_login(self.customer)
         self.client.post(
             reverse("orders:customize", args=[self.store.store_code, "berry-burst"]),
@@ -87,7 +97,9 @@ class PromptFourIntegrationTests(TestCase):
         self.assertEqual(order.status, Order.Status.QUEUED)
         self.assertEqual(payment.provider, PaymentTransaction.Provider.MOCK)
         self.assertEqual(payment.status, PaymentTransaction.Status.SUCCEEDED)
-        self.assertContains(response, "Demo payment mode completed the order instantly.")
+        self.assertContains(
+            response, "Demo payment mode completed the order instantly."
+        )
         self.assertTrue(
             Notification.objects.filter(
                 user=self.customer,
@@ -100,7 +112,10 @@ class PromptFourIntegrationTests(TestCase):
         order = create_order(
             store=self.store,
             customer=None,
-            guest_contact={"display_name": "Guest Cancel", "email": "guest-cancel@test.local"},
+            guest_contact={
+                "display_name": "Guest Cancel",
+                "email": "guest-cancel@test.local",
+            },
             pickup_time_requested=timezone.now() + timedelta(hours=3),
             items=[
                 {
@@ -109,14 +124,18 @@ class PromptFourIntegrationTests(TestCase):
                     "base_price": Decimal("5.00"),
                     "extras_total": Decimal("0.00"),
                     "quantity": 1,
-                    "customizations": {"extras_total": "0.00", "inventory_requirements": []},
+                    "customizations": {
+                        "extras_total": "0.00",
+                        "inventory_requirements": [],
+                    },
                 }
             ],
         )
         record_payment_pending(order, payment_intent_id="pi_cancel_checkout")
 
         response = self.client.get(
-            reverse("payments:checkout-cancel") + f"?order_code={order.public_order_code}",
+            reverse("payments:checkout-cancel")
+            + f"?order_code={order.public_order_code}",
             follow=True,
         )
 
@@ -155,7 +174,9 @@ class PromptFourIntegrationTests(TestCase):
         )
         with self.captureOnCommitCallbacks(execute=True):
             record_payment_pending(order, payment_intent_id="pi_ready_notification")
-            record_payment_success(order, payment_intent_id="pi_ready_notification", actor=self.customer)
+            record_payment_success(
+                order, payment_intent_id="pi_ready_notification", actor=self.customer
+            )
             transition_order_status(order, Order.Status.QUEUED, actor=self.customer)
             transition_order_status(order, Order.Status.PREPARING, actor=self.manager)
             transition_order_status(order, Order.Status.READY, actor=self.manager)
@@ -173,12 +194,16 @@ class PromptFourIntegrationTests(TestCase):
                 title="Your order is ready",
             ).exists()
         )
-        self.assertTrue(AuditLog.objects.filter(action="sync.outbox_processed").exists())
+        self.assertTrue(
+            AuditLog.objects.filter(action="sync.outbox_processed").exists()
+        )
         order.refresh_from_db()
         self.assertTrue(order.locker_number.startswith("L"))
         self.assertRegex(order.locker_code, r"^\d{2}-\d{3}$")
 
-    def test_sync_workspace_is_region_scoped_and_notification_mark_read_requires_login(self):
+    def test_sync_workspace_is_region_scoped_and_notification_mark_read_requires_login(
+        self,
+    ):
         self.client.force_login(self.manager)
         manager_response = self.client.get(reverse("sync:index"))
         self.assertEqual(manager_response.status_code, 403)

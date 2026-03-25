@@ -1,7 +1,6 @@
+from apps.users.models import UserStoreAssignment
 from django.test import TestCase
 from django.urls import reverse
-
-from apps.users.models import UserStoreAssignment
 
 from .helpers import assign_store, make_region, make_store, make_user
 
@@ -10,7 +9,9 @@ class ScaffoldSmokeTests(TestCase):
     @classmethod
     def setUpTestData(cls):
         cls.region = make_region(code="C", name="Logan, UT")
-        cls.store = make_store(store_code="C001", region=cls.region, name="Provo Flagship")
+        cls.store = make_store(
+            store_code="C001", region=cls.region, name="Provo Flagship"
+        )
         cls.customer = make_user(
             email="customer@test.local",
             preferred_store=cls.store,

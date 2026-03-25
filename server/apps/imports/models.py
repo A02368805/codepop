@@ -23,7 +23,9 @@ class ImportJob(models.Model):
         blank=True,
     )
     import_type = models.CharField(max_length=32, choices=ImportType.choices)
-    status = models.CharField(max_length=24, choices=Status.choices, default=Status.PENDING)
+    status = models.CharField(
+        max_length=24, choices=Status.choices, default=Status.PENDING
+    )
     original_filename = models.CharField(max_length=255)
     row_count = models.PositiveIntegerField(default=0)
     success_count = models.PositiveIntegerField(default=0)

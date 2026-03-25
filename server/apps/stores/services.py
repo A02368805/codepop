@@ -49,9 +49,13 @@ def recommend_stores(
             explanations.append("Matches your preferred store.")
 
         if latitude is not None and longitude is not None:
-            distance = haversine_miles(latitude, longitude, store.latitude, store.longitude)
+            distance = haversine_miles(
+                latitude, longitude, store.latitude, store.longitude
+            )
             urgency_penalty = Decimal("0.22")
-            if pickup_time_requested and pickup_time_requested <= now + timedelta(minutes=45):
+            if pickup_time_requested and pickup_time_requested <= now + timedelta(
+                minutes=45
+            ):
                 urgency_penalty = Decimal("0.34")
                 explanations.append("Closer stores are favored for near-term pickup.")
             score -= distance * urgency_penalty
@@ -76,7 +80,9 @@ def recommend_stores(
 
         if pickup_time_requested and pickup_time_requested >= now + timedelta(hours=2):
             score += Decimal("4.00")
-            explanations.append("Future pickup gives more flexibility for store preference.")
+            explanations.append(
+                "Future pickup gives more flexibility for store preference."
+            )
 
         recommendations.append(
             StoreRecommendation(

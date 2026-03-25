@@ -1,6 +1,5 @@
-from django.db.models import QuerySet
-
 from apps.users.models import User
+from django.db.models import QuerySet
 
 from .models import Region, Store
 
@@ -16,7 +15,9 @@ def stores_visible_to_user(user) -> QuerySet[Store]:
             return queryset.filter(pk=user.preferred_store_id)
         return queryset.none()
     if user.role == User.Role.LOGISTICS_MANAGER:
-        return queryset.filter(region__in=user.region_assignments.values("region")).distinct()
+        return queryset.filter(
+            region__in=user.region_assignments.values("region")
+        ).distinct()
     return queryset.filter(user_assignments__user=user).distinct()
 
 

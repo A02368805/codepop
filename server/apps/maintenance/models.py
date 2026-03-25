@@ -96,7 +96,9 @@ class RepairAssignment(models.Model):
         "users.User", related_name="repair_assignments", on_delete=models.PROTECT
     )
     machine = models.ForeignKey(
-        "maintenance.Machine", related_name="repair_assignments", on_delete=models.CASCADE
+        "maintenance.Machine",
+        related_name="repair_assignments",
+        on_delete=models.CASCADE,
     )
     store = models.ForeignKey(
         "stores.Store", related_name="repair_assignments", on_delete=models.PROTECT

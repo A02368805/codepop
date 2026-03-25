@@ -1,12 +1,11 @@
-from django.http import HttpResponse
-from django.template.loader import render_to_string
-from django.views.generic import TemplateView
-
 from apps.analytics.recommendations import explain_maintenance_priority
 from apps.imports.models import ImportJob
 from apps.stores.selectors import stores_visible_to_user
 from apps.users.models import User
 from apps.users.permissions import RoleRequiredMixin
+from django.http import HttpResponse
+from django.template.loader import render_to_string
+from django.views.generic import TemplateView
 
 from .models import Machine, RepairAssignment
 
@@ -24,7 +23,9 @@ class MaintenanceWorkspaceView(RoleRequiredMixin, TemplateView):
         context = super().get_context_data(**kwargs)
         visible_stores = stores_visible_to_user(self.request.user)
         status_filter = self.request.GET.get("status", "").strip()
-        urgent_machines = Machine.objects.filter(store__in=visible_stores).select_related(
+        urgent_machines = Machine.objects.filter(
+            store__in=visible_stores
+        ).select_related(
             "store",
             "machine_type",
         )
@@ -41,16 +42,25 @@ class MaintenanceWorkspaceView(RoleRequiredMixin, TemplateView):
         context.update(
             {
                 "machines": [
-                    {"machine": machine, "explanation": explain_maintenance_priority(machine)}
+                    {
+                        "machine": machine,
+                        "explanation": explain_maintenance_priority(machine),
+                    }
                     for machine in urgent_machines
                 ],
-                "assignments": RepairAssignment.objects.filter(
-                    assigned_to=self.request.user
+                "assignments": (
+                    RepairAssignment.objects.filter(
+                        assigned_to=(
+                            self.request.user
+                            if self.request.user.role == User.Role.REPAIR_STAFF
+                            else None
+                        )
+                    ).select_related("machine", "store", "assigned_to")
                     if self.request.user.role == User.Role.REPAIR_STAFF
-                    else None
-                ).select_related("machine", "store", "assigned_to")
-                if self.request.user.role == User.Role.REPAIR_STAFF
-                else RepairAssignment.objects.filter(store__in=visible_stores).select_related("machine", "store", "assigned_to"),
+                    else RepairAssignment.objects.filter(
+                        store__in=visible_stores
+                    ).select_related("machine", "store", "assigned_to")
+                ),
                 "import_jobs": ImportJob.objects.filter(
                     import_type=ImportJob.ImportType.REPAIR_STATUS
                 ).select_related("uploaded_by")[:10],
@@ -62,6 +72,8 @@ class MaintenanceWorkspaceView(RoleRequiredMixin, TemplateView):
     def get(self, request, *args, **kwargs):
         context = self.get_context_data(**kwargs)
         if getattr(request, "htmx", False):
-            html = render_to_string("maintenance/partials/urgent_queue.html", context, request=request)
+            html = render_to_string(
+                "maintenance/partials/urgent_queue.html", context, request=request
+            )
             return HttpResponse(html)
         return self.render_to_response(context)

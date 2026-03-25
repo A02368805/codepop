@@ -1,3 +1,10 @@
+from apps.stores.selectors import scoped_region_store_options, stores_visible_to_user
+from apps.users.models import User
+from apps.users.permissions import (
+    RoleRequiredMixin,
+    user_can_manage_store,
+    user_has_global_access,
+)
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.core.exceptions import PermissionDenied
 from django.http import HttpResponse
@@ -5,11 +12,6 @@ from django.shortcuts import get_object_or_404
 from django.template.loader import render_to_string
 from django.views import View
 from django.views.generic import TemplateView
-
-from apps.stores.selectors import scoped_region_store_options, stores_visible_to_user
-from apps.users.permissions import user_can_manage_store, user_has_global_access
-from apps.users.models import User
-from apps.users.permissions import RoleRequiredMixin
 
 from .forms import InventoryAdjustmentForm
 from .models import RestockAlert, StoreInventoryBalance
@@ -35,7 +37,9 @@ class InventoryWorkspaceView(RoleRequiredMixin, TemplateView):
         )
         visible_stores = scope["active_store_scope"]
         search = self.request.GET.get("search", "").strip()
-        balances = StoreInventoryBalance.objects.filter(store__in=visible_stores).select_related(
+        balances = StoreInventoryBalance.objects.filter(
+            store__in=visible_stores
+        ).select_related(
             "store",
             "inventory_item",
         )
@@ -65,7 +69,9 @@ class InventoryWorkspaceView(RoleRequiredMixin, TemplateView):
     def get(self, request, *args, **kwargs):
         context = self.get_context_data(**kwargs)
         if getattr(request, "htmx", False):
-            html = render_to_string("inventory/partials/balance_table.html", context, request=request)
+            html = render_to_string(
+                "inventory/partials/balance_table.html", context, request=request
+            )
             return HttpResponse(html)
         return self.render_to_response(context)
 
@@ -76,8 +82,13 @@ class InventoryAdjustView(LoginRequiredMixin, View):
             StoreInventoryBalance.objects.select_related("store", "inventory_item"),
             pk=kwargs["balance_id"],
         )
-        if not (user_has_global_access(request.user) or user_can_manage_store(request.user, balance.store)):
-            raise PermissionDenied("You cannot adjust inventory outside your store scope.")
+        if not (
+            user_has_global_access(request.user)
+            or user_can_manage_store(request.user, balance.store)
+        ):
+            raise PermissionDenied(
+                "You cannot adjust inventory outside your store scope."
+            )
 
         form = InventoryAdjustmentForm(request.POST)
         if form.is_valid():

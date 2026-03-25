@@ -10,68 +10,121 @@ class Migration(migrations.Migration):
     initial = True
 
     dependencies = [
-        ('imports', '0002_initial'),
-        ('inventory', '0001_initial'),
-        ('stores', '0001_initial'),
+        ("imports", "0002_initial"),
+        ("inventory", "0001_initial"),
+        ("stores", "0001_initial"),
         migrations.swappable_dependency(settings.AUTH_USER_MODEL),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='supplierreplenishment',
-            name='recorded_by',
-            field=models.ForeignKey(on_delete=django.db.models.deletion.PROTECT, related_name='recorded_replenishments', to=settings.AUTH_USER_MODEL),
+            model_name="supplierreplenishment",
+            name="recorded_by",
+            field=models.ForeignKey(
+                on_delete=django.db.models.deletion.PROTECT,
+                related_name="recorded_replenishments",
+                to=settings.AUTH_USER_MODEL,
+            ),
         ),
         migrations.AddField(
-            model_name='supplierreplenishment',
-            name='store',
-            field=models.ForeignKey(on_delete=django.db.models.deletion.PROTECT, related_name='supplier_replenishments', to='stores.store'),
+            model_name="supplierreplenishment",
+            name="store",
+            field=models.ForeignKey(
+                on_delete=django.db.models.deletion.PROTECT,
+                related_name="supplier_replenishments",
+                to="stores.store",
+            ),
         ),
         migrations.AddField(
-            model_name='supplierreplenishment',
-            name='supplier',
-            field=models.ForeignKey(on_delete=django.db.models.deletion.PROTECT, related_name='replenishments', to='inventory.localsupplier'),
+            model_name="supplierreplenishment",
+            name="supplier",
+            field=models.ForeignKey(
+                on_delete=django.db.models.deletion.PROTECT,
+                related_name="replenishments",
+                to="inventory.localsupplier",
+            ),
         ),
         migrations.AddField(
-            model_name='supplyschedule',
-            name='approved_by',
-            field=models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.SET_NULL, related_name='approved_supply_schedules', to=settings.AUTH_USER_MODEL),
+            model_name="supplyschedule",
+            name="approved_by",
+            field=models.ForeignKey(
+                blank=True,
+                null=True,
+                on_delete=django.db.models.deletion.SET_NULL,
+                related_name="approved_supply_schedules",
+                to=settings.AUTH_USER_MODEL,
+            ),
         ),
         migrations.AddField(
-            model_name='supplyschedule',
-            name='inventory_item',
-            field=models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='supply_schedules', to='inventory.inventoryitem'),
+            model_name="supplyschedule",
+            name="inventory_item",
+            field=models.ForeignKey(
+                on_delete=django.db.models.deletion.CASCADE,
+                related_name="supply_schedules",
+                to="inventory.inventoryitem",
+            ),
         ),
         migrations.AddField(
-            model_name='supplyschedule',
-            name='store',
-            field=models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='supply_schedules', to='stores.store'),
+            model_name="supplyschedule",
+            name="store",
+            field=models.ForeignKey(
+                on_delete=django.db.models.deletion.CASCADE,
+                related_name="supply_schedules",
+                to="stores.store",
+            ),
         ),
         migrations.AddField(
-            model_name='supplyusagerecord',
-            name='inventory_item',
-            field=models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='supply_usage_records', to='inventory.inventoryitem'),
+            model_name="supplyusagerecord",
+            name="inventory_item",
+            field=models.ForeignKey(
+                on_delete=django.db.models.deletion.CASCADE,
+                related_name="supply_usage_records",
+                to="inventory.inventoryitem",
+            ),
         ),
         migrations.AddField(
-            model_name='supplyusagerecord',
-            name='source_import_job',
-            field=models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.SET_NULL, related_name='supply_usage_records', to='imports.importjob'),
+            model_name="supplyusagerecord",
+            name="source_import_job",
+            field=models.ForeignKey(
+                blank=True,
+                null=True,
+                on_delete=django.db.models.deletion.SET_NULL,
+                related_name="supply_usage_records",
+                to="imports.importjob",
+            ),
         ),
         migrations.AddField(
-            model_name='supplyusagerecord',
-            name='store',
-            field=models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='supply_usage_records', to='stores.store'),
+            model_name="supplyusagerecord",
+            name="store",
+            field=models.ForeignKey(
+                on_delete=django.db.models.deletion.CASCADE,
+                related_name="supply_usage_records",
+                to="stores.store",
+            ),
         ),
         migrations.AddConstraint(
-            model_name='storeinventorybalance',
-            constraint=models.UniqueConstraint(fields=('store', 'inventory_item'), name='unique_store_inventory_balance'),
+            model_name="storeinventorybalance",
+            constraint=models.UniqueConstraint(
+                fields=("store", "inventory_item"),
+                name="unique_store_inventory_balance",
+            ),
         ),
         migrations.AddConstraint(
-            model_name='storeinventorybalance',
-            constraint=models.CheckConstraint(condition=models.Q(('on_hand_quantity__gte', 0), ('reserved_quantity__gte', 0)), name='store_inventory_quantities_non_negative'),
+            model_name="storeinventorybalance",
+            constraint=models.CheckConstraint(
+                condition=models.Q(
+                    ("on_hand_quantity__gte", 0), ("reserved_quantity__gte", 0)
+                ),
+                name="store_inventory_quantities_non_negative",
+            ),
         ),
         migrations.AddConstraint(
-            model_name='storeinventorybalance',
-            constraint=models.CheckConstraint(condition=models.Q(('on_hand_quantity__gte', models.F('reserved_quantity'))), name='store_inventory_reserved_not_greater_than_on_hand'),
+            model_name="storeinventorybalance",
+            constraint=models.CheckConstraint(
+                condition=models.Q(
+                    ("on_hand_quantity__gte", models.F("reserved_quantity"))
+                ),
+                name="store_inventory_reserved_not_greater_than_on_hand",
+            ),
         ),
     ]

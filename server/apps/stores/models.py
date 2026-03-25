@@ -56,7 +56,9 @@ class Store(models.Model):
 
     @property
     def full_address(self) -> str:
-        return f"{self.address_line_1}, {self.city}, {self.state_code} {self.postal_code}"
+        return (
+            f"{self.address_line_1}, {self.city}, {self.state_code} {self.postal_code}"
+        )
 
     @property
     def customer_label(self) -> str:

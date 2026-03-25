@@ -1,6 +1,3 @@
-from django.db.models import F
-from django.urls import reverse
-
 from apps.imports.models import ImportJob
 from apps.inventory.models import StoreInventoryBalance
 from apps.maintenance.models import Machine, RepairAssignment
@@ -12,7 +9,8 @@ from apps.stores.selectors import regions_visible_to_user, stores_visible_to_use
 from apps.supply_hubs.models import SupplyHub
 from apps.sync.models import SyncOutboxEvent
 from apps.users.models import User
-
+from django.db.models import F
+from django.urls import reverse
 
 ROLE_COPY = {
     User.Role.ACCOUNT_USER: {
@@ -79,8 +77,16 @@ def build_dashboard_payload(user, role):
         store__in=visible_stores, on_hand_quantity__lte=F("reorder_threshold")
     ).count()
     metrics = [
-        {"label": "Stores in scope", "value": visible_stores.count(), "tone": "neutral"},
-        {"label": "Regions in scope", "value": visible_regions.count(), "tone": "neutral"},
+        {
+            "label": "Stores in scope",
+            "value": visible_stores.count(),
+            "tone": "neutral",
+        },
+        {
+            "label": "Regions in scope",
+            "value": visible_regions.count(),
+            "tone": "neutral",
+        },
         {"label": "Low-stock balances", "value": low_stock_count, "tone": "warning"},
     ]
 
@@ -88,7 +94,9 @@ def build_dashboard_payload(user, role):
         metrics = [
             {
                 "label": "Preferred store",
-                "value": user.preferred_store.name if user.preferred_store else "Not set",
+                "value": (
+                    user.preferred_store.name if user.preferred_store else "Not set"
+                ),
                 "tone": "neutral",
             },
             {
@@ -108,7 +116,12 @@ def build_dashboard_payload(user, role):
                 "label": "Orders awaiting action",
                 "value": Order.objects.filter(
                     store__in=visible_stores,
-                    status__in=[Order.Status.PAID, Order.Status.QUEUED, Order.Status.PREPARING, Order.Status.READY],
+                    status__in=[
+                        Order.Status.PAID,
+                        Order.Status.QUEUED,
+                        Order.Status.PREPARING,
+                        Order.Status.READY,
+                    ],
                 ).count(),
                 "tone": "info",
             }
@@ -117,7 +130,11 @@ def build_dashboard_payload(user, role):
         metrics.append(
             {
                 "label": "Staff in scope",
-                "value": User.objects.filter(store_assignments__store__in=visible_stores).distinct().count(),
+                "value": User.objects.filter(
+                    store_assignments__store__in=visible_stores
+                )
+                .distinct()
+                .count(),
                 "tone": "info",
             }
         )
@@ -126,12 +143,16 @@ def build_dashboard_payload(user, role):
             [
                 {
                     "label": "Supply hubs",
-                    "value": SupplyHub.objects.filter(region__in=visible_regions).count(),
+                    "value": SupplyHub.objects.filter(
+                        region__in=visible_regions
+                    ).count(),
                     "tone": "neutral",
                 },
                 {
                     "label": "Pending sync events",
-                    "value": SyncOutboxEvent.objects.filter(status=SyncOutboxEvent.Status.PENDING).count(),
+                    "value": SyncOutboxEvent.objects.filter(
+                        status=SyncOutboxEvent.Status.PENDING
+                    ).count(),
                     "tone": "warning",
                 },
             ]
@@ -143,7 +164,10 @@ def build_dashboard_payload(user, role):
                     "label": "Open assignments",
                     "value": RepairAssignment.objects.filter(
                         assigned_to=user,
-                        status__in=[RepairAssignment.Status.SCHEDULED, RepairAssignment.Status.IN_PROGRESS],
+                        status__in=[
+                            RepairAssignment.Status.SCHEDULED,
+                            RepairAssignment.Status.IN_PROGRESS,
+                        ],
                     ).count(),
                     "tone": "warning",
                 },
@@ -151,7 +175,10 @@ def build_dashboard_payload(user, role):
                     "label": "Machines in warning",
                     "value": Machine.objects.filter(
                         store__in=visible_stores,
-                        current_status__in=[Machine.Status.WARNING, Machine.Status.ERROR],
+                        current_status__in=[
+                            Machine.Status.WARNING,
+                            Machine.Status.ERROR,
+                        ],
                     ).count(),
                     "tone": "warning",
                 },
@@ -160,15 +187,23 @@ def build_dashboard_payload(user, role):
     elif role == User.Role.SUPER_ADMIN:
         metrics.extend(
             [
-                {"label": "All stores", "value": Store.objects.count(), "tone": "neutral"},
+                {
+                    "label": "All stores",
+                    "value": Store.objects.count(),
+                    "tone": "neutral",
+                },
                 {
                     "label": "Recorded payments",
-                    "value": PaymentTransaction.objects.exclude(status=PaymentTransaction.Status.FAILED).count(),
+                    "value": PaymentTransaction.objects.exclude(
+                        status=PaymentTransaction.Status.FAILED
+                    ).count(),
                     "tone": "info",
                 },
                 {
                     "label": "Pending imports",
-                    "value": ImportJob.objects.filter(status=ImportJob.Status.PENDING).count(),
+                    "value": ImportJob.objects.filter(
+                        status=ImportJob.Status.PENDING
+                    ).count(),
                     "tone": "warning",
                 },
             ]

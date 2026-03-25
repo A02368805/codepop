@@ -16,7 +16,9 @@ class SyncOutboxEvent(models.Model):
     aggregate_id = models.CharField(max_length=80)
     entity_version = models.PositiveIntegerField(default=1)
     source_scope = models.JSONField(default=dict, blank=True)
-    status = models.CharField(max_length=24, choices=Status.choices, default=Status.PENDING)
+    status = models.CharField(
+        max_length=24, choices=Status.choices, default=Status.PENDING
+    )
     payload = models.JSONField(default=dict, blank=True)
     attempt_count = models.PositiveIntegerField(default=0)
     next_attempt_at = models.DateTimeField(null=True, blank=True)

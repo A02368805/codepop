@@ -1,15 +1,5 @@
 from datetime import date, timedelta
 
-from django.contrib import messages
-from django.core.exceptions import PermissionDenied
-from django.db.models import Sum
-from django.http import HttpResponse
-from django.shortcuts import get_object_or_404, redirect, render
-from django.template.loader import render_to_string
-from django.utils import timezone
-from django.views import View
-from django.views.generic import TemplateView
-
 from apps.analytics.recommendations import explain_supply_schedule
 from apps.inventory.models import (
     LocalSupplier,
@@ -30,10 +20,18 @@ from apps.inventory.services import (
 from apps.stores.selectors import scoped_region_store_options
 from apps.users.models import User
 from apps.users.permissions import RoleRequiredMixin
+from django.contrib import messages
+from django.core.exceptions import PermissionDenied
+from django.db.models import Sum
+from django.http import HttpResponse
+from django.shortcuts import get_object_or_404, redirect, render
+from django.template.loader import render_to_string
+from django.utils import timezone
+from django.views import View
+from django.views.generic import TemplateView
 
 from .forms import SupplierOrderForm, TransferRequestForm
 from .models import HubInventoryBalance, SupplyHub, SupplyTransfer
-
 
 ALLOWED_WORKSPACE_ROLES = (
     User.Role.LOGISTICS_MANAGER,
@@ -64,7 +62,8 @@ def _resolve_window(request):
     if window == "custom":
         return (
             window,
-            _parse_date(_request_value(request, "date_from", "").strip()) or today - timedelta(days=30),
+            _parse_date(_request_value(request, "date_from", "").strip())
+            or today - timedelta(days=30),
             _parse_date(_request_value(request, "date_to", "").strip()) or today,
         )
     return window, today - timedelta(days=30), today
@@ -104,7 +103,9 @@ def _filtered_supply_context(request, *, transfer_form=None, supplier_order_form
 
     supplier_orders = SupplierReplenishment.objects.filter(
         store__in=visible_stores
-    ).select_related("supplier", "store", "inventory_item", "requested_by", "recorded_by")
+    ).select_related(
+        "supplier", "store", "inventory_item", "requested_by", "recorded_by"
+    )
     if date_from:
         supplier_orders = supplier_orders.filter(ordered_at__date__gte=date_from)
     if date_to:
@@ -132,13 +133,17 @@ def _filtered_supply_context(request, *, transfer_form=None, supplier_order_form
             {"schedule": schedule, "explanation": explain_supply_schedule(schedule)}
             for schedule in schedules.order_by("-created_at")
         ],
-        "hubs": SupplyHub.objects.filter(region__in=visible_regions).order_by("hub_code"),
+        "hubs": SupplyHub.objects.filter(region__in=visible_regions).order_by(
+            "hub_code"
+        ),
         "hub_balances": HubInventoryBalance.objects.filter(
             hub__region__in=visible_regions
         )
         .select_related("hub", "inventory_item")
         .order_by("hub__name", "inventory_item__name"),
-        "suppliers": LocalSupplier.objects.filter(service_region__in=visible_regions).order_by("name"),
+        "suppliers": LocalSupplier.objects.filter(
+            service_region__in=visible_regions
+        ).order_by("name"),
         "supplier_orders": supplier_orders.order_by("-ordered_at", "-received_at"),
         "transfer_recommendations": recommendations,
         "supplier_fallbacks": supplier_fallbacks,
@@ -154,7 +159,8 @@ def _filtered_supply_context(request, *, transfer_form=None, supplier_order_form
             else None
         ),
         "transfer_form": transfer_form or TransferRequestForm(user=request.user),
-        "supplier_order_form": supplier_order_form or SupplierOrderForm(user=request.user),
+        "supplier_order_form": supplier_order_form
+        or SupplierOrderForm(user=request.user),
     }
 
 
@@ -170,8 +176,16 @@ def _workspace_context(request, *, transfer_form=None, supplier_order_form=None)
             "store_options": supply_context["scope"]["store_options"],
             "selected_region": supply_context["scope"]["selected_region"],
             "selected_store": supply_context["scope"]["selected_store"],
-            "date_from": supply_context["date_from"].isoformat() if supply_context["date_from"] else "",
-            "date_to": supply_context["date_to"].isoformat() if supply_context["date_to"] else "",
+            "date_from": (
+                supply_context["date_from"].isoformat()
+                if supply_context["date_from"]
+                else ""
+            ),
+            "date_to": (
+                supply_context["date_to"].isoformat()
+                if supply_context["date_to"]
+                else ""
+            ),
         }
     )
     return supply_context
@@ -217,7 +231,10 @@ def _render_supplier_orders(request, *, error_message=""):
 
 
 def _ensure_workspace_access(request):
-    if not getattr(request.user, "is_authenticated", False) or request.user.role not in ALLOWED_WORKSPACE_ROLES:
+    if (
+        not getattr(request.user, "is_authenticated", False)
+        or request.user.role not in ALLOWED_WORKSPACE_ROLES
+    ):
         raise PermissionDenied("You do not have access to the logistics workspace.")
 
 
@@ -323,7 +340,9 @@ class SupplyScheduleListView(RoleRequiredMixin, TemplateView):
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        context["schedule_rows"] = _filtered_supply_context(self.request)["schedule_rows"]
+        context["schedule_rows"] = _filtered_supply_context(self.request)[
+            "schedule_rows"
+        ]
         return context
 
 
@@ -344,7 +363,9 @@ class SupplierOrderListView(RoleRequiredMixin, TemplateView):
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        context["supplier_orders"] = _filtered_supply_context(self.request)["supplier_orders"]
+        context["supplier_orders"] = _filtered_supply_context(self.request)[
+            "supplier_orders"
+        ]
         return context
 
 
@@ -360,8 +381,12 @@ class SupplierOrderCreateView(View):
                     supplier=supplier_order_form.cleaned_data["supplier"],
                     store=supplier_order_form.cleaned_data["store"],
                     inventory_item=supplier_order_form.cleaned_data["inventory_item"],
-                    quantity_requested=supplier_order_form.cleaned_data["quantity_requested"],
-                    expected_delivery_date=supplier_order_form.cleaned_data.get("expected_delivery_date"),
+                    quantity_requested=supplier_order_form.cleaned_data[
+                        "quantity_requested"
+                    ],
+                    expected_delivery_date=supplier_order_form.cleaned_data.get(
+                        "expected_delivery_date"
+                    ),
                     unit_cost=supplier_order_form.cleaned_data.get("unit_cost"),
                     notes=supplier_order_form.cleaned_data.get("notes", ""),
                 )
@@ -386,7 +411,9 @@ class SupplierOrderReceiveView(View):
     def post(self, request, *args, **kwargs):
         _ensure_workspace_access(request)
         replenishment = get_object_or_404(
-            SupplierReplenishment.objects.select_related("store", "store__region", "inventory_item"),
+            SupplierReplenishment.objects.select_related(
+                "store", "store__region", "inventory_item"
+            ),
             pk=kwargs["replenishment_id"],
         )
         try:

@@ -1,13 +1,12 @@
+from apps.imports.models import ImportJob
+from apps.imports.services import queue_import_job
+from apps.users.models import User
+from apps.users.permissions import RoleRequiredMixin
 from django.contrib import messages
 from django.http import HttpResponse
 from django.template.loader import render_to_string
 from django.views import View
 from django.views.generic import TemplateView
-
-from apps.imports.models import ImportJob
-from apps.imports.services import queue_import_job
-from apps.users.models import User
-from apps.users.permissions import RoleRequiredMixin
 
 from .forms import RepairStatusImportForm, SupplyUsageImportForm
 

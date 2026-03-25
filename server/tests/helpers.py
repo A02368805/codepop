@@ -1,13 +1,12 @@
 from datetime import date
 from decimal import Decimal
 
-from django.utils.text import slugify
-
 from apps.inventory.models import InventoryItem
 from apps.maintenance.models import Machine, MachineType
 from apps.stores.models import Region, Store
 from apps.supply_hubs.models import SupplyHub
 from apps.users.models import User, UserRegionAssignment, UserStoreAssignment
+from django.utils.text import slugify
 
 
 def make_region(
@@ -92,7 +91,9 @@ def assign_store(user, store, assignment_type=None):
 
 
 def assign_region(user, region, assignment_type=None):
-    assignment_type = assignment_type or UserRegionAssignment.AssignmentType.LOGISTICS_SCOPE
+    assignment_type = (
+        assignment_type or UserRegionAssignment.AssignmentType.LOGISTICS_SCOPE
+    )
     return UserRegionAssignment.objects.create(
         user=user,
         region=region,
@@ -164,7 +165,10 @@ def make_machine(
     operational_from_date=None,
 ):
     operational_from_date = operational_from_date or date(2025, 1, 1)
-    machine_uid = machine_uid or f"{store.store_code}-{machine_type.code}-{operational_from_date.isoformat()}"
+    machine_uid = (
+        machine_uid
+        or f"{store.store_code}-{machine_type.code}-{operational_from_date.isoformat()}"
+    )
     return Machine.objects.create(
         machine_uid=machine_uid,
         store=store,

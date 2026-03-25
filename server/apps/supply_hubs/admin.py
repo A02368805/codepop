@@ -1,6 +1,11 @@
 from django.contrib import admin
 
-from .models import HubInventoryBalance, SupplyHub, SupplyTransfer, SupplyTransferLineItem
+from .models import (
+    HubInventoryBalance,
+    SupplyHub,
+    SupplyTransfer,
+    SupplyTransferLineItem,
+)
 
 
 class SupplyTransferLineItemInline(admin.TabularInline):
@@ -35,5 +40,9 @@ class SupplyTransferAdmin(admin.ModelAdmin):
         "distance_miles",
     )
     list_filter = ("status", "transfer_scope", "source_type")
-    search_fields = ("destination_store__store_code", "source_store__store_code", "source_hub__hub_code")
+    search_fields = (
+        "destination_store__store_code",
+        "source_store__store_code",
+        "source_hub__hub_code",
+    )
     inlines = [SupplyTransferLineItemInline]

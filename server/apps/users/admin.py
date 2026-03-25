@@ -1,7 +1,13 @@
 from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin as BaseUserAdmin
 
-from .models import FavoriteDrink, TastePreference, User, UserRegionAssignment, UserStoreAssignment
+from .models import (
+    FavoriteDrink,
+    TastePreference,
+    User,
+    UserRegionAssignment,
+    UserStoreAssignment,
+)
 
 
 @admin.register(User)
@@ -54,7 +60,10 @@ class UserAdmin(BaseUserAdmin):
                 )
             },
         ),
-        ("Important dates", {"fields": ("last_login", "date_joined", "created_at", "updated_at")}),
+        (
+            "Important dates",
+            {"fields": ("last_login", "date_joined", "created_at", "updated_at")},
+        ),
     )
     readonly_fields = ("created_at", "updated_at")
     add_fieldsets = (

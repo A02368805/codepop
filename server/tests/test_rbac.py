@@ -1,5 +1,3 @@
-from django.test import TestCase
-
 from apps.stores.selectors import regions_visible_to_user, stores_visible_to_user
 from apps.supply_hubs.models import SupplyTransfer
 from apps.users.permissions import (
@@ -8,6 +6,7 @@ from apps.users.permissions import (
     user_has_region_scope,
     user_has_store_scope,
 )
+from django.test import TestCase
 
 from .helpers import (
     assign_region,
@@ -32,7 +31,9 @@ class RBACScopeTests(TestCase):
             latitude="43.615021",
             longitude="-116.202316",
         )
-        cls.store_c1 = make_store(store_code="C001", region=cls.region_c, name="Logan Main")
+        cls.store_c1 = make_store(
+            store_code="C001", region=cls.region_c, name="Logan Main"
+        )
         cls.store_c2 = make_store(
             store_code="C002",
             region=cls.region_c,

@@ -2,17 +2,21 @@ from __future__ import annotations
 
 from decimal import Decimal
 
-from django.db import transaction
-from django.urls import reverse
-from django.utils import timezone
-
 from apps.inventory.services import InventoryServiceError
 from apps.orders.models import Order
 from apps.orders.services import ensure_refund_allowed, transition_order_status
 from apps.sync.services import create_audit_log, create_outbox_event, serialize_instance
 from core.exceptions import ServiceError
+from django.db import transaction
+from django.urls import reverse
+from django.utils import timezone
 
-from .gateway import PaymentMode, create_stripe_checkout_session, get_payment_mode, retrieve_checkout_session
+from .gateway import (
+    PaymentMode,
+    create_stripe_checkout_session,
+    get_payment_mode,
+    retrieve_checkout_session,
+)
 from .models import PaymentTransaction, RevenueLedgerEntry
 
 
@@ -99,15 +103,23 @@ def record_payment_success(
 
 
 @transaction.atomic
-def record_payment_failure(order, *, actor=None, reason="", payment_intent_id="", checkout_session_id=""):
-    before = serialize_instance(order.payment_transaction) if hasattr(order, "payment_transaction") else {}
+def record_payment_failure(
+    order, *, actor=None, reason="", payment_intent_id="", checkout_session_id=""
+):
+    before = (
+        serialize_instance(order.payment_transaction)
+        if hasattr(order, "payment_transaction")
+        else {}
+    )
     payment, _ = PaymentTransaction.objects.update_or_create(
         order=order,
         defaults={
             "store": order.store,
-            "provider": PaymentTransaction.Provider.STRIPE
-            if get_payment_mode() == PaymentMode.STRIPE
-            else PaymentTransaction.Provider.MOCK,
+            "provider": (
+                PaymentTransaction.Provider.STRIPE
+                if get_payment_mode() == PaymentMode.STRIPE
+                else PaymentTransaction.Provider.MOCK
+            ),
             "status": PaymentTransaction.Status.FAILED,
             "amount_authorized": order.total_amount,
             "stripe_payment_intent_id": payment_intent_id,
@@ -126,7 +138,10 @@ def record_payment_failure(order, *, actor=None, reason="", payment_intent_id=""
         event_type="order.failed",
         instance=order,
         payload={"reason": reason or "Payment failed."},
-        source_scope={"store_id": str(order.store_id), "region_code": order.store.region.code},
+        source_scope={
+            "store_id": str(order.store_id),
+            "region_code": order.store.region.code,
+        },
     )
     create_audit_log(
         actor=actor,
@@ -187,19 +202,25 @@ def initialize_order_checkout(order, *, request, actor=None):
             raise PaymentGatewayError(str(exc)) from exc
         return {
             "mode": PaymentMode.MOCK,
-            "redirect_url": reverse("orders:confirmation", args=[order.public_order_code]),
+            "redirect_url": reverse(
+                "orders:confirmation", args=[order.public_order_code]
+            ),
             "message": "Demo payment mode completed the order instantly.",
         }
 
     if not getattr(request, "build_absolute_uri", None):
-        raise PaymentGatewayError("A request object is required for Stripe checkout initialization.")
+        raise PaymentGatewayError(
+            "A request object is required for Stripe checkout initialization."
+        )
 
-    success_url = request.build_absolute_uri(
-        reverse("payments:checkout-success")
-    ) + f"?order_code={order.public_order_code}&session_id={{CHECKOUT_SESSION_ID}}"
-    cancel_url = request.build_absolute_uri(
-        reverse("payments:checkout-cancel")
-    ) + f"?order_code={order.public_order_code}"
+    success_url = (
+        request.build_absolute_uri(reverse("payments:checkout-success"))
+        + f"?order_code={order.public_order_code}&session_id={{CHECKOUT_SESSION_ID}}"
+    )
+    cancel_url = (
+        request.build_absolute_uri(reverse("payments:checkout-cancel"))
+        + f"?order_code={order.public_order_code}"
+    )
     session = create_stripe_checkout_session(
         order=order,
         success_url=success_url,
@@ -220,7 +241,9 @@ def initialize_order_checkout(order, *, request, actor=None):
 
 def finalize_stripe_checkout(*, order_code, session_id, actor=None):
     session = retrieve_checkout_session(session_id)
-    order = Order.objects.select_related("payment_transaction", "store").get(public_order_code=order_code)
+    order = Order.objects.select_related("payment_transaction", "store").get(
+        public_order_code=order_code
+    )
     if session.payment_status != "paid":
         raise PaymentGatewayError("Stripe checkout has not completed payment yet.")
     try:
@@ -243,8 +266,12 @@ def finalize_stripe_checkout(*, order_code, session_id, actor=None):
 def record_refund(order, *, actor=None, amount=None, notes=""):
     ensure_refund_allowed(order, actor=actor)
     payment = order.payment_transaction
-    refund_amount = Decimal(str(amount or payment.amount_captured or order.total_amount))
-    transition_order_status(order, Order.Status.REFUND_PENDING, actor=actor, reason=notes)
+    refund_amount = Decimal(
+        str(amount or payment.amount_captured or order.total_amount)
+    )
+    transition_order_status(
+        order, Order.Status.REFUND_PENDING, actor=actor, reason=notes
+    )
 
     payment.amount_refunded += refund_amount
     payment.status = (

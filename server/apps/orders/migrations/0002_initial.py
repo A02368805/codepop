@@ -10,38 +10,60 @@ class Migration(migrations.Migration):
     initial = True
 
     dependencies = [
-        ('orders', '0001_initial'),
-        ('stores', '0001_initial'),
+        ("orders", "0001_initial"),
+        ("stores", "0001_initial"),
         migrations.swappable_dependency(settings.AUTH_USER_MODEL),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='order',
-            name='customer',
-            field=models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.SET_NULL, related_name='orders', to=settings.AUTH_USER_MODEL),
+            model_name="order",
+            name="customer",
+            field=models.ForeignKey(
+                blank=True,
+                null=True,
+                on_delete=django.db.models.deletion.SET_NULL,
+                related_name="orders",
+                to=settings.AUTH_USER_MODEL,
+            ),
         ),
         migrations.AddField(
-            model_name='order',
-            name='store',
-            field=models.ForeignKey(on_delete=django.db.models.deletion.PROTECT, related_name='orders', to='stores.store'),
+            model_name="order",
+            name="store",
+            field=models.ForeignKey(
+                on_delete=django.db.models.deletion.PROTECT,
+                related_name="orders",
+                to="stores.store",
+            ),
         ),
         migrations.AddField(
-            model_name='guestordercontact',
-            name='order',
-            field=models.OneToOneField(on_delete=django.db.models.deletion.CASCADE, related_name='guest_contact', to='orders.order'),
+            model_name="guestordercontact",
+            name="order",
+            field=models.OneToOneField(
+                on_delete=django.db.models.deletion.CASCADE,
+                related_name="guest_contact",
+                to="orders.order",
+            ),
         ),
         migrations.AddField(
-            model_name='orderitem',
-            name='order',
-            field=models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='items', to='orders.order'),
+            model_name="orderitem",
+            name="order",
+            field=models.ForeignKey(
+                on_delete=django.db.models.deletion.CASCADE,
+                related_name="items",
+                to="orders.order",
+            ),
         ),
         migrations.AddIndex(
-            model_name='order',
-            index=models.Index(fields=['store', 'status'], name='orders_orde_store_i_610c63_idx'),
+            model_name="order",
+            index=models.Index(
+                fields=["store", "status"], name="orders_orde_store_i_610c63_idx"
+            ),
         ),
         migrations.AddIndex(
-            model_name='order',
-            index=models.Index(fields=['customer', 'placed_at'], name='orders_orde_custome_820226_idx'),
+            model_name="order",
+            index=models.Index(
+                fields=["customer", "placed_at"], name="orders_orde_custome_820226_idx"
+            ),
         ),
     ]

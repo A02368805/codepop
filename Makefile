@@ -1,4 +1,4 @@
-.PHONY: up down build logs shell migrate test demo ci-test check-docker
+.PHONY: up down build logs shell migrate test demo ci-test check-docker lint format
 
 check-docker:
 	@command -v docker >/dev/null 2>&1 || { \
@@ -38,3 +38,11 @@ ci-test:
 
 demo:
 	docker compose exec web python manage.py bootstrap_demo_data --reset
+
+format:
+	docker compose exec web black /app/server/
+	docker compose exec web isort /app/server/
+
+lint:
+	docker compose exec web black --check /app/server/
+	docker compose exec web isort --check-only /app/server/
