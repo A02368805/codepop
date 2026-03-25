@@ -35,6 +35,19 @@
                         Stripe checkout is active. You will be redirected to Stripe after the server validates pricing.
                     {% endif %}
                 </div>
+                {% if payment_mode != "stripe" %}
+                    <div class="flash flash--warning">
+                        Card entry UI is disabled because <strong>PAYMENT_MODE</strong> is not set to <strong>stripe</strong>.
+                    </div>
+                {% elif payment_checkout_flow != "elements" %}
+                    <div class="flash flash--warning">
+                        Card entry UI is disabled because <strong>PAYMENT_CHECKOUT_FLOW</strong> is not set to <strong>elements</strong>.
+                    </div>
+                {% elif not stripe_publishable_key %}
+                    <div class="flash flash--warning">
+                        Card entry UI is disabled because <strong>STRIPE_PUBLISHABLE_KEY</strong> is missing.
+                    </div>
+                {% endif %}
                 <div class="callout">
                     <strong>Server authority:</strong> totals are recomputed at order commit, and payment records are linked to the created order before queueing.
                 </div>

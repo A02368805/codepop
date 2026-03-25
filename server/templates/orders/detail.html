@@ -138,6 +138,19 @@
                         <p class="muted" id="stripe-pay-status">Enter your card details to complete checkout.</p>
                     </div>
                 {% else %}
+                    {% if payment_mode != "stripe" %}
+                    <div class="flash flash--warning">
+                        Card entry UI is disabled because <strong>PAYMENT_MODE</strong> is not set to <strong>stripe</strong>.
+                    </div>
+                    {% elif payment_checkout_flow != "elements" %}
+                    <div class="flash flash--warning">
+                        Card entry UI is disabled because <strong>PAYMENT_CHECKOUT_FLOW</strong> is not set to <strong>elements</strong>.
+                    </div>
+                    {% elif not stripe_publishable_key %}
+                    <div class="flash flash--warning">
+                        Card entry UI is disabled because <strong>STRIPE_PUBLISHABLE_KEY</strong> is missing.
+                    </div>
+                    {% endif %}
                 <div id="payment-intent-panel" data-endpoint="{% url 'payments:payment-intent' %}" data-order-code="{{ order.public_order_code }}">
                     <button class="button button--ghost" type="button" id="payment-intent-btn">Generate payment intent</button>
                     <p class="muted" id="payment-intent-status">Creates a provider intent so checkout can continue with the payment processor.</p>
