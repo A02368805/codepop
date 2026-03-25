@@ -1,16 +1,14 @@
 from __future__ import annotations
 
-from dataclasses import dataclass
 import json
 import logging
 import time
+from dataclasses import dataclass
 from urllib import error as url_error
 from urllib import request as url_request
 
-from django.conf import settings
-
 from apps.orders.personalization import recommend_drink_menu_scores
-
+from django.conf import settings
 
 logger = logging.getLogger(__name__)
 
@@ -38,9 +36,7 @@ class MockExternalRecommendationProvider:
         for row in seeded:
             row_copy = dict(row)
             explanation = row_copy.get("explanation", "")
-            row_copy["explanation"] = (
-                f"[Mock external provider] {explanation}".strip()
-            )
+            row_copy["explanation"] = f"[Mock external provider] {explanation}".strip()
             transformed.append(row_copy)
         return RecommendationProviderResult(recommendations=transformed)
 
@@ -64,19 +60,20 @@ class AnthropicRecommendationProvider:
         base_url = str(
             getattr(settings, "ANTHROPIC_API_BASE_URL", "https://api.anthropic.com")
         ).rstrip("/")
-        model = str(
-            getattr(settings, "ANTHROPIC_MODEL", "claude-3-5-haiku-latest")
-        )
+        model = str(getattr(settings, "ANTHROPIC_MODEL", "claude-3-5-haiku-latest"))
         timeout_seconds = float(getattr(settings, "AI_PROVIDER_TIMEOUT_SECONDS", 8))
         max_retries = int(getattr(settings, "AI_PROVIDER_MAX_RETRIES", 2))
 
         prompt_lines = [
             "Rewrite the explanations for these drink recommendations.",
-            "Return JSON only with this shape: {\"recommendations\": [{\"name\": \"...\", \"explanation\": \"...\"}]}",
+            'Return JSON only with this shape: {"recommendations": [{"name": "...", "explanation": "..."}]}',
             "Do not change names. Keep explanations under 120 characters.",
             json.dumps(
                 [
-                    {"name": row.get("name", ""), "explanation": row.get("explanation", "")}
+                    {
+                        "name": row.get("name", ""),
+                        "explanation": row.get("explanation", ""),
+                    }
                     for row in seeded
                 ]
             ),

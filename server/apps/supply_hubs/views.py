@@ -19,8 +19,8 @@ from apps.inventory.services import (
 )
 from apps.stores.selectors import scoped_region_store_options
 from apps.users.models import User
-from apps.users.permissions import RoleRequiredMixin
 from apps.users.permissions import (
+    RoleRequiredMixin,
     user_can_approve_transfer,
     user_can_progress_transfer,
     user_can_receive_transfer,

@@ -14,12 +14,12 @@ from django.utils import timezone
 from .gateway import (
     CheckoutFlow,
     PaymentMode,
-    create_stripe_payment_intent,
     create_stripe_checkout_session,
+    create_stripe_payment_intent,
     get_checkout_flow,
     get_payment_mode,
-    retrieve_stripe_payment_intent,
     retrieve_checkout_session,
+    retrieve_stripe_payment_intent,
 )
 from .models import PaymentTransaction, RevenueLedgerEntry
 
@@ -33,7 +33,10 @@ class PaymentGatewayError(PaymentServiceError):
 
 
 def create_payment_intent_for_order(order, *, actor=None):
-    if order.status not in {Order.Status.PRICING_VALIDATED, Order.Status.PAYMENT_PENDING}:
+    if order.status not in {
+        Order.Status.PRICING_VALIDATED,
+        Order.Status.PAYMENT_PENDING,
+    }:
         raise PaymentServiceError(
             "Payment intent can only be created for pricing-validated or pending-payment orders."
         )

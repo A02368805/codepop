@@ -1,8 +1,8 @@
-from django.test import TestCase, override_settings
 from unittest.mock import patch
 from urllib import error as url_error
 
 from apps.analytics.recommendations import recommend_drinks_for_user
+from django.test import TestCase, override_settings
 
 from .helpers import make_region, make_store, make_user
 
@@ -52,9 +52,7 @@ class AnalyticsProviderSelectionTests(TestCase):
                 return False
 
             def read(self_inner):
-                return (
-                    b'{"content":[{"type":"text","text":"{\\"recommendations\\":[{\\"name\\":\\"Berry Burst\\",\\"explanation\\":\\"AI tuned for bright citrus balance.\\"}]}"}]}'
-                )
+                return b'{"content":[{"type":"text","text":"{\\"recommendations\\":[{\\"name\\":\\"Berry Burst\\",\\"explanation\\":\\"AI tuned for bright citrus balance.\\"}]}"}]}'
 
         mock_urlopen.return_value = _Resp()
         rows = recommend_drinks_for_user(self.customer, limit=2)
@@ -68,7 +66,9 @@ class AnalyticsProviderSelectionTests(TestCase):
         AI_PROVIDER_MAX_RETRIES=0,
     )
     @patch("apps.analytics.providers.url_request.urlopen")
-    def test_anthropic_provider_falls_back_to_deterministic_on_error(self, mock_urlopen):
+    def test_anthropic_provider_falls_back_to_deterministic_on_error(
+        self, mock_urlopen
+    ):
         mock_urlopen.side_effect = url_error.URLError("timeout")
         rows = recommend_drinks_for_user(self.customer, limit=2)
         self.assertGreaterEqual(len(rows), 1)

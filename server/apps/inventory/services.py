@@ -183,9 +183,7 @@ def reserve_order_inventory(order):
                 inventory_item=inventory_item,
             )
             if available_quantity(balance) < quantity:
-                raise InventoryServiceError(
-                    f"Insufficient inventory for SKU '{sku}'."
-                )
+                raise InventoryServiceError(f"Insufficient inventory for SKU '{sku}'.")
             apply_balance_change(balance, on_hand_delta=-quantity)
             evaluate_restock_alert(balance)
 
@@ -462,7 +460,9 @@ def approve_transfer(transfer, *, approver, approved_quantities=None):
             )
         )
         if quantity_approved <= 0:
-            raise InventoryServiceError("Approved transfer quantities must be positive.")
+            raise InventoryServiceError(
+                "Approved transfer quantities must be positive."
+            )
         if quantity_approved > line_item.quantity_requested:
             raise InventoryServiceError(
                 "Approved transfer quantity cannot exceed requested quantity."
@@ -607,7 +607,9 @@ def receive_transfer(transfer, *, actor=None):
     for line_item in _locked_transfer_line_items(transfer):
         quantity = line_item.quantity_received or line_item.quantity_approved
         if quantity <= 0:
-            raise InventoryServiceError("Received transfer quantities must be positive.")
+            raise InventoryServiceError(
+                "Received transfer quantities must be positive."
+            )
         if quantity > line_item.quantity_approved:
             raise InventoryServiceError(
                 "Received quantity cannot exceed approved transfer quantity."

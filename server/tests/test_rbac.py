@@ -1,3 +1,4 @@
+from apps.inventory.services import request_transfer
 from apps.stores.selectors import regions_visible_to_user, stores_visible_to_user
 from apps.supply_hubs.models import SupplyTransfer
 from apps.users.permissions import (
@@ -10,7 +11,6 @@ from apps.users.permissions import (
     user_has_region_scope,
     user_has_store_scope,
 )
-from apps.inventory.services import request_transfer
 from django.test import TestCase
 
 from .helpers import (
@@ -184,7 +184,9 @@ class RBACScopeTests(TestCase):
         self.assertFalse(
             user_can_approve_transfer(self.logistics, self.transfer_other_region)
         )
-        self.assertFalse(user_can_approve_transfer(self.manager, self.transfer_same_region))
+        self.assertFalse(
+            user_can_approve_transfer(self.manager, self.transfer_same_region)
+        )
         self.assertTrue(
             user_can_approve_transfer(self.super_admin, self.transfer_other_region)
         )
@@ -200,7 +202,9 @@ class RBACScopeTests(TestCase):
             user_can_progress_transfer(self.repair, self.transfer_same_region)
         )
 
-        self.assertTrue(user_can_receive_transfer(self.manager, self.transfer_same_region))
+        self.assertTrue(
+            user_can_receive_transfer(self.manager, self.transfer_same_region)
+        )
         self.assertFalse(
             user_can_receive_transfer(self.repair, self.transfer_same_region)
         )

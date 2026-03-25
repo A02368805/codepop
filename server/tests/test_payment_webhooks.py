@@ -47,7 +47,9 @@ class PaymentWebhookSafetyTests(TestCase):
             actor=self.customer,
         )
         record_payment_pending(order, payment_intent_id="pi_webhook_1")
-        record_payment_success(order, payment_intent_id="pi_webhook_1", actor=self.customer)
+        record_payment_success(
+            order, payment_intent_id="pi_webhook_1", actor=self.customer
+        )
         return order
 
     @patch("apps.payments.views.construct_webhook_event")
@@ -59,7 +61,12 @@ class PaymentWebhookSafetyTests(TestCase):
     ):
         mock_construct.return_value = {
             "type": "checkout.session.completed",
-            "data": {"object": {"id": "cs_test_1", "metadata": {"order_code": "FS-C-C001-TEST"}}},
+            "data": {
+                "object": {
+                    "id": "cs_test_1",
+                    "metadata": {"order_code": "FS-C-C001-TEST"},
+                }
+            },
         }
         mock_finalize.side_effect = RuntimeError("already processed")
 
@@ -146,12 +153,16 @@ class PaymentWebhookSafetyTests(TestCase):
         self.assertEqual(second.status_code, 200)
         self.assertEqual(mock_finalize_intent.call_count, 1)
         self.assertEqual(
-            PaymentWebhookEvent.objects.filter(provider_event_id="evt_pi_once_1").count(),
+            PaymentWebhookEvent.objects.filter(
+                provider_event_id="evt_pi_once_1"
+            ).count(),
             1,
         )
 
     @patch("apps.payments.views.construct_webhook_event")
-    def test_refund_webhook_is_ignored_when_payment_already_refunded(self, mock_construct):
+    def test_refund_webhook_is_ignored_when_payment_already_refunded(
+        self, mock_construct
+    ):
         order = self._create_paid_order()
         order.status = Order.Status.REFUNDED
         order.save(update_fields=["status", "updated_at"])

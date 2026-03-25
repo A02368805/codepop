@@ -58,7 +58,9 @@ class PaymentIntentEndpointTests(TestCase):
 
         order.refresh_from_db()
         self.assertEqual(order.status, Order.Status.PAYMENT_PENDING)
-        self.assertEqual(order.payment_transaction.status, PaymentTransaction.Status.PENDING)
+        self.assertEqual(
+            order.payment_transaction.status, PaymentTransaction.Status.PENDING
+        )
 
     @override_settings(PAYMENT_MODE="mock")
     def test_payment_intent_endpoint_rejects_terminal_order_status(self):
@@ -76,10 +78,14 @@ class PaymentIntentEndpointTests(TestCase):
         self.assertIn("Payment intent can only be created", response.json()["error"])
 
     @override_settings(PAYMENT_MODE="mock")
-    def test_payment_status_endpoint_returns_finalized_redirect_when_order_is_queued(self):
+    def test_payment_status_endpoint_returns_finalized_redirect_when_order_is_queued(
+        self,
+    ):
         order = self._create_pricing_validated_order()
         record_payment_pending(order, payment_intent_id="pi_status_1")
-        record_payment_success(order, payment_intent_id="pi_status_1", actor=self.customer)
+        record_payment_success(
+            order, payment_intent_id="pi_status_1", actor=self.customer
+        )
         order.refresh_from_db()
 
         self.client.force_login(self.customer)

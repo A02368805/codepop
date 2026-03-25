@@ -2,9 +2,9 @@ from django.urls import path
 
 from .views import (
     CheckoutCancelView,
+    CheckoutSuccessView,
     PaymentIntentCreateView,
     PaymentStatusView,
-    CheckoutSuccessView,
     PaymentWorkspaceView,
     StripeWebhookView,
 )

@@ -652,7 +652,11 @@ class DashboardAndHtmxViewTests(TestCase):
                 HTTP_HX_REQUEST="true",
             )
         self.assertEqual(response.status_code, 200)
-        job = ImportJob.objects.filter(original_filename="usage.csv").order_by("-created_at").first()
+        job = (
+            ImportJob.objects.filter(original_filename="usage.csv")
+            .order_by("-created_at")
+            .first()
+        )
         self.assertIsNotNone(job)
         self.assertIn(
             job.status,

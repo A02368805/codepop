@@ -33,7 +33,9 @@ def refresh_account_recommendations(user_id, *, reason=""):
 
 @shared_task
 def analyze_supply_usage_import(import_job_id):
-    job = ImportJob.objects.select_related("uploaded_by").filter(pk=import_job_id).first()
+    job = (
+        ImportJob.objects.select_related("uploaded_by").filter(pk=import_job_id).first()
+    )
     if job is None or job.import_type != ImportJob.ImportType.SUPPLY_USAGE:
         return None
     if job.uploaded_by_id is None:

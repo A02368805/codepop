@@ -8,7 +8,7 @@ class ArchitectureGuardrailTests(SimpleTestCase):
         urlconf_path = Path(__file__).resolve().parents[1] / "config" / "urls.py"
         urlconf_source = urlconf_path.read_text(encoding="utf-8")
 
-        self.assertNotIn("include(\"codepop_backend", urlconf_source)
+        self.assertNotIn('include("codepop_backend', urlconf_source)
         self.assertNotIn("include('codepop_backend", urlconf_source)
         self.assertNotIn("codepop_backend.urls", urlconf_source)
 

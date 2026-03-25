@@ -150,7 +150,9 @@ class PaymentIntentCreateView(View):
             return HttpResponseBadRequest("Missing order code.")
 
         order = get_object_or_404(
-            Order.objects.select_related("store", "payment_transaction").prefetch_related("items"),
+            Order.objects.select_related(
+                "store", "payment_transaction"
+            ).prefetch_related("items"),
             public_order_code=order_code,
         )
         if not user_can_view_order(request.user, order, session=request.session):
@@ -239,7 +241,9 @@ class StripeWebhookView(View):
             session_id = data_object.get("id", "")
             if order_code and session_id:
                 try:
-                    finalize_stripe_checkout(order_code=order_code, session_id=session_id)
+                    finalize_stripe_checkout(
+                        order_code=order_code, session_id=session_id
+                    )
                 except Exception:
                     return HttpResponse(status=200)
         elif event_type == "payment_intent.succeeded":
@@ -255,10 +259,9 @@ class StripeWebhookView(View):
                     return HttpResponse(status=200)
         elif event_type == "payment_intent.payment_failed":
             order_code = data_object.get("metadata", {}).get("order_code", "")
-            failure_message = (
-                (data_object.get("last_payment_error") or {}).get("message")
-                or "Stripe payment intent failed."
-            )
+            failure_message = (data_object.get("last_payment_error") or {}).get(
+                "message"
+            ) or "Stripe payment intent failed."
             if order_code:
                 order = Order.objects.filter(public_order_code=order_code).first()
                 if order and order.status == Order.Status.PAYMENT_PENDING:

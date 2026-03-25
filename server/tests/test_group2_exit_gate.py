@@ -3,9 +3,17 @@ from pathlib import Path
 
 from apps.analytics.tasks import refresh_account_recommendations
 from apps.imports.models import ImportJob
-from apps.imports.services import CSVImportError, import_repair_status_csv, import_supply_usage_csv
+from apps.imports.services import (
+    CSVImportError,
+    import_repair_status_csv,
+    import_supply_usage_csv,
+)
 from apps.inventory.models import SupplyUsageRecord
-from apps.inventory.services import InventoryServiceError, determine_transfer_scope, get_store_balance
+from apps.inventory.services import (
+    InventoryServiceError,
+    determine_transfer_scope,
+    get_store_balance,
+)
 from apps.maintenance.models import MachineStatusEvent
 from apps.notifications.models import Notification
 from apps.orders.models import Order
@@ -47,7 +55,9 @@ class Group2ExitGateTests(TestCase):
             longitude="-87.629799",
         )
 
-        cls.store_c1 = make_store(store_code="C001", region=cls.region_c, name="Logan Main")
+        cls.store_c1 = make_store(
+            store_code="C001", region=cls.region_c, name="Logan Main"
+        )
         cls.store_c2 = make_store(
             store_code="C002",
             region=cls.region_c,
@@ -146,7 +156,9 @@ class Group2ExitGateTests(TestCase):
             ],
             actor=self.customer,
         )
-        transition_order_status(order, Order.Status.PAYMENT_PENDING, actor=self.customer)
+        transition_order_status(
+            order, Order.Status.PAYMENT_PENDING, actor=self.customer
+        )
         transition_order_status(order, Order.Status.PAID, actor=self.customer)
 
         with self.assertRaises(InventoryServiceError):
