@@ -8,3 +8,4 @@ python-dotenv==1.0.1
 whitenoise==6.8.2
 stripe==11.2.0
 gunicorn==23.0.0
+pre-commit==4.0.1

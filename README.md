@@ -83,10 +83,17 @@ python3.12 -m venv .venv
 source .venv/bin/activate
 pip install -r requirements.txt
 cp .env.example .env
+pre-commit install
 cd server
 ../.venv/bin/python manage.py migrate
 ../.venv/bin/python manage.py bootstrap_demo_data --reset
 ../.venv/bin/python manage.py runserver 127.0.0.1:8000
+```
+
+Or run the setup script which handles everything except starting the server:
+
+```bash
+./setup.sh
 ```
 
 Local dev defaults to `CELERY_TASK_ALWAYS_EAGER=True`, so imports, notifications, and recommendation refreshes run inline unless you explicitly switch to worker-backed execution.
