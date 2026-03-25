@@ -32,6 +32,7 @@ def add_cart_item(session, *, store_code, item):
 
     item = dict(item)
     item["item_id"] = uuid.uuid4().hex
+    item["store_code_snapshot"] = store_code
     cart["items"].append(item)
     save_cart(session, cart)
     return cart, replaced_store

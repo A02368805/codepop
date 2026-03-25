@@ -417,6 +417,19 @@ class CheckoutView(CustomerOrderingRequiredMixin, TemplateView):
             messages.error(request, "Your cart is empty.")
             return redirect("orders:cart")
         store = get_object_or_404(Store, store_code=cart["store_code"])
+        mismatched_items = [
+            item
+            for item in cart["items"]
+            if item.get("store_code_snapshot")
+            and item.get("store_code_snapshot") != store.store_code
+        ]
+        if mismatched_items:
+            messages.error(
+                request,
+                "Your cart includes items from a different store. Please rebuild your cart for one store.",
+            )
+            clear_cart(request.session)
+            return redirect("orders:cart")
         form = CheckoutForm(request.POST)
         if not form.is_valid():
             return self.render_to_response(self.get_context_data(form=form))

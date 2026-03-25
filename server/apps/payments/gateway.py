@@ -17,6 +17,12 @@ class CheckoutSessionResult:
     payment_intent_id: str
 
 
+@dataclass(frozen=True)
+class PaymentIntentResult:
+    payment_intent_id: str
+    client_secret: str
+
+
 def get_payment_mode():
     configured_mode = getattr(settings, "PAYMENT_MODE", PaymentMode.MOCK).lower()
     if configured_mode == PaymentMode.STRIPE and getattr(
@@ -72,6 +78,19 @@ def create_stripe_checkout_session(*, order, success_url, cancel_url):
         checkout_url=session.url,
         checkout_session_id=session.id,
         payment_intent_id=getattr(session, "payment_intent", "") or "",
+    )
+
+
+def create_stripe_payment_intent(*, order):
+    client = _client()
+    payment_intent = client.PaymentIntent.create(
+        amount=int(order.total_amount * 100),
+        currency=order.currency.lower(),
+        metadata={"order_id": str(order.pk), "order_code": order.public_order_code},
+    )
+    return PaymentIntentResult(
+        payment_intent_id=payment_intent.id,
+        client_secret=getattr(payment_intent, "client_secret", "") or "",
     )
 
 

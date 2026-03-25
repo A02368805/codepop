@@ -81,3 +81,21 @@ class RevenueLedgerEntry(models.Model):
 
     def __str__(self):
         return f"{self.store.store_code} / {self.entry_type} / {self.net_amount}"
+
+
+class PaymentWebhookEvent(models.Model):
+    class Provider(models.TextChoices):
+        STRIPE = "stripe", "Stripe"
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    provider = models.CharField(max_length=24, choices=Provider.choices)
+    provider_event_id = models.CharField(max_length=160, unique=True)
+    event_type = models.CharField(max_length=120)
+    payload = models.JSONField(default=dict, blank=True)
+    processed_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ("-processed_at",)
+
+    def __str__(self):
+        return f"{self.provider} / {self.provider_event_id}"

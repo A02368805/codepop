@@ -254,7 +254,11 @@ def _process_supply_usage_import(job, csv_text):
                     source_type="hub",
                     source_reference={"region_code": parsed_row.store.region.code},
                 )
-        return _finalize_job_success(job, row_count=len(parsed_rows))
+        completed_job = _finalize_job_success(job, row_count=len(parsed_rows))
+        from apps.analytics.tasks import analyze_supply_usage_import
+
+        analyze_supply_usage_import.delay(str(completed_job.pk))
+        return completed_job
     except CSVImportError as exc:
         _finalize_job_failure(job, exc)
 

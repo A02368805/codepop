@@ -3,7 +3,11 @@ from unittest.mock import patch
 
 from apps.orders.models import Order
 from apps.orders.services import create_order
-from apps.payments.models import PaymentTransaction, RevenueLedgerEntry
+from apps.payments.models import (
+    PaymentTransaction,
+    PaymentWebhookEvent,
+    RevenueLedgerEntry,
+)
 from apps.payments.services import record_payment_pending, record_payment_success
 from django.test import TestCase
 from django.urls import reverse
@@ -67,6 +71,45 @@ class PaymentWebhookSafetyTests(TestCase):
         )
 
         self.assertEqual(response.status_code, 200)
+
+    @patch("apps.payments.views.construct_webhook_event")
+    @patch("apps.payments.views.finalize_stripe_checkout")
+    def test_checkout_completed_webhook_is_processed_once_per_event_id(
+        self,
+        mock_finalize,
+        mock_construct,
+    ):
+        mock_construct.return_value = {
+            "id": "evt_once_1",
+            "type": "checkout.session.completed",
+            "data": {
+                "object": {
+                    "id": "cs_test_once",
+                    "metadata": {"order_code": "FS-C-C001-ONCE"},
+                }
+            },
+        }
+
+        first = self.client.post(
+            reverse("payments:stripe-webhook"),
+            data=b"{}",
+            content_type="application/json",
+            HTTP_STRIPE_SIGNATURE="test",
+        )
+        second = self.client.post(
+            reverse("payments:stripe-webhook"),
+            data=b"{}",
+            content_type="application/json",
+            HTTP_STRIPE_SIGNATURE="test",
+        )
+
+        self.assertEqual(first.status_code, 200)
+        self.assertEqual(second.status_code, 200)
+        self.assertEqual(mock_finalize.call_count, 1)
+        self.assertEqual(
+            PaymentWebhookEvent.objects.filter(provider_event_id="evt_once_1").count(),
+            1,
+        )
 
     @patch("apps.payments.views.construct_webhook_event")
     def test_refund_webhook_is_ignored_when_payment_already_refunded(self, mock_construct):

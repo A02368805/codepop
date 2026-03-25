@@ -58,6 +58,13 @@ def _money(value) -> Decimal:
     return Decimal(str(value)).quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
 
 
+def ensure_items_match_store(*, store, items):
+    for item in items:
+        snapshot = (item.get("store_code_snapshot") or "").strip()
+        if snapshot and snapshot != store.store_code:
+            raise OrderServiceError("Order items must belong to a single store.")
+
+
 def generate_public_order_code(store) -> str:
     return f"FS-{store.region.code}-{store.store_code}-{uuid.uuid4().hex[:6].upper()}"
 
@@ -153,6 +160,7 @@ def create_order(
     notes="",
     actor=None,
 ):
+    ensure_items_match_store(store=store, items=items)
     pricing = validate_pricing(store=store, items=items)
     order = Order.objects.create(
         public_order_code=generate_public_order_code(store),

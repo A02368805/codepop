@@ -13,6 +13,7 @@ from django.utils import timezone
 
 from .gateway import (
     PaymentMode,
+    create_stripe_payment_intent,
     create_stripe_checkout_session,
     get_payment_mode,
     retrieve_checkout_session,
@@ -26,6 +27,39 @@ class PaymentServiceError(ServiceError):
 
 class PaymentGatewayError(PaymentServiceError):
     pass
+
+
+def create_payment_intent_for_order(order, *, actor=None):
+    if order.status not in {Order.Status.PRICING_VALIDATED, Order.Status.PAYMENT_PENDING}:
+        raise PaymentServiceError(
+            "Payment intent can only be created for pricing-validated or pending-payment orders."
+        )
+
+    mode = get_payment_mode()
+    if mode == PaymentMode.MOCK:
+        mock_client_secret = f"mock_client_secret_{order.public_order_code.lower()}"
+        record_payment_pending(
+            order,
+            payment_intent_id=mock_client_secret,
+            provider=PaymentTransaction.Provider.MOCK,
+        )
+        return {
+            "provider": PaymentTransaction.Provider.MOCK,
+            "payment_intent_id": mock_client_secret,
+            "client_secret": mock_client_secret,
+        }
+
+    intent = create_stripe_payment_intent(order=order)
+    record_payment_pending(
+        order,
+        payment_intent_id=intent.payment_intent_id,
+        provider=PaymentTransaction.Provider.STRIPE,
+    )
+    return {
+        "provider": PaymentTransaction.Provider.STRIPE,
+        "payment_intent_id": intent.payment_intent_id,
+        "client_secret": intent.client_secret,
+    }
 
 
 @transaction.atomic

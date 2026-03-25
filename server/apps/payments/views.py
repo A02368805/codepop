@@ -1,13 +1,14 @@
 from datetime import date
 
 from apps.orders.models import Order
-from apps.orders.selectors import authorize_guest_lookup
+from apps.orders.selectors import authorize_guest_lookup, user_can_view_order
 from apps.stores.selectors import scoped_region_store_options, stores_visible_to_user
 from apps.users.models import User
 from apps.users.permissions import RoleRequiredMixin
 from django.contrib import messages
+from django.db import IntegrityError, transaction
 from django.db.models import Sum
-from django.http import HttpResponse, HttpResponseBadRequest
+from django.http import HttpResponse, HttpResponseBadRequest, JsonResponse
 from django.shortcuts import get_object_or_404, redirect
 from django.utils.decorators import method_decorator
 from django.views import View
@@ -20,9 +21,11 @@ from .gateway import (
     get_payment_mode,
     stripe_is_configured,
 )
-from .models import PaymentTransaction, RevenueLedgerEntry
+from .models import PaymentTransaction, PaymentWebhookEvent, RevenueLedgerEntry
 from .services import (
     PaymentGatewayError,
+    PaymentServiceError,
+    create_payment_intent_for_order,
     finalize_stripe_checkout,
     record_payment_failure,
     record_refund,
@@ -138,6 +141,33 @@ class CheckoutCancelView(View):
         return redirect("orders:detail", order_code=order.public_order_code)
 
 
+class PaymentIntentCreateView(View):
+    def post(self, request, *args, **kwargs):
+        order_code = request.POST.get("order_code", "").strip()
+        if not order_code:
+            return HttpResponseBadRequest("Missing order code.")
+
+        order = get_object_or_404(
+            Order.objects.select_related("store", "payment_transaction").prefetch_related("items"),
+            public_order_code=order_code,
+        )
+        if not user_can_view_order(request.user, order, session=request.session):
+            return JsonResponse(
+                {"error": "This order is outside your access scope."},
+                status=403,
+            )
+
+        try:
+            payload = create_payment_intent_for_order(
+                order,
+                actor=request.user if request.user.is_authenticated else None,
+            )
+        except PaymentServiceError as exc:
+            return JsonResponse({"error": str(exc)}, status=400)
+
+        return JsonResponse(payload)
+
+
 @method_decorator(csrf_exempt, name="dispatch")
 class StripeWebhookView(View):
     def post(self, request, *args, **kwargs):
@@ -147,8 +177,21 @@ class StripeWebhookView(View):
         except Exception:
             return HttpResponseBadRequest("Invalid Stripe webhook signature.")
 
+        event_id = event.get("id", "")
         event_type = event.get("type", "")
         data_object = event.get("data", {}).get("object", {})
+
+        if event_id:
+            try:
+                with transaction.atomic():
+                    PaymentWebhookEvent.objects.create(
+                        provider=PaymentWebhookEvent.Provider.STRIPE,
+                        provider_event_id=event_id,
+                        event_type=event_type,
+                        payload=event,
+                    )
+            except IntegrityError:
+                return HttpResponse(status=200)
 
         if event_type == "checkout.session.completed":
             order_code = data_object.get("metadata", {}).get("order_code", "")

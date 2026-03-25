@@ -265,3 +265,58 @@ class InventoryWorkflowTests(TestCase):
         self.assertEqual(replenishment.status, SupplierReplenishment.Status.RECEIVED)
         self.assertEqual(replenishment.quantity_received, Decimal("250"))
         self.assertEqual(store_balance.on_hand_quantity, Decimal("275.00"))
+
+    def test_transfer_approval_cannot_exceed_requested_quantity(self):
+        transfer = request_transfer(
+            requested_by=self.manager,
+            source_store=self.store_c1,
+            destination_store=self.store_c2,
+            line_items=[
+                {
+                    "inventory_item": self.inventory_item,
+                    "quantity_requested": Decimal("2.00"),
+                }
+            ],
+            notes="approval bounds test",
+        )
+
+        with self.assertRaises(InventoryServiceError):
+            approve_transfer(
+                transfer,
+                approver=self.logistics,
+                approved_quantities={
+                    str(self.inventory_item.id): Decimal("3.00"),
+                },
+            )
+
+    def test_transfer_receive_rejects_quantity_above_approved(self):
+        transfer = request_transfer(
+            requested_by=self.manager,
+            source_store=self.store_c1,
+            destination_store=self.store_c2,
+            line_items=[
+                {
+                    "inventory_item": self.inventory_item,
+                    "quantity_requested": Decimal("2.00"),
+                }
+            ],
+            notes="receive bounds test",
+        )
+
+        approve_transfer(
+            transfer,
+            approver=self.logistics,
+            approved_quantities={
+                str(self.inventory_item.id): Decimal("2.00"),
+            },
+        )
+        reserve_transfer_inventory(transfer)
+        ship_transfer(transfer)
+        deliver_transfer(transfer)
+
+        line_item = transfer.line_items.first()
+        line_item.quantity_received = Decimal("3.00")
+        line_item.save(update_fields=["quantity_received"])
+
+        with self.assertRaises(InventoryServiceError):
+            receive_transfer(transfer, actor=self.manager)

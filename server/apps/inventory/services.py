@@ -155,6 +155,19 @@ def _locked_store_balance(*, store, inventory_item):
     return StoreInventoryBalance.objects.select_for_update().get(pk=balance.pk)
 
 
+def _locked_hub_balance(*, hub, inventory_item):
+    balance = get_hub_balance(hub, inventory_item)
+    return HubInventoryBalance.objects.select_for_update().get(pk=balance.pk)
+
+
+def _lock_transfer(transfer):
+    return SupplyTransfer.objects.select_for_update().get(pk=transfer.pk)
+
+
+def _locked_transfer_line_items(transfer):
+    return SupplyTransferLineItem.objects.select_for_update().filter(transfer=transfer)
+
+
 @transaction.atomic
 def reserve_order_inventory(order):
     for item in order.items.all():
@@ -435,18 +448,26 @@ def request_transfer(
 
 @transaction.atomic
 def approve_transfer(transfer, *, approver, approved_quantities=None):
+    transfer = _lock_transfer(transfer)
     if not user_can_approve_transfer(approver, transfer):
         raise InventoryServiceError("User cannot approve this transfer.")
     if transfer.status != SupplyTransfer.Status.REQUESTED:
         raise InventoryServiceError("Only requested transfers can be approved.")
 
     approved_quantities = approved_quantities or {}
-    for line_item in transfer.line_items.all():
-        line_item.quantity_approved = _as_decimal(
+    for line_item in _locked_transfer_line_items(transfer):
+        quantity_approved = _as_decimal(
             approved_quantities.get(
                 str(line_item.inventory_item_id), line_item.quantity_requested
             )
         )
+        if quantity_approved <= 0:
+            raise InventoryServiceError("Approved transfer quantities must be positive.")
+        if quantity_approved > line_item.quantity_requested:
+            raise InventoryServiceError(
+                "Approved transfer quantity cannot exceed requested quantity."
+            )
+        line_item.quantity_approved = quantity_approved
         line_item.save()
 
     before = serialize_instance(transfer)
@@ -472,15 +493,26 @@ def approve_transfer(transfer, *, approver, approved_quantities=None):
 
 @transaction.atomic
 def reserve_transfer_inventory(transfer):
+    transfer = _lock_transfer(transfer)
     if transfer.status != SupplyTransfer.Status.APPROVED:
         raise InventoryServiceError("Only approved transfers can reserve stock.")
 
-    for line_item in transfer.line_items.all():
+    for line_item in _locked_transfer_line_items(transfer):
         quantity = line_item.quantity_approved
+        if quantity <= 0:
+            raise InventoryServiceError(
+                "Approved transfer quantities must be positive before reservation."
+            )
         if transfer.source_store_id:
-            balance = get_store_balance(transfer.source_store, line_item.inventory_item)
+            balance = _locked_store_balance(
+                store=transfer.source_store,
+                inventory_item=line_item.inventory_item,
+            )
         else:
-            balance = get_hub_balance(transfer.source_hub, line_item.inventory_item)
+            balance = _locked_hub_balance(
+                hub=transfer.source_hub,
+                inventory_item=line_item.inventory_item,
+            )
         if available_quantity(balance) < quantity:
             raise InventoryServiceError(
                 "Transfer would oversubscribe source inventory."
@@ -507,15 +539,22 @@ def reserve_transfer_inventory(transfer):
 
 @transaction.atomic
 def ship_transfer(transfer):
+    transfer = _lock_transfer(transfer)
     if transfer.status != SupplyTransfer.Status.RESERVED:
         raise InventoryServiceError("Only reserved transfers can be shipped.")
 
-    for line_item in transfer.line_items.all():
+    for line_item in _locked_transfer_line_items(transfer):
         quantity = line_item.quantity_approved
         if transfer.source_store_id:
-            balance = get_store_balance(transfer.source_store, line_item.inventory_item)
+            balance = _locked_store_balance(
+                store=transfer.source_store,
+                inventory_item=line_item.inventory_item,
+            )
         else:
-            balance = get_hub_balance(transfer.source_hub, line_item.inventory_item)
+            balance = _locked_hub_balance(
+                hub=transfer.source_hub,
+                inventory_item=line_item.inventory_item,
+            )
         apply_balance_change(balance, on_hand_delta=-quantity, reserved_delta=-quantity)
 
     before = serialize_instance(transfer)
@@ -538,6 +577,7 @@ def ship_transfer(transfer):
 
 @transaction.atomic
 def deliver_transfer(transfer):
+    transfer = _lock_transfer(transfer)
     if transfer.status != SupplyTransfer.Status.IN_TRANSIT:
         raise InventoryServiceError("Only in-transit transfers can be delivered.")
     before = serialize_instance(transfer)
@@ -561,10 +601,17 @@ def deliver_transfer(transfer):
 
 @transaction.atomic
 def receive_transfer(transfer, *, actor=None):
+    transfer = _lock_transfer(transfer)
     if transfer.status != SupplyTransfer.Status.DELIVERED:
         raise InventoryServiceError("Only delivered transfers can be received.")
-    for line_item in transfer.line_items.all():
+    for line_item in _locked_transfer_line_items(transfer):
         quantity = line_item.quantity_received or line_item.quantity_approved
+        if quantity <= 0:
+            raise InventoryServiceError("Received transfer quantities must be positive.")
+        if quantity > line_item.quantity_approved:
+            raise InventoryServiceError(
+                "Received quantity cannot exceed approved transfer quantity."
+            )
         balance = get_store_balance(
             transfer.destination_store, line_item.inventory_item
         )

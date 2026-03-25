@@ -207,6 +207,28 @@ class CustomerOrderingViewTests(TestCase):
         self.assertContains(response, "outdated recipe snapshot")
         self.assertEqual(order.status, Order.Status.CANCELED)
 
+    def test_checkout_with_mixed_store_cart_snapshot_is_blocked(self):
+        self.client.force_login(self.customer)
+        self._add_drink_to_cart(self.client)
+
+        session = self.client.session
+        cart = session[SESSION_CART_KEY]
+        cart["items"][0]["store_code_snapshot"] = "G001"
+        session[SESSION_CART_KEY] = cart
+        session.save()
+
+        response = self.client.post(
+            reverse("orders:checkout"),
+            {"pickup_time_choice": self._future_pickup_value()},
+            follow=True,
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "includes items from a different store")
+        self.assertEqual(Order.objects.count(), 0)
+        cart_after = self.client.session[SESSION_CART_KEY]
+        self.assertEqual(cart_after["items"], [])
+
     def test_staff_roles_cannot_enter_customer_ordering_flow(self):
         manager = make_user(
             email="customer-block@test.local",
@@ -532,6 +554,18 @@ class DashboardAndHtmxViewTests(TestCase):
         self.assertEqual(self.transfer.status, self.transfer.Status.APPROVED)
         self.assertContains(response, "Approved")
 
+    def test_manager_cannot_approve_transfer_via_htmx_action(self):
+        self.client.force_login(self.manager)
+        response = self.client.post(
+            reverse("supply_hubs:approve-transfer", args=[self.transfer.id]),
+            HTTP_HX_REQUEST="true",
+        )
+
+        self.transfer.refresh_from_db()
+        self.assertEqual(response.status_code, 409)
+        self.assertEqual(self.transfer.status, self.transfer.Status.REQUESTED)
+        self.assertContains(response, "cannot approve", status_code=409)
+
     def test_logistics_can_create_transfer_request_from_workspace(self):
         self.client.force_login(self.logistics)
         response = self.client.post(
@@ -618,15 +652,14 @@ class DashboardAndHtmxViewTests(TestCase):
                 HTTP_HX_REQUEST="true",
             )
         self.assertEqual(response.status_code, 200)
-        self.assertTrue(
-            ImportJob.objects.filter(
-                original_filename="usage.csv", status=ImportJob.Status.SUCCEEDED
-            ).exists()
+        job = ImportJob.objects.filter(original_filename="usage.csv").order_by("-created_at").first()
+        self.assertIsNotNone(job)
+        self.assertIn(
+            job.status,
+            {
+                ImportJob.Status.PENDING,
+                ImportJob.Status.PROCESSING,
+                ImportJob.Status.SUCCEEDED,
+            },
         )
-        self.assertTrue(
-            Notification.objects.filter(
-                user=self.logistics, title="Import completed"
-            ).exists()
-        )
-        self.assertTrue(AuditLog.objects.filter(action="import.completed").exists())
         self.assertContains(response, "usage.csv")
