@@ -1,6 +1,6 @@
 from decimal import Decimal
 
-from apps.inventory.services import get_store_balance
+from apps.inventory.services import InventoryServiceError, get_store_balance
 from apps.orders.models import Order
 from apps.orders.services import (
     RefundEligibilityError,
@@ -138,12 +138,33 @@ class OrderWorkflowTests(TestCase):
             order, actor=self.admin, notes="Admin override for store issue."
         )
         order.refresh_from_db()
+        syrup_balance = get_store_balance(self.store, self.inventory_item)
+        cup_balance = get_store_balance(self.store, self.cups)
         self.assertEqual(order.status, Order.Status.REFUNDED)
         self.assertEqual(order.refund_status, Order.RefundStatus.REFUNDED)
         self.assertEqual(payment.status, PaymentTransaction.Status.REFUNDED)
+        self.assertEqual(syrup_balance.on_hand_quantity, Decimal("12.00"))
+        self.assertEqual(cup_balance.on_hand_quantity, Decimal("200.00"))
         self.assertEqual(
             RevenueLedgerEntry.objects.filter(
                 order=order, entry_type=RevenueLedgerEntry.EntryType.REFUND
             ).count(),
             1,
         )
+
+    def test_queue_transition_blocks_when_inventory_is_insufficient(self):
+        order = self._create_order()
+        balance = get_store_balance(self.store, self.inventory_item)
+        balance.on_hand_quantity = Decimal("1.00")
+        balance.save(update_fields=["on_hand_quantity", "updated_at"])
+
+        record_payment_pending(order, payment_intent_id="pi_test_004")
+        record_payment_success(
+            order, payment_intent_id="pi_test_004", actor=self.customer
+        )
+
+        with self.assertRaises(InventoryServiceError):
+            transition_order_status(order, Order.Status.QUEUED, actor=self.customer)
+
+        order.refresh_from_db()
+        self.assertEqual(order.status, Order.Status.PAID)

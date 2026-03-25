@@ -154,7 +154,10 @@ class StripeWebhookView(View):
             order_code = data_object.get("metadata", {}).get("order_code", "")
             session_id = data_object.get("id", "")
             if order_code and session_id:
-                finalize_stripe_checkout(order_code=order_code, session_id=session_id)
+                try:
+                    finalize_stripe_checkout(order_code=order_code, session_id=session_id)
+                except Exception:
+                    return HttpResponse(status=200)
         elif event_type == "checkout.session.expired":
             order_code = data_object.get("metadata", {}).get("order_code", "")
             if order_code:
@@ -173,8 +176,16 @@ class StripeWebhookView(View):
                 .first()
             )
             if payment:
-                record_refund(
-                    payment.order, notes="Stripe webhook refund confirmation."
-                )
+                if payment.status in {
+                    PaymentTransaction.Status.REFUNDED,
+                    PaymentTransaction.Status.PARTIALLY_REFUNDED,
+                }:
+                    return HttpResponse(status=200)
+                try:
+                    record_refund(
+                        payment.order, notes="Stripe webhook refund confirmation."
+                    )
+                except Exception:
+                    return HttpResponse(status=200)
 
         return HttpResponse(status=200)

@@ -244,6 +244,17 @@ def finalize_stripe_checkout(*, order_code, session_id, actor=None):
     order = Order.objects.select_related("payment_transaction", "store").get(
         public_order_code=order_code
     )
+    if order.status in {
+        Order.Status.QUEUED,
+        Order.Status.PREPARING,
+        Order.Status.READY,
+        Order.Status.PICKED_UP,
+    }:
+        payment = getattr(order, "payment_transaction", None)
+        if payment:
+            payment.last_webhook_at = timezone.now()
+            payment.save(update_fields=["last_webhook_at"])
+        return order
     if session.payment_status != "paid":
         raise PaymentGatewayError("Stripe checkout has not completed payment yet.")
     try:
@@ -266,6 +277,14 @@ def finalize_stripe_checkout(*, order_code, session_id, actor=None):
 def record_refund(order, *, actor=None, amount=None, notes=""):
     ensure_refund_allowed(order, actor=actor)
     payment = order.payment_transaction
+    if order.status in {
+        Order.Status.QUEUED,
+        Order.Status.PREPARING,
+        Order.Status.READY,
+    }:
+        from apps.inventory.services import reverse_order_inventory
+
+        reverse_order_inventory(order)
     refund_amount = Decimal(
         str(amount or payment.amount_captured or order.total_amount)
     )

@@ -150,6 +150,12 @@ def _inventory_item_for_reservation(*, sku):
     )
 
 
+def _locked_store_balance(*, store, inventory_item):
+    balance = get_store_balance(store, inventory_item)
+    return StoreInventoryBalance.objects.select_for_update().get(pk=balance.pk)
+
+
+@transaction.atomic
 def reserve_order_inventory(order):
     for item in order.items.all():
         requirements = item.customizations_json.get("inventory_requirements", [])
@@ -159,8 +165,33 @@ def reserve_order_inventory(order):
             if quantity <= 0:
                 continue
             inventory_item = _inventory_item_for_reservation(sku=sku)
-            balance = get_store_balance(order.store, inventory_item)
+            balance = _locked_store_balance(
+                store=order.store,
+                inventory_item=inventory_item,
+            )
+            if available_quantity(balance) < quantity:
+                raise InventoryServiceError(
+                    f"Insufficient inventory for SKU '{sku}'."
+                )
             apply_balance_change(balance, on_hand_delta=-quantity)
+            evaluate_restock_alert(balance)
+
+
+@transaction.atomic
+def reverse_order_inventory(order):
+    for item in order.items.all():
+        requirements = item.customizations_json.get("inventory_requirements", [])
+        for requirement in requirements:
+            sku = requirement.get("sku")
+            quantity = _as_decimal(requirement.get("quantity", 0))
+            if quantity <= 0:
+                continue
+            inventory_item = _inventory_item_for_reservation(sku=sku)
+            balance = _locked_store_balance(
+                store=order.store,
+                inventory_item=inventory_item,
+            )
+            apply_balance_change(balance, on_hand_delta=quantity)
             evaluate_restock_alert(balance)
 
 
