@@ -1,12 +1,24 @@
-.PHONY: up down build logs shell migrate test demo ci-test
+.PHONY: up down build logs shell migrate test demo ci-test check-docker
 
-up:
+check-docker:
+	@command -v docker >/dev/null 2>&1 || { \
+		echo "Error: Docker is not installed."; \
+		echo "Please install Docker Desktop or Docker Engine from https://docs.docker.com/get-docker/"; \
+		exit 1; \
+	}
+	@docker ps >/dev/null 2>&1 || { \
+		echo "Error: Docker daemon is not running."; \
+		echo "Please start Docker and try again."; \
+		exit 1; \
+	}
+
+up: check-docker
 	docker compose up -d
 
 down:
 	docker compose down
 
-build:
+build: check-docker
 	docker compose up -d --build
 
 logs:
