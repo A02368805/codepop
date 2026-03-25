@@ -1,6 +1,6 @@
 {% extends "base/base.html" %}
 
-{% block title %}Super Admin Dashboard | FloatStack{% endblock %}
+{% block title %}Super Admin Dashboard | CodePop{% endblock %}
 
 {% block content %}
 <section class="hero hero--dashboard">
@@ -25,12 +25,58 @@
             <div><dt>Customers</dt><dd>{{ account_summary.customers }}</dd></div>
             <div><dt>Staff</dt><dd>{{ account_summary.staff }}</dd></div>
             <div><dt>Stores</dt><dd>{{ account_summary.stores }}</dd></div>
+            <div><dt>Machine Issues</dt><dd>{{ machine_issue_count }}</dd></div>
+            <div><dt>Pending Imports</dt><dd>{{ pending_import_count }}</dd></div>
         </dl>
     </div>
     <div class="panel">
-        <p class="eyebrow">Recent Audit Events</p>
+        <p class="eyebrow">Sync Oversight</p>
+        <dl class="summary-list">
+            <div><dt>Pending Events</dt><dd>{{ sync_summary.pending }}</dd></div>
+            <div><dt>Failed Events</dt><dd>{{ sync_summary.failed }}</dd></div>
+            <div><dt>Open Conflicts</dt><dd>{{ sync_summary.conflicts }}</dd></div>
+            <div><dt>Tracked Projections</dt><dd>{{ sync_summary.projections }}</dd></div>
+        </dl>
+    </div>
+</section>
+
+<section class="page-grid page-grid--sidebar">
+    <div class="panel">
+        <div class="section-heading">
+            <div>
+                <p class="eyebrow">Region Comparison</p>
+                <h2>Store and hub footprint</h2>
+            </div>
+        </div>
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>Region</th>
+                    <th>Stores</th>
+                    <th>Hubs</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for region in region_rows %}
+                    <tr>
+                        <td>{{ region.name }}</td>
+                        <td>{{ region.store_count }}</td>
+                        <td>{{ region.hub_count }}</td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <div class="panel">
+        <div class="section-heading">
+            <div>
+                <p class="eyebrow">Recent Audit Events</p>
+                <h2>System activity across scopes</h2>
+            </div>
+        </div>
         <ul class="mini-list">
-            {% for log in recent_audit_logs|slice:":6" %}
+            {% for log in recent_audit_logs|slice:":8" %}
                 <li>
                     {{ log.action }} ·
                     {% if log.store %}
@@ -51,25 +97,28 @@
 <section class="panel">
     <div class="section-heading">
         <div>
-            <p class="eyebrow">Region Comparison</p>
-            <h2>Store and hub footprint</h2>
+            <p class="eyebrow">Regional Operations</p>
+            <h2>Transfer and machine pressure by region</h2>
         </div>
+        <a href="{% url 'sync:index' %}">Open sync workspace</a>
     </div>
     <table class="data-table">
         <thead>
             <tr>
                 <th>Region</th>
-                <th>Stores</th>
-                <th>Hubs</th>
+                <th>Transfers</th>
+                <th>Machine Issues</th>
             </tr>
         </thead>
         <tbody>
-            {% for region in region_rows %}
+            {% for row in region_operations %}
                 <tr>
-                    <td>{{ region.name }}</td>
-                    <td>{{ region.store_count }}</td>
-                    <td>{{ region.hub_count }}</td>
+                    <td>{{ row.name }}</td>
+                    <td>{{ row.transfer_count }}</td>
+                    <td>{{ row.machine_issue_count }}</td>
                 </tr>
+            {% empty %}
+                <tr><td colspan="3">No regional operations are available.</td></tr>
             {% endfor %}
         </tbody>
     </table>

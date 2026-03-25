@@ -84,11 +84,12 @@ class CSVImportTests(TestCase):
                 "C002,SYRUP-STRAWBERRY,2026-03-18,2.00",
             ]
         )
-        job = import_supply_usage_csv(
-            csv_text,
-            uploaded_by=self.logistics,
-            original_filename="usage.csv",
-        )
+        with self.captureOnCommitCallbacks(execute=True):
+            job = import_supply_usage_csv(
+                csv_text,
+                uploaded_by=self.logistics,
+                original_filename="usage.csv",
+            )
 
         self.assertEqual(job.status, ImportJob.Status.SUCCEEDED)
         self.assertEqual(SupplyUsageRecord.objects.count(), 2)
@@ -117,11 +118,12 @@ class CSVImportTests(TestCase):
             ]
         )
         with self.assertRaises(CSVImportError):
-            import_supply_usage_csv(
-                csv_text,
-                uploaded_by=self.logistics,
-                original_filename="bad-usage.csv",
-            )
+            with self.captureOnCommitCallbacks(execute=True):
+                import_supply_usage_csv(
+                    csv_text,
+                    uploaded_by=self.logistics,
+                    original_filename="bad-usage.csv",
+                )
 
         self.assertEqual(SupplyUsageRecord.objects.count(), 0)
         failed_job = ImportJob.objects.get(original_filename="bad-usage.csv")
@@ -155,11 +157,12 @@ class CSVImportTests(TestCase):
                 "123 Main St Logan UT,MIXER_A,2025-07-01,warning,2026-03-18",
             ]
         )
-        job = import_repair_status_csv(
-            valid_csv,
-            uploaded_by=self.repair,
-            original_filename="repair.csv",
-        )
+        with self.captureOnCommitCallbacks(execute=True):
+            job = import_repair_status_csv(
+                valid_csv,
+                uploaded_by=self.repair,
+                original_filename="repair.csv",
+            )
 
         machine = Machine.objects.get(
             store=self.store_c1, machine_type=self.machine_type

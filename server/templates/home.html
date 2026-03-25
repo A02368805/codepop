@@ -1,13 +1,13 @@
 {% extends "base/base.html" %}
 
-{% block title %}FloatStack{% endblock %}
+{% block title %}CodePop{% endblock %}
 
 {% block content %}
 <section class="hero hero--landing">
     <div class="hero-copy">
-        <p class="eyebrow">FloatStack</p>
+        <p class="eyebrow">CodePop</p>
         <h1>Build a soda you actually want, then pick it up fast.</h1>
-        <p class="lede">FloatStack pairs a polished drink builder with store-aware pickup timing, favorites, and operational workflows that stay tightly scoped behind the scenes.</p>
+        <p class="lede">CodePop pairs a polished drink builder with store-aware pickup timing, favorites, and operational workflows that stay tightly scoped behind the scenes.</p>
         <div class="cta-row">
             {% if can_start_order %}
                 <a class="button button--primary" href="{% url 'stores:index' %}">Build a drink</a>
@@ -26,7 +26,7 @@
         </div>
     </div>
     <div class="hero-card hero-card--showcase">
-        <p class="eyebrow">What FloatStack Delivers</p>
+        <p class="eyebrow">What CodePop Delivers</p>
         <ul class="checklist">
             {% for principle in platform_principles %}
                 <li>{{ principle }}</li>
@@ -79,7 +79,7 @@
                 <article class="list-card">
                     <div class="list-card__main">
                         <h3>Guide recommendations</h3>
-                        <p class="muted">Structured preferences help FloatStack assist instead of guessing.</p>
+                        <p class="muted">Structured preferences help CodePop assist instead of guessing.</p>
                     </div>
                 </article>
                 <article class="list-card">

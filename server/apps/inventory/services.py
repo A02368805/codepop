@@ -391,7 +391,10 @@ def request_transfer(
         event_type="transfer.requested",
         instance=transfer,
         payload={"status": transfer.status},
-        source_scope={"region_code": destination_store.region.code},
+        source_scope={
+            "region_code": destination_store.region.code,
+            "store_id": str(destination_store.id),
+        },
     )
     create_audit_log(
         actor=requested_by,
@@ -427,7 +430,10 @@ def approve_transfer(transfer, *, approver, approved_quantities=None):
         event_type="transfer.approved",
         instance=transfer,
         payload={"status": transfer.status},
-        source_scope={"region_code": transfer.destination_store.region.code},
+        source_scope={
+            "region_code": transfer.destination_store.region.code,
+            "store_id": str(transfer.destination_store_id),
+        },
     )
     create_audit_log(
         actor=approver,
@@ -463,7 +469,10 @@ def reserve_transfer_inventory(transfer):
         event_type="transfer.reserved",
         instance=transfer,
         payload={"status": transfer.status},
-        source_scope={"region_code": transfer.destination_store.region.code},
+        source_scope={
+            "region_code": transfer.destination_store.region.code,
+            "store_id": str(transfer.destination_store_id),
+        },
     )
     create_audit_log(
         action="transfer.reserved",
@@ -494,7 +503,10 @@ def ship_transfer(transfer):
         event_type="transfer.shipped",
         instance=transfer,
         payload={"status": transfer.status},
-        source_scope={"region_code": transfer.destination_store.region.code},
+        source_scope={
+            "region_code": transfer.destination_store.region.code,
+            "store_id": str(transfer.destination_store_id),
+        },
     )
     create_audit_log(
         action="transfer.shipped",
@@ -517,7 +529,10 @@ def deliver_transfer(transfer):
         event_type="transfer.delivered",
         instance=transfer,
         payload={"status": transfer.status},
-        source_scope={"region_code": transfer.destination_store.region.code},
+        source_scope={
+            "region_code": transfer.destination_store.region.code,
+            "store_id": str(transfer.destination_store_id),
+        },
     )
     create_audit_log(
         action="transfer.delivered",
@@ -548,7 +563,10 @@ def receive_transfer(transfer, *, actor=None):
         event_type="transfer.received",
         instance=transfer,
         payload={"status": transfer.status},
-        source_scope={"region_code": transfer.destination_store.region.code},
+        source_scope={
+            "region_code": transfer.destination_store.region.code,
+            "store_id": str(transfer.destination_store_id),
+        },
     )
     create_audit_log(
         actor=actor,
@@ -639,7 +657,7 @@ def create_supplier_replenishment_order(
             "status": replenishment.status,
             "quantity_requested": str(quantity_requested),
         },
-        source_scope={"region_code": store.region.code},
+        source_scope={"region_code": store.region.code, "store_id": str(store.id)},
     )
     create_audit_log(
         actor=actor,
@@ -690,7 +708,10 @@ def receive_supplier_replenishment(
             "status": replenishment.status,
             "quantity_received": str(quantity_received),
         },
-        source_scope={"region_code": replenishment.store.region.code},
+        source_scope={
+            "region_code": replenishment.store.region.code,
+            "store_id": str(replenishment.store_id),
+        },
     )
     create_audit_log(
         actor=actor,
@@ -718,7 +739,10 @@ def cancel_supplier_replenishment(replenishment, *, actor):
         event_type="supplier_replenishment.canceled",
         instance=replenishment,
         payload={"status": replenishment.status},
-        source_scope={"region_code": replenishment.store.region.code},
+        source_scope={
+            "region_code": replenishment.store.region.code,
+            "store_id": str(replenishment.store_id),
+        },
     )
     create_audit_log(
         actor=actor,

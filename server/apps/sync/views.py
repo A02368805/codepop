@@ -5,13 +5,14 @@ from django.template.loader import render_to_string
 from django.views import View
 from django.views.generic import TemplateView
 
-from .models import SyncOutboxEvent
-from .services import retry_failed_outbox_events
+from .models import SyncConflictLog, SyncOutboxEvent, SyncProjectionState
+from .services import resolve_sync_conflict, retry_failed_outbox_events
 from .tasks import process_pending_outbox_events_async
 
 
 def _sync_context():
     queryset = SyncOutboxEvent.objects.order_by("-created_at")
+    events = list(queryset[:40])
     return {
         "event_counts": {
             "pending": queryset.filter(status=SyncOutboxEvent.Status.PENDING).count(),
@@ -23,7 +24,45 @@ def _sync_context():
                 status=SyncOutboxEvent.Status.DISPATCHED
             ).count(),
         },
-        "events": queryset[:40],
+        "event_rows": [
+            {
+                "event": event,
+                "scope_display": (
+                    event.source_scope.get("region_code")
+                    or event.source_scope.get("store_id")
+                    or "-"
+                ),
+            }
+            for event in events
+        ],
+        "projection_counts": {
+            "tracked": SyncProjectionState.objects.count(),
+            "region": SyncProjectionState.objects.filter(
+                receiver_scope_type=SyncProjectionState.ReceiverScope.REGION
+            ).count(),
+            "store": SyncProjectionState.objects.filter(
+                receiver_scope_type=SyncProjectionState.ReceiverScope.STORE
+            ).count(),
+            "global": SyncProjectionState.objects.filter(
+                receiver_scope_type=SyncProjectionState.ReceiverScope.GLOBAL
+            ).count(),
+        },
+        "projections": SyncProjectionState.objects.order_by("-updated_at")[:20],
+        "conflict_counts": {
+            "open": SyncConflictLog.objects.filter(
+                resolution_status=SyncConflictLog.ResolutionStatus.OPEN
+            ).count(),
+            "resolved": SyncConflictLog.objects.filter(
+                resolution_status=SyncConflictLog.ResolutionStatus.RESOLVED
+            ).count(),
+            "ignored": SyncConflictLog.objects.filter(
+                resolution_status=SyncConflictLog.ResolutionStatus.IGNORED
+            ).count(),
+        },
+        "conflicts": SyncConflictLog.objects.order_by("-created_at")[:20],
+        "resolution_open": SyncConflictLog.ResolutionStatus.OPEN,
+        "resolution_resolved": SyncConflictLog.ResolutionStatus.RESOLVED,
+        "resolution_ignored": SyncConflictLog.ResolutionStatus.IGNORED,
     }
 
 
@@ -77,4 +116,20 @@ class SyncRetryFailedView(RoleRequiredMixin, View):
 
     def post(self, request, *args, **kwargs):
         retry_failed_outbox_events(limit=40)
+        return _render_sync_panel(request)
+
+
+class SyncResolveConflictView(RoleRequiredMixin, View):
+    allowed_roles = (
+        User.Role.LOGISTICS_MANAGER,
+        User.Role.SUPER_ADMIN,
+    )
+
+    def post(self, request, *args, **kwargs):
+        conflict = SyncConflictLog.objects.get(pk=kwargs["conflict_id"])
+        resolution = request.POST.get(
+            "resolution_status",
+            SyncConflictLog.ResolutionStatus.RESOLVED,
+        )
+        resolve_sync_conflict(conflict, resolution_status=resolution)
         return _render_sync_panel(request)

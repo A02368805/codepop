@@ -1,0 +1,28 @@
+{% if route_groups %}
+    <div class="surface-list">
+        {% for group in route_groups %}
+            <article class="list-card">
+                <div class="list-card__main">
+                    <div class="inline-cluster">
+                        <span class="pill">{{ group.assignment_count }} job{{ group.assignment_count|pluralize }}</span>
+                        <span class="pill pill--soft">{{ group.store_count }} store{{ group.store_count|pluralize }}</span>
+                    </div>
+                    <h3>{{ group.label }}</h3>
+                    <p class="muted">Batch key: <code>{{ group.key }}</code></p>
+                    <p class="muted">Assignees: {{ group.assignee_names|join:", " }}</p>
+                    <p class="muted">Stores: {{ group.store_names|join:", " }}</p>
+                </div>
+                <div class="list-card__actions">
+                    <span class="pill {% if group.highest_priority >= 90 %}pill--critical{% elif group.highest_priority >= 50 %}pill--warning{% endif %}">
+                        Priority {{ group.highest_priority }}
+                    </span>
+                    {% if group.next_stop_at %}
+                        <p class="muted">{{ group.next_stop_at|date:"M j, g:i a" }}</p>
+                    {% endif %}
+                </div>
+            </article>
+        {% endfor %}
+    </div>
+{% else %}
+    <div class="empty-state"><p>No route batches are active in this scope.</p></div>
+{% endif %}

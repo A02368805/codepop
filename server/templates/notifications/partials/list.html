@@ -5,22 +5,28 @@
                 <div class="list-card__main">
                     <div class="inline-cluster">
                         <span class="pill">{{ notification.get_category_display }}</span>
+                        <span class="pill pill--soft">{{ notification.get_notification_type_display }}</span>
                         {% if notification.is_read %}
                             <span class="pill pill--soft">Read</span>
                         {% endif %}
                     </div>
                     <h3>{{ notification.title }}</h3>
                     <p>{{ notification.message }}</p>
+                    <p class="muted">{{ notification.created_at|date:"M j, g:i a" }}</p>
                 </div>
                 <div class="list-card__actions">
+                    {% if notification.payload_json.action_url %}
+                        <a href="{{ notification.payload_json.action_url }}">Open related workflow</a>
+                    {% endif %}
                     {% if not notification.is_read %}
                         <form
                             method="post"
                             hx-post="{% url 'notifications:mark-read' notification.id %}"
-                            hx-target="#notification-list"
+                            hx-target="#notification-workspace"
                             hx-swap="innerHTML"
                         >
                             {% csrf_token %}
+                            <input type="hidden" name="state" value="{{ state_filter }}">
                             <button class="button button--ghost" type="submit">Mark read</button>
                         </form>
                     {% endif %}

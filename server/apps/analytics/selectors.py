@@ -166,7 +166,9 @@ def build_dashboard_payload(user, role):
                         assigned_to=user,
                         status__in=[
                             RepairAssignment.Status.SCHEDULED,
+                            RepairAssignment.Status.ACKNOWLEDGED,
                             RepairAssignment.Status.IN_PROGRESS,
+                            RepairAssignment.Status.BLOCKED,
                         ],
                     ).count(),
                     "tone": "warning",

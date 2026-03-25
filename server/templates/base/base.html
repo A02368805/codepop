@@ -4,8 +4,8 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>{% block title %}FloatStack{% endblock %}</title>
-    <meta name="description" content="FloatStack is a polished soda ordering and operations platform for customers and regional teams.">
+    <title>{% block title %}CodePop{% endblock %}</title>
+    <meta name="description" content="CodePop is a polished soda ordering and operations platform for customers and regional teams.">
     <link rel="icon" type="image/png" href="{% static 'images/floatstack-favicon.png' %}">
     <link rel="stylesheet" href="{% static 'css/app.css' %}">
     <script src="https://unpkg.com/htmx.org@1.9.12" defer></script>
@@ -15,9 +15,9 @@
     <div class="page-shell">
         <header class="topbar">
             <a class="brandmark" href="{% url 'home' %}">
-                <img class="brandmark__logo" src="{% static 'images/floatstack-logo.png' %}" alt="FloatStack">
+                <img class="brandmark__logo" src="{% static 'images/floatstack-logo.png' %}" alt="CodePop">
                 <span class="brandmark__wordmark">
-                    <span class="brandmark__text">FloatStack</span>
+                    <span class="brandmark__text">CodePop</span>
                     <span class="brandmark__subtext">Ordering + Operations</span>
                 </span>
             </a>
@@ -29,7 +29,12 @@
                             <button type="submit" class="nav-button">{{ item.label }}</button>
                         </form>
                     {% else %}
-                        <a href="{{ item.url }}">{{ item.label }}</a>
+                        <a href="{{ item.url }}">
+                            <span>{{ item.label }}</span>
+                            {% if item.badge_id %}
+                                <span id="{{ item.badge_id|default:'nav-badge' }}" class="nav-badge">{% if item.badge %}{{ item.badge }}{% endif %}</span>
+                            {% endif %}
+                        </a>
                     {% endif %}
                 {% endfor %}
             </nav>
@@ -48,7 +53,7 @@
         </main>
 
         <footer class="footer">
-            <p>FloatStack keeps customer ordering and operational workflows in one responsive web product.</p>
+            <p>CodePop keeps customer ordering and operational workflows in one responsive web product.</p>
             <p class="muted">Session auth, scoped dashboards, and server-side business rules stay aligned across the demo.</p>
         </footer>
     </div>

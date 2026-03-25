@@ -83,7 +83,7 @@ class PreferenceProfileForm(forms.Form):
         required=False,
         choices=[(key, value["label"]) for key, value in SODA_OPTIONS.items()],
         widget=forms.CheckboxSelectMultiple,
-        help_text="Choose every base soda you want FloatStack AI to prefer.",
+        help_text="Choose every base soda you want CodePop AI to prefer.",
     )
     favorite_syrups = forms.MultipleChoiceField(
         required=False,
@@ -117,7 +117,7 @@ class PreferenceProfileForm(forms.Form):
     )
     sweetness_preference = forms.ChoiceField(
         choices=SWEETNESS_PREFERENCE_CHOICES,
-        help_text="Tell FloatStack whether to keep recommendations lighter or sweeter.",
+        help_text="Tell CodePop whether to keep recommendations lighter or sweeter.",
     )
     adventurousness_preference = forms.ChoiceField(
         choices=ADVENTUROUSNESS_PREFERENCE_CHOICES,

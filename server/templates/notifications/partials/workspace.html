@@ -1,0 +1,54 @@
+{% if messages %}
+    <section class="flash-stack" aria-label="Messages">
+        {% for message in messages %}
+            <div class="flash flash--{{ message.tags|default:'info' }}">{{ message }}</div>
+        {% endfor %}
+    </section>
+{% endif %}
+
+<section class="panel">
+    <div class="section-heading">
+        <div>
+            <p class="eyebrow">Notifications</p>
+            <h1>Unread and recent updates</h1>
+            <p class="muted">Alerts stay scoped to the signed-in user, with typed payloads behind the in-app feed for maintenance, imports, transfers, and order updates.</p>
+        </div>
+        <div class="action-row">
+            <a
+                class="button {% if state_filter == 'all' %}button--primary{% else %}button--ghost{% endif %}"
+                href="{% url 'notifications:index' %}"
+                hx-get="{% url 'notifications:index' %}"
+                hx-target="#notification-workspace"
+                hx-swap="innerHTML"
+                hx-push-url="true"
+            >
+                All
+            </a>
+            <a
+                class="button {% if state_filter == 'unread' %}button--primary{% else %}button--ghost{% endif %}"
+                href="{% url 'notifications:index' %}?state=unread"
+                hx-get="{% url 'notifications:index' %}?state=unread"
+                hx-target="#notification-workspace"
+                hx-swap="innerHTML"
+                hx-push-url="true"
+            >
+                Unread
+            </a>
+            {% if unread_count %}
+                <form method="post" hx-post="{% url 'notifications:mark-all-read' %}" hx-target="#notification-workspace" hx-swap="innerHTML">
+                    {% csrf_token %}
+                    <input type="hidden" name="state" value="{{ state_filter }}">
+                    <button class="button button--ghost" type="submit">Mark all read</button>
+                </form>
+            {% endif %}
+        </div>
+    </div>
+    <div class="badge-row">
+        <span class="pill">{{ unread_count }} unread</span>
+        <span class="pill pill--soft">{{ notifications|length }} shown</span>
+    </div>
+    <div id="notification-list">
+        {% include "notifications/partials/list.html" %}
+    </div>
+</section>
+<span id="nav-notification-badge" hx-swap-oob="true" class="nav-badge">{% if unread_count %}{{ unread_count }}{% endif %}</span>
