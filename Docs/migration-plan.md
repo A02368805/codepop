@@ -1,4 +1,4 @@
-# FloatStack Migration Plan
+# CodePop Migration Plan
 
 ## Source Of Truth
 
@@ -40,7 +40,7 @@ The archived starter application code is not present in this workspace. What rem
 - payments are server-authoritative and routed through a clean `mock` or Stripe-ready gateway boundary
 - the sync outbox and audit log are first-class internal operational surfaces, not hidden internals
 
-## Prompt 4 Completion Notes
+## Canonical Django Completion Notes
 
 - Added background tasks for queued CSV imports, notification dispatch hooks, sync processing, and recommendation refreshes
 - Added geolocation-assisted store recommendation with browser fallback to manual selection
@@ -59,3 +59,9 @@ The archived starter application code is not present in this workspace. What rem
 - Swap from demo/mock configuration to live Stripe and external notification credentials when a real deployment is ready
 - Add true downstream sync connectors if the outbox needs to publish beyond the local monolith
 - Expand push-notification subscriptions, production monitoring, and accessibility polish as a post-demo hardening pass
+
+## Final Cutover Notes
+
+- The active shared layout is `server/templates/base/base.html`.
+- Unreferenced starter-era Tailwind templates such as the old root `base.html`, `login.html`, `drink_builder.html`, and `drink_list.html` were removed from the active template tree.
+- The active dashboard, ordering, maintenance, analytics, and sync surfaces all route through the canonical Django apps under `server/apps/`.

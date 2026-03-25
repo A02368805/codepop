@@ -1,4 +1,4 @@
-# FloatStack Demo Readiness Notes
+# CodePop Demo Readiness Notes
 
 ## Payments
 

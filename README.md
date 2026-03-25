@@ -1,6 +1,6 @@
-# CodePop / FloatStack
+# CodePop
 
-This repository contains the canonical Django workspace for the rewritten CodePop architecture. The seeded UI copy and demo accounts still use the `FloatStack` product name, but the active implementation path is the Django + HTMX application in `server/`.
+This repository contains the canonical Django workspace for the rewritten CodePop architecture. The active implementation path is the Django + HTMX application in `server/`, while seeded emails keep the `floatstack.local` domain purely for demo convenience.
 
 The rewritten design documents remain the source of truth:
 
@@ -276,6 +276,8 @@ Implementation notes and migration details live in:
 - `Docs/demo-readiness.md`
 - `Docs/demo-runbook.md`
 - `Docs/acceptance-checklist.md`
+- `Docs/deployment-notes.md`
+- `Docs/presentation-script.md`
 - `STATUS.md`
 
 ## Known Limitations

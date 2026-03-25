@@ -1,6 +1,6 @@
 {% extends "base/base.html" %}
 
-{% block title %}{{ store.name }} Menu | FloatStack{% endblock %}
+{% block title %}{{ store.name }} Menu | CodePop{% endblock %}
 
 {% block content %}
 <section class="hero hero--dashboard">
@@ -23,7 +23,7 @@
             {% for recommendation in recommendations %}
                 <li><strong>{{ recommendation.name }}</strong>: {{ recommendation.explanation }}</li>
             {% empty %}
-                <li>Open any signature drink to let FloatStack start helping with the build.</li>
+                <li>Open any signature drink to let CodePop start helping with the build.</li>
             {% endfor %}
         </ul>
     </div>

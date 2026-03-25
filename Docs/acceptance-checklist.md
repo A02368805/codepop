@@ -28,5 +28,6 @@
 
 - `python manage.py bootstrap_demo_data --reset` seeds a complete local demo.
 - `README.md`, `STATUS.md`, `Docs/demo-readiness.md`, and `Docs/demo-runbook.md` all point to the canonical Django path.
+- `Docs/deployment-notes.md` and `Docs/presentation-script.md` are present for teammate handoff and demo delivery.
 - Legacy architecture is clearly documented as retired from the active workspace.
 - Full test suite passes locally.

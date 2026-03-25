@@ -117,7 +117,7 @@ def save_preference_profile(
     transaction.on_commit(
         lambda: refresh_account_recommendations.delay(
             str(user.pk),
-            reason="Your saved FloatStack taste profile was updated",
+            reason="Your saved CodePop taste profile was updated",
         )
     )
 

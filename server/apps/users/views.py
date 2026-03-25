@@ -144,7 +144,7 @@ class HomePageView(TemplateView):
         return context
 
 
-class FloatStackLoginView(LoginView):
+class CodePopLoginView(LoginView):
     template_name = "registration/login.html"
     authentication_form = EmailAuthenticationForm
     redirect_authenticated_user = True
@@ -153,7 +153,7 @@ class FloatStackLoginView(LoginView):
         return get_post_login_url(self.request.user)
 
 
-class FloatStackLogoutView(LogoutView):
+class CodePopLogoutView(LogoutView):
     pass
 
 
@@ -582,7 +582,7 @@ class PreferenceView(RoleRequiredMixin, LoginRequiredMixin, FormView):
                     groups=[
                         {
                             "label": "Sodas",
-                            "description": "Bases FloatStack should steer away from.",
+                            "description": "Bases CodePop should steer away from.",
                             "items": [
                                 {"value": key, **value}
                                 for key, value in SODA_OPTIONS.items()

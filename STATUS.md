@@ -23,6 +23,7 @@ The canonical Django + HTMX workspace is demo-ready for the Group 3 operational 
 - Updated Docker Compose to include web, db, redis, worker, and beat
 - Updated docs and setup instructions for local dev, Docker, seeds, env vars, and demo workflows
 - Added a demo runbook, acceptance checklist, and clearer legacy/cutover documentation for future contributors
+- Added explicit deployment notes and a presentation script for final teammate handoff
 
 ## Remaining Gaps
 

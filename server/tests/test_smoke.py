@@ -32,7 +32,7 @@ class ScaffoldSmokeTests(TestCase):
     def test_homepage_loads_for_anonymous_users(self):
         response = self.client.get(reverse("home"))
         self.assertEqual(response.status_code, 200)
-        self.assertContains(response, "FloatStack")
+        self.assertContains(response, "CodePop")
         self.assertContains(response, "Build a drink")
 
     def test_dashboard_redirects_to_role_specific_page(self):
