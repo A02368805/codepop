@@ -1,0 +1,24 @@
+<div class="section-heading">
+    <div>
+        <p class="eyebrow">Live Summary</p>
+        <h2>{{ dashboard.title }}</h2>
+    </div>
+    <button
+        class="button button--ghost"
+        type="button"
+        hx-get="{{ dashboard.refresh_url }}"
+        hx-target="#dashboard-metrics"
+        hx-swap="innerHTML"
+    >
+        Refresh metrics
+    </button>
+</div>
+
+<div class="metric-grid">
+    {% for metric in dashboard.metrics %}
+        <article class="metric metric--{{ metric.tone }}">
+            <p>{{ metric.label }}</p>
+            <strong>{{ metric.value }}</strong>
+        </article>
+    {% endfor %}
+</div>

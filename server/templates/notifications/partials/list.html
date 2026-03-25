@@ -1,0 +1,33 @@
+{% if notifications %}
+    <div class="surface-list">
+        {% for notification in notifications %}
+            <article class="list-card">
+                <div class="list-card__main">
+                    <div class="inline-cluster">
+                        <span class="pill">{{ notification.get_category_display }}</span>
+                        {% if notification.is_read %}
+                            <span class="pill pill--soft">Read</span>
+                        {% endif %}
+                    </div>
+                    <h3>{{ notification.title }}</h3>
+                    <p>{{ notification.message }}</p>
+                </div>
+                <div class="list-card__actions">
+                    {% if not notification.is_read %}
+                        <form
+                            method="post"
+                            hx-post="{% url 'notifications:mark-read' notification.id %}"
+                            hx-target="#notification-list"
+                            hx-swap="innerHTML"
+                        >
+                            {% csrf_token %}
+                            <button class="button button--ghost" type="submit">Mark read</button>
+                        </form>
+                    {% endif %}
+                </div>
+            </article>
+        {% endfor %}
+    </div>
+{% else %}
+    <div class="empty-state"><p>No notifications yet.</p></div>
+{% endif %}

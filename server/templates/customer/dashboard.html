@@ -1,0 +1,79 @@
+{% extends "base/base.html" %}
+
+{% block title %}Customer Dashboard | FloatStack{% endblock %}
+
+{% block content %}
+<section class="hero hero--dashboard">
+    <div>
+        <p class="eyebrow">Customer Dashboard</p>
+        <h1>{{ dashboard.title }}</h1>
+        <p class="lede">{{ dashboard.intro }}</p>
+        <div class="cta-row">
+            <a class="button button--primary" href="{% url 'stores:index' %}">Start an order</a>
+            <a class="button button--ghost" href="{% url 'orders:history' %}">View order history</a>
+        </div>
+    </div>
+    <div class="hero-card" id="dashboard-metrics" hx-get="{{ dashboard.refresh_url }}" hx-trigger="load, every 30s" hx-swap="innerHTML">
+        {% include "partials/dashboard_metrics.html" %}
+    </div>
+</section>
+
+<section class="page-grid page-grid--sidebar">
+    <div class="panel">
+        <div class="section-heading">
+            <div>
+                <p class="eyebrow">Recent Orders</p>
+                <h2>Track current and past pickups</h2>
+            </div>
+        </div>
+        <div class="surface-list">
+            {% for order in recent_orders %}
+                <article class="list-card">
+                    <div class="list-card__main">
+                        <h3><a href="{% url 'orders:detail' order.public_order_code %}">{{ order.public_order_code }}</a></h3>
+                        <p class="muted">{{ order.store.name }}</p>
+                        <p>{{ order.get_status_display }} · ${{ order.total_amount }}</p>
+                    </div>
+                </article>
+            {% empty %}
+                <div class="empty-state">
+                    <p>No account orders yet.</p>
+                </div>
+            {% endfor %}
+        </div>
+    </div>
+    <div class="panel">
+        <p class="eyebrow">Preferences + Favorites</p>
+        <ul class="mini-list">
+            {% for preference in taste_preferences %}
+                <li>{{ preference.get_preference_type_display }}: {{ preference.ingredient_name }}</li>
+            {% empty %}
+                <li>No taste preferences saved yet.</li>
+            {% endfor %}
+        </ul>
+        <div class="action-row">
+            <a class="button button--ghost" href="{% url 'account-preferences' %}">Edit preferences</a>
+            <a class="button button--ghost" href="{% url 'orders:favorites' %}">Open favorites</a>
+        </div>
+    </div>
+</section>
+
+<section class="panel">
+    <div class="section-heading">
+        <div>
+            <p class="eyebrow">Recommendations</p>
+            <h2>Suggested drinks</h2>
+        </div>
+        <a href="{% url 'orders:recommendations' %}">See full recommendation page</a>
+    </div>
+    <div class="card-grid">
+        {% for recommendation in recommended_drinks %}
+            <article class="menu-card">
+                <h3>{{ recommendation.name }}</h3>
+                <p>{{ recommendation.description }}</p>
+                <p class="muted">{{ recommendation.explanation }}</p>
+            </article>
+        {% endfor %}
+    </div>
+</section>
+{% endblock %}

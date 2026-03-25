@@ -1,0 +1,41 @@
+{% if messages %}
+    <div class="flash-stack">
+        {% for message in messages %}
+            <div class="flash flash--{{ message.tags|default:'info' }}">{{ message }}</div>
+        {% endfor %}
+    </div>
+{% endif %}
+
+<div class="section-heading">
+    <div>
+        <p class="eyebrow">Import History</p>
+        <h2>Recent upload outcomes</h2>
+    </div>
+</div>
+
+{% if jobs %}
+    <table class="data-table">
+        <thead>
+            <tr>
+                <th>File</th>
+                <th>Type</th>
+                <th>Status</th>
+                <th>Rows</th>
+                <th>Errors</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for job in jobs %}
+                <tr>
+                    <td>{{ job.original_filename }}</td>
+                    <td>{{ job.get_import_type_display }}</td>
+                    <td>{{ job.get_status_display }}</td>
+                    <td>{{ job.success_count }}/{{ job.row_count }}</td>
+                    <td>{{ job.error_count }}</td>
+                </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+{% else %}
+    <div class="empty-state"><p>No imports yet.</p></div>
+{% endif %}

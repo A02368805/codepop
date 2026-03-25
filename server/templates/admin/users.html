@@ -1,0 +1,63 @@
+{% extends "base/base.html" %}
+
+{% block title %}User Management | FloatStack{% endblock %}
+
+{% block content %}
+<section class="panel">
+    <div class="section-heading">
+        <div>
+            <p class="eyebrow">Scoped User Management</p>
+            <h1>Update roles and account status inside your allowed scope</h1>
+        </div>
+        <p class="lede-small">
+            {% if managed_store %}
+                Scope: {{ managed_store.name }}
+            {% else %}
+                Scope: Global super admin
+            {% endif %}
+        </p>
+    </div>
+    <table class="data-table">
+        <thead>
+            <tr>
+                <th>User</th>
+                <th>Role</th>
+                <th>Status</th>
+                <th>Apply</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for scoped_user in scoped_users %}
+                <tr>
+                    <td>{{ scoped_user.email }}</td>
+                    <td>
+                        <form method="post" action="{% url 'admin-user-update' scoped_user.id %}" class="inline-cluster">
+                            {% csrf_token %}
+                            <select name="role">
+                                <option value="account_user" {% if scoped_user.role == "account_user" %}selected{% endif %}>Account User</option>
+                                <option value="manager" {% if scoped_user.role == "manager" %}selected{% endif %}>Manager</option>
+                                <option value="admin" {% if scoped_user.role == "admin" %}selected{% endif %}>Admin</option>
+                            </select>
+                    </td>
+                    <td>
+                            <select name="status">
+                                <option value="active" {% if scoped_user.status == "active" %}selected{% endif %}>Active</option>
+                                <option value="locked" {% if scoped_user.status == "locked" %}selected{% endif %}>Locked</option>
+                                <option value="disabled" {% if scoped_user.status == "disabled" %}selected{% endif %}>Disabled</option>
+                                <option value="pending" {% if scoped_user.status == "pending" %}selected{% endif %}>Pending</option>
+                            </select>
+                    </td>
+                    <td>
+                            <button class="button button--ghost" type="submit">Save</button>
+                        </form>
+                    </td>
+                </tr>
+            {% empty %}
+                <tr>
+                    <td colspan="4">No users are currently in scope.</td>
+                </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</section>
+{% endblock %}

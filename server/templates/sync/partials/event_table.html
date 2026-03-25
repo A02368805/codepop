@@ -1,0 +1,62 @@
+<div class="metric-grid">
+    <article class="metric metric--warning">
+        <p>Pending</p>
+        <strong>{{ event_counts.pending }}</strong>
+    </article>
+    <article class="metric">
+        <p>Processing</p>
+        <strong>{{ event_counts.processing }}</strong>
+    </article>
+    <article class="metric metric--warning">
+        <p>Failed</p>
+        <strong>{{ event_counts.failed }}</strong>
+    </article>
+    <article class="metric metric--info">
+        <p>Dispatched</p>
+        <strong>{{ event_counts.dispatched }}</strong>
+    </article>
+</div>
+
+<div class="action-row">
+    <form method="post" hx-post="{% url 'sync:process' %}" hx-target="#sync-panel" hx-swap="innerHTML">
+        {% csrf_token %}
+        <button class="button button--primary" type="submit">Process pending</button>
+    </form>
+    <form method="post" hx-post="{% url 'sync:retry' %}" hx-target="#sync-panel" hx-swap="innerHTML">
+        {% csrf_token %}
+        <button class="button button--ghost" type="submit">Retry failed</button>
+    </form>
+    <button class="button button--ghost" type="button" hx-get="{% url 'sync:panel' %}" hx-target="#sync-panel" hx-swap="innerHTML">Refresh</button>
+</div>
+
+{% if events %}
+    <table class="data-table">
+        <thead>
+            <tr>
+                <th>Event</th>
+                <th>Aggregate</th>
+                <th>Status</th>
+                <th>Attempts</th>
+                <th>Scope</th>
+                <th>Error</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for event in events %}
+                <tr>
+                    <td>{{ event.event_type }}</td>
+                    <td>{{ event.aggregate_type }} · {{ event.aggregate_id|slice:":8" }}</td>
+                    <td>{{ event.get_status_display }}</td>
+                    <td>{{ event.attempt_count }}</td>
+                    <td>{{ event.source_scope.region_code|default:event.source_scope.store_id|default:"-" }}</td>
+                    <td>{{ event.last_error|default:"-" }}</td>
+                </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+{% else %}
+    <div class="empty-state">
+        <h3>No outbox events have been recorded yet.</h3>
+        <p>Place an order, approve a transfer, or run an import to see the sync pipeline populate.</p>
+    </div>
+{% endif %}

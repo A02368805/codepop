@@ -1,0 +1,86 @@
+{% extends "base/base.html" %}
+
+{% block title %}Checkout | FloatStack{% endblock %}
+
+{% block content %}
+<section class="hero hero--dashboard">
+    <div>
+        <p class="eyebrow">Checkout</p>
+        <h1>Confirm pickup details and place the order.</h1>
+        <p class="lede">FloatStack keeps checkout simple for guests and account users while re-validating pricing on the server before payment is recorded.</p>
+    </div>
+    <div class="hero-card">
+        <p class="eyebrow">Pickup Store</p>
+        {% if store %}
+            <h2>{{ store.name }}</h2>
+            <p class="muted">{{ store.full_address }}</p>
+        {% else %}
+            <p>No active store is attached to this cart.</p>
+        {% endif %}
+    </div>
+</section>
+
+{% if cart.items and store %}
+    <section class="page-grid page-grid--sidebar">
+        <div class="panel">
+            <form id="checkout-form" method="post" class="form-grid">
+                {% csrf_token %}
+                <div class="callout">
+                    <strong>Payment mode:</strong>
+                    {% if payment_mode_is_mock %}
+                        Demo mode is active. Orders complete with a mock payment on the server so the local workflow stays self-contained.
+                    {% else %}
+                        Stripe checkout is active. You will be redirected to Stripe after the server validates pricing.
+                    {% endif %}
+                </div>
+                <label class="field">
+                    <span>{{ form.pickup_time_choice.label }}</span>
+                    {{ form.pickup_time_choice }}
+                    {{ form.pickup_time_choice.errors }}
+                </label>
+                {% if not request.user.is_authenticated %}
+                    <label class="field">
+                        <span>{{ form.guest_name.label }}</span>
+                        {{ form.guest_name }}
+                        {{ form.guest_name.errors }}
+                    </label>
+                    <label class="field">
+                        <span>{{ form.guest_email.label }}</span>
+                        {{ form.guest_email }}
+                        {{ form.guest_email.errors }}
+                    </label>
+                    <label class="field">
+                        <span>{{ form.guest_phone_number.label }}</span>
+                        {{ form.guest_phone_number }}
+                        {{ form.guest_phone_number.errors }}
+                    </label>
+                {% endif %}
+                <div class="action-row">
+                    <button class="button button--primary" type="submit">Place order</button>
+                    <button
+                        class="button button--ghost"
+                        type="button"
+                        hx-post="{% url 'orders:checkout-validate' %}"
+                        hx-target="#checkout-summary"
+                        hx-swap="innerHTML"
+                        hx-include="#checkout-form"
+                    >
+                        Refresh totals
+                    </button>
+                </div>
+            </form>
+        </div>
+        <div class="panel" id="checkout-summary">
+            {% include "orders/partials/checkout_summary.html" %}
+        </div>
+    </section>
+{% else %}
+    <section class="panel">
+        <div class="empty-state">
+            <h2>There is nothing ready to check out.</h2>
+            <p>Add at least one drink from a store menu before you place an order.</p>
+            <a class="button button--primary" href="{% url 'stores:index' %}">Choose a store</a>
+        </div>
+    </section>
+{% endif %}
+{% endblock %}

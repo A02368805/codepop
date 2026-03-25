@@ -1,0 +1,27 @@
+{% extends "base/base.html" %}
+
+{% block title %}Cart | FloatStack{% endblock %}
+
+{% block content %}
+<section class="hero hero--dashboard">
+    <div>
+        <p class="eyebrow">Cart</p>
+        <h1>Your current order</h1>
+        <p class="lede">The cart is session-backed and stays bound to one store. Starting a new store order resets the cart intentionally.</p>
+    </div>
+    <div class="hero-card">
+        <p class="eyebrow">Store</p>
+        {% if store %}
+            <h2>{{ store.name }}</h2>
+            <p class="muted">{{ store.full_address }}</p>
+        {% else %}
+            <h2>No store selected yet</h2>
+            <p class="muted">Pick a store before you start building drinks.</p>
+        {% endif %}
+    </div>
+</section>
+
+<div id="cart-panel">
+    {% include "orders/partials/cart_panel.html" %}
+</div>
+{% endblock %}

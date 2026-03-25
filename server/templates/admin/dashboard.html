@@ -1,0 +1,75 @@
+{% extends "base/base.html" %}
+
+{% block title %}Admin Dashboard | FloatStack{% endblock %}
+
+{% block content %}
+<section class="hero hero--dashboard">
+    <div>
+        <p class="eyebrow">Admin Dashboard</p>
+        <h1>{{ dashboard.title }}</h1>
+        <p class="lede">{{ dashboard.intro }}</p>
+        <div class="cta-row">
+            <a class="button button--primary" href="{% url 'admin-users' %}">Manage store users</a>
+        </div>
+    </div>
+    <div class="hero-card" id="dashboard-metrics" hx-get="{{ dashboard.refresh_url }}" hx-trigger="load, every 30s" hx-swap="innerHTML">
+        {% include "partials/dashboard_metrics.html" %}
+    </div>
+</section>
+
+<section class="page-grid page-grid--sidebar">
+    <div class="panel">
+        <p class="eyebrow">Account Status</p>
+        <dl class="summary-list">
+            <div><dt>Locked</dt><dd>{{ locked_count }}</dd></div>
+            <div><dt>Disabled</dt><dd>{{ disabled_count }}</dd></div>
+            <div><dt>Pending</dt><dd>{{ pending_count }}</dd></div>
+        </dl>
+        {% if managed_store %}
+            <p class="muted">Current management scope: {{ managed_store.name }}</p>
+        {% else %}
+            <p class="muted">Global oversight mode enabled.</p>
+        {% endif %}
+    </div>
+    <div class="panel">
+        <p class="eyebrow">Support / Complaints</p>
+        <ul class="mini-list">
+            <li>Complaint triage placeholder wired for prompt 4.</li>
+            <li>Account unlock and disable tools live in the team panel.</li>
+            <li>Store-scoped role changes stay server-enforced.</li>
+        </ul>
+    </div>
+</section>
+
+<section class="panel">
+    <div class="section-heading">
+        <div>
+            <p class="eyebrow">Scoped Users</p>
+            <h2>People you can manage</h2>
+        </div>
+        <a href="{% url 'admin-users' %}">Open full management view</a>
+    </div>
+    <table class="data-table">
+        <thead>
+            <tr>
+                <th>Email</th>
+                <th>Role</th>
+                <th>Status</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for user in scoped_users %}
+                <tr>
+                    <td>{{ user.email }}</td>
+                    <td>{{ user.get_role_display }}</td>
+                    <td>{{ user.get_status_display }}</td>
+                </tr>
+            {% empty %}
+                <tr>
+                    <td colspan="3">No users in scope.</td>
+                </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</section>
+{% endblock %}

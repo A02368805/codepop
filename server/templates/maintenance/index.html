@@ -1,0 +1,56 @@
+{% extends "base/base.html" %}
+
+{% block title %}Maintenance | FloatStack{% endblock %}
+
+{% block content %}
+<section class="panel">
+    <div class="section-heading">
+        <div>
+            <p class="eyebrow">Maintenance Workspace</p>
+            <h1>Urgency queue, assignments, and import history</h1>
+        </div>
+        <form
+            method="get"
+            class="filter-bar"
+            hx-get="{% url 'maintenance:index' %}"
+            hx-target="#urgent-queue"
+            hx-push-url="true"
+        >
+            <select name="status">
+                <option value="">All urgent states</option>
+                <option value="warning" {% if status_filter == "warning" %}selected{% endif %}>Warning</option>
+                <option value="error" {% if status_filter == "error" %}selected{% endif %}>Error</option>
+                <option value="out-of-order" {% if status_filter == "out-of-order" %}selected{% endif %}>Out of order</option>
+                <option value="schedule-service" {% if status_filter == "schedule-service" %}selected{% endif %}>Schedule service</option>
+            </select>
+            <button class="button button--ghost" type="submit">Filter</button>
+        </form>
+    </div>
+    <div id="urgent-queue">
+        {% include "maintenance/partials/urgent_queue.html" %}
+    </div>
+</section>
+
+<section class="page-grid page-grid--sidebar">
+    <div class="panel">
+        <p class="eyebrow">Repair Assignments</p>
+        <ul class="mini-list">
+            {% for assignment in assignments %}
+                <li>{{ assignment.store.name }} · {{ assignment.machine.display_name }} · {{ assignment.get_status_display }}</li>
+            {% empty %}
+                <li>No assignments in this scope.</li>
+            {% endfor %}
+        </ul>
+    </div>
+    <div class="panel">
+        <p class="eyebrow">Recent Maintenance Imports</p>
+        <ul class="mini-list">
+            {% for job in import_jobs %}
+                <li>{{ job.original_filename }} · {{ job.get_status_display }}</li>
+            {% empty %}
+                <li>No maintenance imports yet.</li>
+            {% endfor %}
+        </ul>
+    </div>
+</section>
+{% endblock %}

@@ -1,0 +1,24 @@
+{% if machines %}
+    <table class="data-table">
+        <thead>
+            <tr>
+                <th>Store</th>
+                <th>Machine</th>
+                <th>Status</th>
+                <th>Priority Reason</th>
+            </tr>
+        </thead>
+        <tbody>
+                {% for row in machines %}
+                    <tr>
+                    <td>{{ row.machine.store.name }}</td>
+                        <td>{{ row.machine.display_name }}</td>
+                        <td>{{ row.machine.get_current_status_display }}</td>
+                        <td>{{ row.explanation }}</td>
+                </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+{% else %}
+    <div class="empty-state"><p>No urgent machines in this filter view.</p></div>
+{% endif %}

@@ -1,0 +1,23 @@
+{% extends "base/base.html" %}
+
+{% block title %}Guest Order Lookup | FloatStack{% endblock %}
+
+{% block content %}
+<section class="auth-shell">
+    <div class="auth-card">
+        <p class="eyebrow">Guest Order Lookup</p>
+        <h1>Find a one-time guest order</h1>
+        <p class="lede-small">Enter the lookup code shown after checkout. Guest orders do not create a persistent full user account.</p>
+        <form method="post" class="auth-form">
+            {% csrf_token %}
+            {{ form.non_field_errors }}
+            <label>
+                {{ form.lookup_code.label }}
+                {{ form.lookup_code }}
+                {{ form.lookup_code.errors }}
+            </label>
+            <button class="button button--primary" type="submit">Open order</button>
+        </form>
+    </div>
+</section>
+{% endblock %}

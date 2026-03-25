@@ -1,0 +1,298 @@
+{% extends "base/base.html" %}
+
+{% block title %}Customize {{ menu_item.name }} | FloatStack{% endblock %}
+
+{% block content %}
+<section class="hero hero--dashboard">
+    <div>
+        <p class="eyebrow">Drink Builder</p>
+        <h1>{{ menu_item.name }}</h1>
+        <p class="lede">{{ menu_item.description }}</p>
+        <div class="badge-row">
+            {% for tag in menu_item.tags %}
+                <span class="pill pill--soft">{{ tag }}</span>
+            {% endfor %}
+        </div>
+    </div>
+    <div class="hero-card">
+        <p class="eyebrow">Pickup Store</p>
+        <h2>{{ store.name }}</h2>
+        <p class="muted">{{ store.full_address }}</p>
+        <div class="cta-row">
+            <a class="button button--ghost" href="{% url 'orders:menu' store.store_code %}">Back to menu</a>
+            <a class="button button--ghost" href="{% url 'orders:cart' %}">View cart</a>
+        </div>
+    </div>
+</section>
+
+<section class="page-grid page-grid--builder">
+    <form
+        method="post"
+        class="panel panel--builder builder-form"
+        id="drink-builder-form"
+        data-builder-assistant-url="{% url 'orders:assistant' store.store_code menu_item.slug %}"
+        data-builder-ai-fill-url="{% url 'orders:ai-fill' store.store_code menu_item.slug %}"
+        data-builder-menu-name="{{ menu_item.name }}"
+    >
+        {% csrf_token %}
+        {{ form.non_field_errors }}
+
+        <div class="builder-stage">
+            <div class="builder-stage__visual">
+                <div class="cup-preview" data-cup-preview>
+                    <div class="cup-preview__rim"></div>
+                    <div class="cup-preview__liquid" data-soda="{{ selected_soda }}">
+                        <span class="cup-preview__swirl cup-preview__swirl--one"></span>
+                        <span class="cup-preview__swirl cup-preview__swirl--two"></span>
+                        <span class="cup-preview__swirl cup-preview__swirl--three"></span>
+                    </div>
+                    <div class="cup-preview__foam" data-has-float="{% if selected_ice_cream %}1{% else %}0{% endif %}"></div>
+                    <div class="cup-preview__label" data-builder-cup-label>{{ menu_item.name }}</div>
+                </div>
+                <div class="builder-stage__caption">
+                    <p class="eyebrow">Live Cup</p>
+                    <h2 class="builder-stage__title" data-builder-heading>{{ menu_item.name }}</h2>
+                    <p class="muted" data-builder-summary>Choose a base, add flavor layers, and let FloatStack AI refine the balance without locking anything in.</p>
+                    <div class="badge-row builder-stage__chips" data-builder-chips></div>
+                </div>
+            </div>
+        </div>
+
+        <div class="builder-overview-card">
+            <p class="eyebrow">What makes this one work</p>
+            <ul class="mini-list">
+                <li>Grouped ingredients keep the build fast to scan.</li>
+                <li>AI fill uses preferences, past orders, and your current selections.</li>
+                <li>Pricing updates live, but the server still validates everything at checkout.</li>
+            </ul>
+        </div>
+
+        <div class="builder-section">
+            <div class="section-heading">
+                <div>
+                    <p class="eyebrow">Step 1</p>
+                    <h2>Choose your size</h2>
+                </div>
+                <p class="lede-small">Start with the cup size and FloatStack will keep totals aligned as you build.</p>
+            </div>
+            <div class="choice-grid choice-grid--segmented">
+                {% for option in size_cards %}
+                    <label class="choice-card choice-card--segmented {% if option.checked %}is-selected{% endif %}">
+                        <input
+                            type="radio"
+                            name="{{ option.name }}"
+                            value="{{ option.value }}"
+                            {% if option.checked %}checked{% endif %}
+                        >
+                        <span class="choice-card__label">{{ option.label }}</span>
+                    </label>
+                {% endfor %}
+            </div>
+            {{ form.size.errors }}
+        </div>
+
+        <div class="builder-section">
+            <div class="section-heading">
+                <div>
+                    <p class="eyebrow">Step 2</p>
+                    <h2>Pick your soda base</h2>
+                </div>
+                <p class="lede-small">These are the backbone of the drink, so we grouped them the way customers actually browse.</p>
+            </div>
+            <div class="group-stack">
+                {% for group in soda_cards %}
+                    <section class="ingredient-group">
+                        <div class="ingredient-group__header">
+                            <h3>{{ group.label }}</h3>
+                            <p class="muted">{{ group.description }}</p>
+                        </div>
+                        <div class="choice-grid">
+                            {% for item in group.items %}
+                                <label class="choice-card {% if item.checked %}is-selected{% endif %}" data-builder-option-card>
+                                    <input
+                                        type="radio"
+                                        name="{{ item.name }}"
+                                        value="{{ item.value }}"
+                                        {% if item.checked %}checked{% endif %}
+                                    >
+                                    <span class="choice-card__label">{{ item.label }}</span>
+                                    <span class="choice-card__meta">{{ item.description }}</span>
+                                </label>
+                            {% endfor %}
+                        </div>
+                    </section>
+                {% endfor %}
+            </div>
+            {{ form.soda.errors }}
+        </div>
+
+        <div class="builder-section">
+            <div class="section-heading">
+                <div>
+                    <p class="eyebrow">Step 3</p>
+                    <h2>Layer in flavor shots</h2>
+                </div>
+                <p class="lede-small">Add one or two syrups for a clean signature build, or keep going if you want a bigger soda-shop feel.</p>
+            </div>
+            <div class="group-stack">
+                {% for group in syrup_cards %}
+                    <section class="ingredient-group">
+                        <div class="ingredient-group__header">
+                            <h3>{{ group.label }}</h3>
+                            <p class="muted">{{ group.description }}</p>
+                        </div>
+                        <div class="choice-grid">
+                            {% for item in group.items %}
+                                <label class="choice-card choice-card--check {% if item.checked %}is-selected{% endif %}" data-builder-option-card>
+                                    <input
+                                        type="checkbox"
+                                        name="{{ item.name }}"
+                                        value="{{ item.value }}"
+                                        {% if item.checked %}checked{% endif %}
+                                    >
+                                    <span class="choice-card__label">{{ item.label }}</span>
+                                    <span class="choice-card__meta">{{ item.description }}</span>
+                                    <span class="choice-card__price">+${{ item.price }}</span>
+                                </label>
+                            {% endfor %}
+                        </div>
+                    </section>
+                {% endfor %}
+            </div>
+            {{ form.syrups.errors }}
+        </div>
+
+        <div class="builder-section">
+            <div class="section-heading">
+                <div>
+                    <p class="eyebrow">Step 4</p>
+                    <h2>Add texture and finishes</h2>
+                </div>
+                <p class="lede-small">Creamy extras, fresh garnishes, and purees help the drink feel more complete without overcomplicating it.</p>
+            </div>
+            <div class="group-stack">
+                {% for group in add_in_cards %}
+                    <section class="ingredient-group">
+                        <div class="ingredient-group__header">
+                            <h3>{{ group.label }}</h3>
+                            <p class="muted">{{ group.description }}</p>
+                        </div>
+                        <div class="choice-grid">
+                            {% for item in group.items %}
+                                <label class="choice-card choice-card--check {% if item.checked %}is-selected{% endif %}" data-builder-option-card>
+                                    <input
+                                        type="checkbox"
+                                        name="{{ item.name }}"
+                                        value="{{ item.value }}"
+                                        {% if item.checked %}checked{% endif %}
+                                    >
+                                    <span class="choice-card__label">{{ item.label }}</span>
+                                    <span class="choice-card__meta">{{ item.description }}</span>
+                                    <span class="choice-card__price">+${{ item.price }}</span>
+                                </label>
+                            {% endfor %}
+                        </div>
+                    </section>
+                {% endfor %}
+            </div>
+            {{ form.add_ins.errors }}
+        </div>
+
+        <div class="builder-section">
+            <div class="section-heading">
+                <div>
+                    <p class="eyebrow">Optional Float Finish</p>
+                    <h2>Top it with ice cream</h2>
+                </div>
+                <p class="lede-small">Leave it off for a crisp soda or add a scoop for a richer float experience.</p>
+            </div>
+            {% for group in ice_cream_cards %}
+                <section class="ingredient-group">
+                    <div class="ingredient-group__header">
+                        <h3>{{ group.label }}</h3>
+                        <p class="muted">{{ group.description }}</p>
+                    </div>
+                    <div class="choice-grid choice-grid--three">
+                        {% for item in group.items %}
+                            <label class="choice-card {% if item.checked %}is-selected{% endif %}" data-builder-option-card>
+                                <input
+                                    type="radio"
+                                    name="{{ item.name }}"
+                                    value="{{ item.value }}"
+                                    {% if item.checked %}checked{% endif %}
+                                >
+                                <span class="choice-card__label">{{ item.label }}</span>
+                                <span class="choice-card__meta">{{ item.description }}</span>
+                                {% if item.price %}
+                                    <span class="choice-card__price">+${{ item.price }}</span>
+                                {% endif %}
+                            </label>
+                        {% endfor %}
+                    </div>
+                </section>
+            {% endfor %}
+            {{ form.ice_cream.errors }}
+        </div>
+
+        <div class="builder-section builder-section--details">
+            <div class="section-heading">
+                <div>
+                    <p class="eyebrow">Finish</p>
+                    <h2>Quantity and pickup notes</h2>
+                </div>
+                <p class="lede-small">Everything stays editable after AI fills the builder, including quantity and notes.</p>
+            </div>
+            <div class="builder-detail-grid">
+                <label class="field">
+                    <span>{{ form.quantity.label }}</span>
+                    {{ form.quantity }}
+                    {{ form.quantity.errors }}
+                </label>
+                <label class="field">
+                    <span>{{ form.notes.label }}</span>
+                    {{ form.notes }}
+                    {{ form.notes.errors }}
+                </label>
+            </div>
+            {% if request.user.is_authenticated and request.user.role == "account_user" %}
+                <label class="field-inline builder-favorite-toggle">
+                    <input type="checkbox" name="save_favorite" value="1">
+                    <span>Save this exact build as a favorite for faster reorders.</span>
+                </label>
+            {% endif %}
+        </div>
+    </form>
+
+    <aside class="panel panel--assistant builder-sidebar">
+        <div class="builder-price-card">
+            <p class="eyebrow">Live Total</p>
+            <h2 data-builder-total>$0.00</h2>
+            <p class="muted">This preview updates instantly, and checkout still recalculates totals on the server.</p>
+            <dl class="summary-list">
+                <div>
+                    <dt>Pickup Store</dt>
+                    <dd>{{ store.name }}</dd>
+                </div>
+                <div>
+                    <dt>Quantity</dt>
+                    <dd data-builder-quantity>1</dd>
+                </div>
+                <div>
+                    <dt>Build Style</dt>
+                    <dd data-builder-style>{{ menu_item.name }}</dd>
+                </div>
+            </dl>
+            <div class="action-row">
+                <button class="button button--primary" type="submit" form="drink-builder-form">Add to cart</button>
+                <a class="button button--ghost" href="{% url 'orders:menu' store.store_code %}">Keep browsing</a>
+            </div>
+        </div>
+
+        <div id="builder-assistant">
+            {% include "orders/partials/builder_assistant.html" %}
+        </div>
+    </aside>
+</section>
+
+{{ builder_pricing|json_script:"builder-pricing-data" }}
+{% endblock %}
