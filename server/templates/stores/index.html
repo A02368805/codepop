@@ -59,6 +59,7 @@
             hx-get="{% url 'stores:index' %}"
             hx-target="#store-recommendations"
             hx-push-url="true"
+            hx-indicator="#recommendation-indicator"
             data-mapbox-token="{{ mapbox_public_token }}"
         >
             <label class="field">
@@ -79,6 +80,7 @@
                 <button class="button button--primary" type="submit">Show stores</button>
                 <button class="button button--ghost" type="button" id="geo-locate-btn">Use my location</button>
             </div>
+            <p class="muted htmx-indicator" id="recommendation-indicator">Refreshing store recommendations…</p>
         </form>
     </div>
 

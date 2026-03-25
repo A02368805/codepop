@@ -685,6 +685,11 @@ h3 {
     display: none;
 }
 
+.htmx-request .htmx-indicator,
+.htmx-request.htmx-indicator {
+    display: block;
+}
+
 .footer {
     margin-top: 1.5rem;
     padding: 1.2rem 1.4rem 0;

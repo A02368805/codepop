@@ -88,6 +88,32 @@
         {% if order.order_type == "guest" and order.guest_contact %}
             <p class="muted">Guest lookup code: <strong>{{ order.guest_contact.lookup_code }}</strong></p>
         {% endif %}
+        <hr>
+        <p class="eyebrow">Payment</p>
+        <p class="muted">
+            {% if payment_mode_is_mock %}
+                Demo payment mode is active.
+            {% else %}
+                Stripe payment mode is active.
+            {% endif %}
+        </p>
+        {% if payment_transaction %}
+            <dl class="summary-list">
+                <div><dt>Status</dt><dd>{{ payment_transaction.get_status_display }}</dd></div>
+                <div><dt>Provider</dt><dd>{{ payment_transaction.get_provider_display }}</dd></div>
+                <div><dt>Captured</dt><dd>${{ payment_transaction.amount_captured }}</dd></div>
+                <div><dt>Refunded</dt><dd>${{ payment_transaction.amount_refunded }}</dd></div>
+                <div><dt>Failure</dt><dd>{{ payment_transaction.failure_reason|default:"-" }}</dd></div>
+            </dl>
+        {% else %}
+            <p class="muted">No payment transaction record exists yet.</p>
+            {% if order.status == "pricing_validated" or order.status == "payment_pending" %}
+                <div id="payment-intent-panel" data-endpoint="{% url 'payments:payment-intent' %}" data-order-code="{{ order.public_order_code }}">
+                    <button class="button button--ghost" type="button" id="payment-intent-btn">Generate payment intent</button>
+                    <p class="muted" id="payment-intent-status">Creates a provider intent so checkout can continue with the payment processor.</p>
+                </div>
+            {% endif %}
+        {% endif %}
     </div>
 </section>
 

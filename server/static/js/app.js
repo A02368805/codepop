@@ -8,6 +8,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
     initStoreRecommendation();
     initDrinkBuilder();
+    initPaymentIntentPanel();
 });
 
 function getCsrfToken() {
@@ -382,6 +383,51 @@ function initDrinkBuilder() {
 
     renderPreview();
     refreshAssistant();
+}
+
+function initPaymentIntentPanel() {
+    const panel = document.querySelector("#payment-intent-panel");
+    const button = document.querySelector("#payment-intent-btn");
+    const status = document.querySelector("#payment-intent-status");
+    if (!panel || !button || !status) {
+        return;
+    }
+
+    button.addEventListener("click", async () => {
+        const endpoint = panel.dataset.endpoint;
+        const orderCode = panel.dataset.orderCode;
+        if (!endpoint || !orderCode) {
+            status.textContent = "Payment intent endpoint metadata is missing.";
+            return;
+        }
+
+        button.disabled = true;
+        status.textContent = "Creating payment intent...";
+        const body = new URLSearchParams({ order_code: orderCode });
+
+        try {
+            const response = await window.fetch(endpoint, {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/x-www-form-urlencoded;charset=UTF-8",
+                    "X-CSRFToken": getCsrfToken(),
+                },
+                body: body.toString(),
+            });
+            const payload = await response.json();
+            if (!response.ok) {
+                status.textContent = payload.error || "Unable to create payment intent.";
+                button.disabled = false;
+                return;
+            }
+
+            status.textContent = `Payment intent ready via ${payload.provider}. Continue checkout in the payment flow.`;
+            button.textContent = "Payment intent created";
+        } catch (error) {
+            status.textContent = "Failed to create payment intent. Try again.";
+            button.disabled = false;
+        }
+    });
 }
 
 function getCheckedLabels(form, fieldName) {

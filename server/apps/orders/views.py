@@ -552,9 +552,12 @@ class OrderDetailView(TemplateView):
         context.update(
             {
                 "order": order,
+                "payment_transaction": getattr(order, "payment_transaction", None),
                 "can_manage": user_can_transition_order(self.request.user, order),
                 "can_cancel": can_cancel,
                 "cancel_reason": refund_message,
+                "payment_mode": get_payment_mode(),
+                "payment_mode_is_mock": get_payment_mode() == PaymentMode.MOCK,
             }
         )
         return context
