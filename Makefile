@@ -1,4 +1,4 @@
-.PHONY: up down build logs shell migrate test demo
+.PHONY: up down build logs shell migrate test demo ci-test
 
 up:
 	docker compose up -d
@@ -20,6 +20,9 @@ migrate:
 
 test:
 	docker compose exec -e DJANGO_SETTINGS_MODULE=config.settings.test web python manage.py test tests/
+
+ci-test:
+	cd server && python manage.py test tests/
 
 demo:
 	docker compose exec web python manage.py bootstrap_demo_data --reset
