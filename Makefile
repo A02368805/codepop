@@ -40,9 +40,9 @@ demo:
 	docker compose exec web python manage.py bootstrap_demo_data --reset
 
 format:
-	docker compose exec web black /app/server/
-	docker compose exec web isort /app/server/
+	docker compose exec -w /app web black .
+	docker compose exec -w /app web isort .
 
 lint:
-	docker compose exec web black --check /app/server/
-	docker compose exec web isort --check-only /app/server/
+	docker compose exec -w /app web black --check .
+	docker compose exec -w /app web isort --check-only .
