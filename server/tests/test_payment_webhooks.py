@@ -112,6 +112,45 @@ class PaymentWebhookSafetyTests(TestCase):
         )
 
     @patch("apps.payments.views.construct_webhook_event")
+    @patch("apps.payments.views.finalize_stripe_payment_intent")
+    def test_payment_intent_succeeded_webhook_is_processed_once_per_event_id(
+        self,
+        mock_finalize_intent,
+        mock_construct,
+    ):
+        mock_construct.return_value = {
+            "id": "evt_pi_once_1",
+            "type": "payment_intent.succeeded",
+            "data": {
+                "object": {
+                    "id": "pi_test_once",
+                    "metadata": {"order_code": "FS-C-C001-PI-ONCE"},
+                }
+            },
+        }
+
+        first = self.client.post(
+            reverse("payments:stripe-webhook"),
+            data=b"{}",
+            content_type="application/json",
+            HTTP_STRIPE_SIGNATURE="test",
+        )
+        second = self.client.post(
+            reverse("payments:stripe-webhook"),
+            data=b"{}",
+            content_type="application/json",
+            HTTP_STRIPE_SIGNATURE="test",
+        )
+
+        self.assertEqual(first.status_code, 200)
+        self.assertEqual(second.status_code, 200)
+        self.assertEqual(mock_finalize_intent.call_count, 1)
+        self.assertEqual(
+            PaymentWebhookEvent.objects.filter(provider_event_id="evt_pi_once_1").count(),
+            1,
+        )
+
+    @patch("apps.payments.views.construct_webhook_event")
     def test_refund_webhook_is_ignored_when_payment_already_refunded(self, mock_construct):
         order = self._create_paid_order()
         order.status = Order.Status.REFUNDED

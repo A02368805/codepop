@@ -12,10 +12,13 @@ from django.urls import reverse
 from django.utils import timezone
 
 from .gateway import (
+    CheckoutFlow,
     PaymentMode,
     create_stripe_payment_intent,
     create_stripe_checkout_session,
+    get_checkout_flow,
     get_payment_mode,
+    retrieve_stripe_payment_intent,
     retrieve_checkout_session,
 )
 from .models import PaymentTransaction, RevenueLedgerEntry
@@ -48,6 +51,26 @@ def create_payment_intent_for_order(order, *, actor=None):
             "payment_intent_id": mock_client_secret,
             "client_secret": mock_client_secret,
         }
+
+    existing = getattr(order, "payment_transaction", None)
+    if (
+        existing
+        and existing.provider == PaymentTransaction.Provider.STRIPE
+        and existing.status == PaymentTransaction.Status.PENDING
+        and existing.stripe_payment_intent_id
+    ):
+        try:
+            existing_intent = retrieve_stripe_payment_intent(
+                existing.stripe_payment_intent_id
+            )
+            if existing_intent.client_secret:
+                return {
+                    "provider": PaymentTransaction.Provider.STRIPE,
+                    "payment_intent_id": existing_intent.payment_intent_id,
+                    "client_secret": existing_intent.client_secret,
+                }
+        except Exception:
+            pass
 
     intent = create_stripe_payment_intent(order=order)
     record_payment_pending(
@@ -242,6 +265,14 @@ def initialize_order_checkout(order, *, request, actor=None):
             "message": "Demo payment mode completed the order instantly.",
         }
 
+    checkout_flow = get_checkout_flow()
+    if checkout_flow == CheckoutFlow.ELEMENTS:
+        return {
+            "mode": PaymentMode.STRIPE,
+            "redirect_url": reverse("orders:detail", args=[order.public_order_code]),
+            "message": "Enter your card details to complete payment.",
+        }
+
     if not getattr(request, "build_absolute_uri", None):
         raise PaymentGatewayError(
             "A request object is required for Stripe checkout initialization."
@@ -301,6 +332,36 @@ def finalize_stripe_checkout(*, order_code, session_id, actor=None):
         )
     except InventoryServiceError as exc:
         raise PaymentGatewayError(str(exc)) from exc
+    payment = order.payment_transaction
+    payment.last_webhook_at = timezone.now()
+    payment.save(update_fields=["last_webhook_at"])
+    return order
+
+
+def finalize_stripe_payment_intent(*, order_code, payment_intent_id, actor=None):
+    order = Order.objects.select_related("store").get(public_order_code=order_code)
+    if order.status in {
+        Order.Status.QUEUED,
+        Order.Status.PREPARING,
+        Order.Status.READY,
+        Order.Status.PICKED_UP,
+    }:
+        payment = getattr(order, "payment_transaction", None)
+        if payment:
+            payment.last_webhook_at = timezone.now()
+            payment.save(update_fields=["last_webhook_at"])
+        return order
+
+    try:
+        complete_checkout_payment(
+            order,
+            actor=actor,
+            payment_intent_id=payment_intent_id,
+            provider=PaymentTransaction.Provider.STRIPE,
+        )
+    except InventoryServiceError as exc:
+        raise PaymentGatewayError(str(exc)) from exc
+
     payment = order.payment_transaction
     payment.last_webhook_at = timezone.now()
     payment.save(update_fields=["last_webhook_at"])

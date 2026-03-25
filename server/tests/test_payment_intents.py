@@ -3,6 +3,7 @@ from decimal import Decimal
 from apps.orders.models import Order
 from apps.orders.services import create_order
 from apps.payments.models import PaymentTransaction
+from apps.payments.services import record_payment_pending, record_payment_success
 from django.test import TestCase, override_settings
 from django.urls import reverse
 
@@ -73,3 +74,39 @@ class PaymentIntentEndpointTests(TestCase):
 
         self.assertEqual(response.status_code, 400)
         self.assertIn("Payment intent can only be created", response.json()["error"])
+
+    @override_settings(PAYMENT_MODE="mock")
+    def test_payment_status_endpoint_returns_finalized_redirect_when_order_is_queued(self):
+        order = self._create_pricing_validated_order()
+        record_payment_pending(order, payment_intent_id="pi_status_1")
+        record_payment_success(order, payment_intent_id="pi_status_1", actor=self.customer)
+        order.refresh_from_db()
+
+        self.client.force_login(self.customer)
+        response = self.client.get(
+            reverse("payments:payment-status"),
+            {"order_code": order.public_order_code},
+        )
+
+        self.assertEqual(response.status_code, 200)
+        payload = response.json()
+        self.assertEqual(payload["order_status"], Order.Status.PAID)
+        self.assertEqual(payload["payment_status"], PaymentTransaction.Status.SUCCEEDED)
+        self.assertTrue(payload["finalized"])
+        self.assertIn(order.public_order_code, payload["redirect_url"])
+
+    def test_payment_status_endpoint_requires_order_scope(self):
+        order = self._create_pricing_validated_order()
+        outsider = make_user(
+            email="payment-intent-outsider@test.local",
+            preferred_store=self.store,
+            default_region=self.region,
+        )
+        self.client.force_login(outsider)
+
+        response = self.client.get(
+            reverse("payments:payment-status"),
+            {"order_code": order.public_order_code},
+        )
+
+        self.assertEqual(response.status_code, 403)

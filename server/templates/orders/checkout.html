@@ -29,6 +29,8 @@
                     <strong>Payment mode:</strong>
                     {% if payment_mode_is_mock %}
                         Demo mode is active. Orders complete with a mock payment on the server so the local workflow stays self-contained.
+                    {% elif payment_checkout_flow == "elements" %}
+                        Stripe Elements is active. After you place the order, you'll enter card details on the next step.
                     {% else %}
                         Stripe checkout is active. You will be redirected to Stripe after the server validates pricing.
                     {% endif %}

@@ -1,4 +1,6 @@
 from django.test import TestCase, override_settings
+from unittest.mock import patch
+from urllib import error as url_error
 
 from apps.analytics.recommendations import recommend_drinks_for_user
 
@@ -31,6 +33,43 @@ class AnalyticsProviderSelectionTests(TestCase):
 
     @override_settings(AI_RECOMMENDATION_PROVIDER="not-a-provider")
     def test_unknown_provider_falls_back_to_deterministic(self):
+        rows = recommend_drinks_for_user(self.customer, limit=2)
+        self.assertGreaterEqual(len(rows), 1)
+        self.assertNotIn("[Mock external provider]", rows[0]["explanation"])
+
+    @override_settings(
+        AI_RECOMMENDATION_PROVIDER="anthropic",
+        ANTHROPIC_API_KEY="test-key",
+        AI_PROVIDER_MAX_RETRIES=0,
+    )
+    @patch("apps.analytics.providers.url_request.urlopen")
+    def test_anthropic_provider_uses_response_payload(self, mock_urlopen):
+        class _Resp:
+            def __enter__(self_inner):
+                return self_inner
+
+            def __exit__(self_inner, exc_type, exc, tb):
+                return False
+
+            def read(self_inner):
+                return (
+                    b'{"content":[{"type":"text","text":"{\\"recommendations\\":[{\\"name\\":\\"Berry Burst\\",\\"explanation\\":\\"AI tuned for bright citrus balance.\\"}]}"}]}'
+                )
+
+        mock_urlopen.return_value = _Resp()
+        rows = recommend_drinks_for_user(self.customer, limit=2)
+        self.assertGreaterEqual(len(rows), 1)
+        target = next((row for row in rows if row["name"] == "Berry Burst"), rows[0])
+        self.assertIn("AI tuned", target["explanation"])
+
+    @override_settings(
+        AI_RECOMMENDATION_PROVIDER="anthropic",
+        ANTHROPIC_API_KEY="test-key",
+        AI_PROVIDER_MAX_RETRIES=0,
+    )
+    @patch("apps.analytics.providers.url_request.urlopen")
+    def test_anthropic_provider_falls_back_to_deterministic_on_error(self, mock_urlopen):
+        mock_urlopen.side_effect = url_error.URLError("timeout")
         rows = recommend_drinks_for_user(self.customer, limit=2)
         self.assertGreaterEqual(len(rows), 1)
         self.assertNotIn("[Mock external provider]", rows[0]["explanation"])

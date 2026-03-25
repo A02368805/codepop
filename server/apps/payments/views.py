@@ -10,6 +10,7 @@ from django.db import IntegrityError, transaction
 from django.db.models import Sum
 from django.http import HttpResponse, HttpResponseBadRequest, JsonResponse
 from django.shortcuts import get_object_or_404, redirect
+from django.urls import reverse
 from django.utils.decorators import method_decorator
 from django.views import View
 from django.views.decorators.csrf import csrf_exempt
@@ -27,6 +28,7 @@ from .services import (
     PaymentServiceError,
     create_payment_intent_for_order,
     finalize_stripe_checkout,
+    finalize_stripe_payment_intent,
     record_payment_failure,
     record_refund,
 )
@@ -168,6 +170,45 @@ class PaymentIntentCreateView(View):
         return JsonResponse(payload)
 
 
+class PaymentStatusView(View):
+    def get(self, request, *args, **kwargs):
+        order_code = request.GET.get("order_code", "").strip()
+        if not order_code:
+            return HttpResponseBadRequest("Missing order code.")
+
+        order = get_object_or_404(
+            Order.objects.select_related("payment_transaction"),
+            public_order_code=order_code,
+        )
+        if not user_can_view_order(request.user, order, session=request.session):
+            return JsonResponse(
+                {"error": "This order is outside your access scope."},
+                status=403,
+            )
+
+        payment = getattr(order, "payment_transaction", None)
+        is_finalized = order.status in {
+            Order.Status.PAID,
+            Order.Status.QUEUED,
+            Order.Status.PREPARING,
+            Order.Status.READY,
+            Order.Status.PICKED_UP,
+        }
+        return JsonResponse(
+            {
+                "order_code": order.public_order_code,
+                "order_status": order.status,
+                "payment_status": payment.status if payment else "none",
+                "finalized": is_finalized,
+                "redirect_url": (
+                    reverse("orders:confirmation", args=[order.public_order_code])
+                    if is_finalized
+                    else ""
+                ),
+            }
+        )
+
+
 @method_decorator(csrf_exempt, name="dispatch")
 class StripeWebhookView(View):
     def post(self, request, *args, **kwargs):
@@ -201,6 +242,27 @@ class StripeWebhookView(View):
                     finalize_stripe_checkout(order_code=order_code, session_id=session_id)
                 except Exception:
                     return HttpResponse(status=200)
+        elif event_type == "payment_intent.succeeded":
+            order_code = data_object.get("metadata", {}).get("order_code", "")
+            payment_intent_id = data_object.get("id", "")
+            if order_code and payment_intent_id:
+                try:
+                    finalize_stripe_payment_intent(
+                        order_code=order_code,
+                        payment_intent_id=payment_intent_id,
+                    )
+                except Exception:
+                    return HttpResponse(status=200)
+        elif event_type == "payment_intent.payment_failed":
+            order_code = data_object.get("metadata", {}).get("order_code", "")
+            failure_message = (
+                (data_object.get("last_payment_error") or {}).get("message")
+                or "Stripe payment intent failed."
+            )
+            if order_code:
+                order = Order.objects.filter(public_order_code=order_code).first()
+                if order and order.status == Order.Status.PAYMENT_PENDING:
+                    record_payment_failure(order, reason=failure_message)
         elif event_type == "checkout.session.expired":
             order_code = data_object.get("metadata", {}).get("order_code", "")
             if order_code:

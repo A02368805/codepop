@@ -690,6 +690,14 @@ h3 {
     display: block;
 }
 
+#card-element {
+    border: 1px solid var(--border-soft);
+    border-radius: 0.7rem;
+    background: var(--surface-card);
+    padding: 0.8rem;
+    min-height: 44px;
+}
+
 .footer {
     margin-top: 1.5rem;
     padding: 1.2rem 1.4rem 0;

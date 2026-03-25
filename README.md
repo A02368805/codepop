@@ -142,9 +142,19 @@ Seed/demo variables:
 Payment variables:
 
 - `PAYMENT_MODE` with `mock` or `stripe`
+- `PAYMENT_CHECKOUT_FLOW` with `hosted` or `elements`
 - `STRIPE_SECRET_KEY`
 - `STRIPE_PUBLISHABLE_KEY`
 - `STRIPE_WEBHOOK_SECRET`
+
+AI provider variables:
+
+- `AI_RECOMMENDATION_PROVIDER` with `deterministic`, `mock-external`, or `anthropic`
+- `ANTHROPIC_API_KEY`
+- `ANTHROPIC_MODEL`
+- `ANTHROPIC_API_BASE_URL`
+- `AI_PROVIDER_TIMEOUT_SECONDS`
+- `AI_PROVIDER_MAX_RETRIES`
 
 Location and notification hook variables:
 
@@ -157,7 +167,18 @@ Location and notification hook variables:
 
 - `PAYMENT_MODE=mock` is the safest default for demos and local setup. Server-side pricing still runs, but checkout completes immediately without an external processor.
 - `PAYMENT_MODE=stripe` enables the Stripe checkout boundary and webhook route. Add real Stripe credentials before using it.
+- `PAYMENT_CHECKOUT_FLOW=hosted` uses Stripe-hosted checkout redirect.
+- `PAYMENT_CHECKOUT_FLOW=elements` keeps card entry inside the app with Stripe Elements + PaymentIntents.
 - Client-submitted totals are never trusted. Order pricing is recalculated on the server before payment records are written.
+
+### Keys-Last Activation Checklist
+
+1. Keep defaults during development: `PAYMENT_MODE=mock`, `AI_RECOMMENDATION_PROVIDER=deterministic`.
+2. Set Stripe test credentials and webhook secret.
+3. Switch `PAYMENT_MODE=stripe` and choose `PAYMENT_CHECKOUT_FLOW=elements` (or `hosted`).
+4. Set Anthropic settings and switch `AI_RECOMMENDATION_PROVIDER=anthropic`.
+5. Run focused tests, then perform one checkout smoke test and one recommendation smoke test.
+6. Run `python manage.py prelive_integrations_check` to validate launch configuration.
 
 ## Seed Data And Demo Credentials
 
@@ -258,6 +279,13 @@ Run Django checks:
 ```bash
 cd server
 ../.venv/bin/python manage.py check
+```
+
+Run integrations readiness check:
+
+```bash
+cd server
+../.venv/bin/python manage.py prelive_integrations_check --allow-warnings
 ```
 
 Run the dev server:

@@ -68,6 +68,7 @@ from .selectors import (
     user_can_view_order,
 )
 from .services import create_order, get_refund_eligibility, transition_order_status
+from django.conf import settings
 
 
 def _parse_date(value):
@@ -407,6 +408,8 @@ class CheckoutView(CustomerOrderingRequiredMixin, TemplateView):
                 "form": kwargs.get("form") or CheckoutForm(),
                 "payment_mode": get_payment_mode(),
                 "payment_mode_is_mock": get_payment_mode() == PaymentMode.MOCK,
+                "payment_checkout_flow": getattr(settings, "PAYMENT_CHECKOUT_FLOW", "hosted"),
+                "stripe_publishable_key": getattr(settings, "STRIPE_PUBLISHABLE_KEY", ""),
             }
         )
         return context
@@ -558,6 +561,8 @@ class OrderDetailView(TemplateView):
                 "cancel_reason": refund_message,
                 "payment_mode": get_payment_mode(),
                 "payment_mode_is_mock": get_payment_mode() == PaymentMode.MOCK,
+                "payment_checkout_flow": getattr(settings, "PAYMENT_CHECKOUT_FLOW", "hosted"),
+                "stripe_publishable_key": getattr(settings, "STRIPE_PUBLISHABLE_KEY", ""),
             }
         )
         return context

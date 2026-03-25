@@ -105,13 +105,44 @@
                 <div><dt>Refunded</dt><dd>${{ payment_transaction.amount_refunded }}</dd></div>
                 <div><dt>Failure</dt><dd>{{ payment_transaction.failure_reason|default:"-" }}</dd></div>
             </dl>
+            {% if payment_transaction.status == "pending" and payment_mode == "stripe" and payment_checkout_flow == "elements" and stripe_publishable_key %}
+                <div
+                    id="stripe-elements-panel"
+                    data-endpoint="{% url 'payments:payment-intent' %}"
+                    data-status-endpoint="{% url 'payments:payment-status' %}"
+                    data-order-code="{{ order.public_order_code }}"
+                    data-publishable-key="{{ stripe_publishable_key }}"
+                >
+                    <div id="card-element" class="field"></div>
+                    <div class="action-row">
+                        <button class="button button--primary" type="button" id="stripe-pay-btn">Pay now</button>
+                    </div>
+                    <p class="muted" id="stripe-pay-status">Enter your card details to complete checkout.</p>
+                </div>
+            {% endif %}
         {% else %}
             <p class="muted">No payment transaction record exists yet.</p>
             {% if order.status == "pricing_validated" or order.status == "payment_pending" %}
+                {% if payment_mode == "stripe" and payment_checkout_flow == "elements" and stripe_publishable_key %}
+                    <div
+                        id="stripe-elements-panel"
+                        data-endpoint="{% url 'payments:payment-intent' %}"
+                        data-status-endpoint="{% url 'payments:payment-status' %}"
+                        data-order-code="{{ order.public_order_code }}"
+                        data-publishable-key="{{ stripe_publishable_key }}"
+                    >
+                        <div id="card-element" class="field"></div>
+                        <div class="action-row">
+                            <button class="button button--primary" type="button" id="stripe-pay-btn">Pay now</button>
+                        </div>
+                        <p class="muted" id="stripe-pay-status">Enter your card details to complete checkout.</p>
+                    </div>
+                {% else %}
                 <div id="payment-intent-panel" data-endpoint="{% url 'payments:payment-intent' %}" data-order-code="{{ order.public_order_code }}">
                     <button class="button button--ghost" type="button" id="payment-intent-btn">Generate payment intent</button>
                     <p class="muted" id="payment-intent-status">Creates a provider intent so checkout can continue with the payment processor.</p>
                 </div>
+                {% endif %}
             {% endif %}
         {% endif %}
     </div>

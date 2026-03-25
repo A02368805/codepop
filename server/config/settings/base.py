@@ -147,6 +147,7 @@ STRIPE_SECRET_KEY = os.getenv("STRIPE_SECRET_KEY", "")
 STRIPE_PUBLISHABLE_KEY = os.getenv("STRIPE_PUBLISHABLE_KEY", "")
 STRIPE_WEBHOOK_SECRET = os.getenv("STRIPE_WEBHOOK_SECRET", "")
 PAYMENT_MODE = os.getenv("PAYMENT_MODE", "mock")
+PAYMENT_CHECKOUT_FLOW = os.getenv("PAYMENT_CHECKOUT_FLOW", "hosted")
 
 MAPBOX_PUBLIC_TOKEN = os.getenv("MAPBOX_PUBLIC_TOKEN", "")
 FCM_SERVER_KEY = os.getenv("FCM_SERVER_KEY", "")
@@ -159,6 +160,13 @@ CELERY_TASK_ALWAYS_EAGER = env_bool("CELERY_TASK_ALWAYS_EAGER", True)
 CELERY_TASK_TIME_LIMIT = int(os.getenv("CELERY_TASK_TIME_LIMIT", "300"))
 
 AI_RECOMMENDATION_PROVIDER = os.getenv("AI_RECOMMENDATION_PROVIDER", "deterministic")
+ANTHROPIC_API_KEY = os.getenv("ANTHROPIC_API_KEY", "")
+ANTHROPIC_MODEL = os.getenv("ANTHROPIC_MODEL", "claude-3-5-haiku-latest")
+ANTHROPIC_API_BASE_URL = os.getenv(
+    "ANTHROPIC_API_BASE_URL", "https://api.anthropic.com"
+)
+AI_PROVIDER_TIMEOUT_SECONDS = float(os.getenv("AI_PROVIDER_TIMEOUT_SECONDS", "8"))
+AI_PROVIDER_MAX_RETRIES = int(os.getenv("AI_PROVIDER_MAX_RETRIES", "2"))
 
 EMAIL_BACKEND = os.getenv(
     "EMAIL_BACKEND", "django.core.mail.backends.console.EmailBackend"
