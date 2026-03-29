@@ -95,6 +95,4 @@ class SyncResolveConflictView(RoleRequiredMixin, View):
             conflict.resolution_status = resolution_status
             conflict.save(update_fields=["resolution_status"])
 
-        return HttpResponse(
-            '<div class="alert alert-info">Conflict Log</div>'
-        )
+        return HttpResponse('<div class="alert alert-info">Conflict Log</div>')

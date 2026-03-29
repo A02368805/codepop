@@ -78,9 +78,7 @@ class SyncProjectionState(models.Model):
         GLOBAL = "global", "Global"
 
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    receiver_scope_type = models.CharField(
-        max_length=24, choices=ReceiverScope.choices
-    )
+    receiver_scope_type = models.CharField(max_length=24, choices=ReceiverScope.choices)
     receiver_scope_key = models.CharField(max_length=80)
     receiver_label = models.CharField(max_length=160)
     aggregate_type = models.CharField(max_length=80)
@@ -136,9 +134,7 @@ class SyncConflictLog(models.Model):
         IGNORED = "ignored", "Ignored"
 
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    receiver_scope_type = models.CharField(
-        max_length=24, choices=ReceiverScope.choices
-    )
+    receiver_scope_type = models.CharField(max_length=24, choices=ReceiverScope.choices)
     receiver_scope_key = models.CharField(max_length=80)
     receiver_label = models.CharField(max_length=160)
     aggregate_type = models.CharField(max_length=80)

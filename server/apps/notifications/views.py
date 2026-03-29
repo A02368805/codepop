@@ -80,7 +80,9 @@ class NotificationRegisterDeviceView(LoginRequiredMixin, View):
     def post(self, request, *args, **kwargs):
         device_token = request.POST.get("device_token")
         platform = request.POST.get("platform", DeviceRegistration.Platform.WEB)
-        push_provider = request.POST.get("push_provider", DeviceRegistration.PushProvider.WEB_PUSH)
+        push_provider = request.POST.get(
+            "push_provider", DeviceRegistration.PushProvider.WEB_PUSH
+        )
         device_label = request.POST.get("device_label", "")
 
         DeviceRegistration.objects.update_or_create(

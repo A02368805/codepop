@@ -107,7 +107,9 @@ class PromptFourIntegrationTests(TestCase):
         # Process pending sync events to dispatch notifications
         process_pending_outbox_events(limit=25)
         # Manually trigger recommendation task (should have been triggered by transaction.on_commit)
-        refresh_account_recommendations(str(self.customer.pk), reason="Based on your latest order")
+        refresh_account_recommendations(
+            str(self.customer.pk), reason="Based on your latest order"
+        )
 
         self.assertTrue(
             Notification.objects.filter(

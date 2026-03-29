@@ -17,5 +17,9 @@ urlpatterns = [
         name="mark-read",
     ),
     path("mark-all-read/", NotificationMarkAllReadView.as_view(), name="mark-all-read"),
-    path("register-device/", NotificationRegisterDeviceView.as_view(), name="register-device"),
+    path(
+        "register-device/",
+        NotificationRegisterDeviceView.as_view(),
+        name="register-device",
+    ),
 ]
