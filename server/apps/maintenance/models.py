@@ -113,6 +113,7 @@ class RepairAssignment(models.Model):
     completed_at = models.DateTimeField(null=True, blank=True)
     created_by_system = models.BooleanField(default=True)
     route_batch_key = models.CharField(max_length=64, blank=True)
+    blocker_summary = models.CharField(max_length=255, blank=True)
     notes = models.TextField(blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
 

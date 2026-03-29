@@ -123,8 +123,8 @@ def create_repair_assignment(
         priority_score=priority_score,
         scheduled_for=scheduled_for,
         created_by_system=created_by_system,
-        notes=notes,
         blocker_summary="",
+        notes=notes,
     )
     create_audit_log(
         actor=assigned_to if not created_by_system else None,
