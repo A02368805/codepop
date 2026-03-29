@@ -124,6 +124,7 @@ def create_repair_assignment(
         scheduled_for=scheduled_for,
         created_by_system=created_by_system,
         notes=notes,
+        blocker_summary="",
     )
     create_audit_log(
         actor=assigned_to if not created_by_system else None,

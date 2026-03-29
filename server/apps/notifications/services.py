@@ -15,6 +15,7 @@ def create_notification(*, user, title, message, category=Notification.Category.
         title=title,
         message=message,
         category=category,
+        delivery_channel=Notification.DeliveryChannel.IN_APP,
     )
     from .tasks import dispatch_notification_async
 
