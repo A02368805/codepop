@@ -3,7 +3,7 @@ from django.urls import path
 from .views import (
     NotificationMarkAllReadView,
     NotificationMarkReadView,
-    NotificationRegisterDeviceView,
+    NotificationDeviceRegistrationView,
     NotificationWorkspaceView,
 )
 
@@ -19,7 +19,7 @@ urlpatterns = [
     path("mark-all-read/", NotificationMarkAllReadView.as_view(), name="mark-all-read"),
     path(
         "register-device/",
-        NotificationRegisterDeviceView.as_view(),
+        NotificationDeviceRegistrationView.as_view(),
         name="register-device",
     ),
 ]
