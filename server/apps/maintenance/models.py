@@ -87,8 +87,11 @@ class MachineStatusEvent(models.Model):
 class RepairAssignment(models.Model):
     class Status(models.TextChoices):
         SCHEDULED = "scheduled", "Scheduled"
+        ACKNOWLEDGED = "acknowledged", "Acknowledged"
         IN_PROGRESS = "in_progress", "In Progress"
+        BLOCKED = "blocked", "Blocked"
         COMPLETED = "completed", "Completed"
+        CLOSED = "closed", "Closed"
         CANCELED = "canceled", "Canceled"
 
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
@@ -110,12 +113,18 @@ class RepairAssignment(models.Model):
         max_length=24, choices=Status.choices, default=Status.SCHEDULED
     )
     scheduled_for = models.DateTimeField(null=True, blank=True)
+    acknowledged_at = models.DateTimeField(null=True, blank=True)
+    started_at = models.DateTimeField(null=True, blank=True)
+    blocked_at = models.DateTimeField(null=True, blank=True)
     completed_at = models.DateTimeField(null=True, blank=True)
+    closed_at = models.DateTimeField(null=True, blank=True)
     created_by_system = models.BooleanField(default=True)
     route_batch_key = models.CharField(max_length=64, blank=True)
     blocker_summary = models.CharField(max_length=255, blank=True)
+    follow_up_required = models.BooleanField(default=False)
     notes = models.TextField(blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
         ordering = ("scheduled_for", "-priority_score")

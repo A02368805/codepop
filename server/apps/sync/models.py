@@ -72,14 +72,14 @@ class AuditLog(models.Model):
 
 
 class SyncProjectionState(models.Model):
-    class ReceiverScopeType(models.TextChoices):
+    class ReceiverScope(models.TextChoices):
         REGION = "region", "Region"
         STORE = "store", "Store"
         GLOBAL = "global", "Global"
 
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     receiver_scope_type = models.CharField(
-        max_length=24, choices=ReceiverScopeType.choices
+        max_length=24, choices=ReceiverScope.choices
     )
     receiver_scope_key = models.CharField(max_length=80)
     receiver_label = models.CharField(max_length=160)
@@ -119,7 +119,7 @@ class SyncProjectionState(models.Model):
 
 
 class SyncConflictLog(models.Model):
-    class ReceiverScopeType(models.TextChoices):
+    class ReceiverScope(models.TextChoices):
         REGION = "region", "Region"
         STORE = "store", "Store"
         GLOBAL = "global", "Global"
@@ -137,7 +137,7 @@ class SyncConflictLog(models.Model):
 
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     receiver_scope_type = models.CharField(
-        max_length=24, choices=ReceiverScopeType.choices
+        max_length=24, choices=ReceiverScope.choices
     )
     receiver_scope_key = models.CharField(max_length=80)
     receiver_label = models.CharField(max_length=160)
