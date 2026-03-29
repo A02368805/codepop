@@ -1,9 +1,9 @@
 from django.urls import path
 
 from .views import (
+    NotificationDeviceRegistrationView,
     NotificationMarkAllReadView,
     NotificationMarkReadView,
-    NotificationDeviceRegistrationView,
     NotificationWorkspaceView,
 )
 
