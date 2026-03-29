@@ -5,7 +5,7 @@ from decimal import Decimal
 from uuid import UUID
 
 from apps.notifications.models import Notification
-from apps.notifications.services import notify_store_roles, notify_user
+from apps.notifications.services import notify_region_roles, notify_store_roles, notify_user
 from apps.orders.models import Order
 from apps.supply_hubs.models import SupplyTransfer
 from apps.users.models import User
@@ -123,18 +123,34 @@ def _dispatch_outbox_event(event):
             )
     elif event.event_type == "transfer.approved":
         transfer = (
-            SupplyTransfer.objects.select_related("requested_by", "destination_store")
+            SupplyTransfer.objects.select_related("requested_by", "destination_store", "destination_store__region")
             .filter(pk=event.aggregate_id)
             .first()
         )
         if transfer:
-            notify_user(
+            # Notify the requester
+            notif = notify_user(
                 user=transfer.requested_by,
                 title="Transfer approved",
                 message=f"Transfer to {transfer.destination_store.name} was approved.",
                 category=Notification.Category.TASK,
             )
-    elif event.event_type in {"machine.out-of-order", "machine.error"}:
+            if notif:
+                notif.notification_type = Notification.NotificationType.TRANSFER_UPDATE
+                notif.save(update_fields=["notification_type"])
+
+            # Notify managers and logistics in destination store's region
+            notifications = notify_region_roles(
+                region=transfer.destination_store.region,
+                roles=[User.Role.LOGISTICS_MANAGER],
+                title="Transfer approved",
+                message=f"Transfer to {transfer.destination_store.name} was approved by {transfer.approved_by.email}.",
+                category=Notification.Category.TASK,
+            )
+            for notif in notifications:
+                notif.notification_type = Notification.NotificationType.TRANSFER_UPDATE
+                notif.save(update_fields=["notification_type"])
+    elif event.event_type in {"machine.out-of-order", "machine.error", "machine.warning"}:
         aggregate_store_id = event.source_scope.get("store_id")
         from apps.stores.models import Store
 
@@ -142,13 +158,17 @@ def _dispatch_outbox_event(event):
             Store.objects.select_related("region").filter(pk=aggregate_store_id).first()
         )
         if store:
-            notify_store_roles(
+            notifications = notify_store_roles(
                 store=store,
-                roles=[User.Role.MANAGER, User.Role.ADMIN],
+                roles=[User.Role.MANAGER, User.Role.REPAIR_STAFF, User.Role.ADMIN],
                 title="Machine escalation",
                 message=f"{store.name} has a machine in {event.event_type.split('.')[-1]} status.",
                 category=Notification.Category.ALERT,
             )
+            # Update notification_type for machine alerts
+            for notification in notifications:
+                notification.notification_type = Notification.NotificationType.MACHINE_ALERT
+                notification.save(update_fields=["notification_type"])
 
 
 def process_outbox_event(event):
@@ -198,42 +218,43 @@ def process_outbox_event(event):
         event.next_attempt_at = None
         event.save(update_fields=["status", "next_attempt_at", "updated_at"])
 
-        # Create or update projection state records
-        region_code = event.source_scope.get("region_code", "")
-        store_id = event.source_scope.get("store_id", "")
+        # Only update projections if this is not a stale event
+        if not is_stale:
+            # Create or update projection state records
+            region_code = event.source_scope.get("region_code", "")
+            store_id = event.source_scope.get("store_id", "")
 
-        if region_code:
+            if region_code:
+                SyncProjectionState.objects.update_or_create(
+                    aggregate_type=event.aggregate_type,
+                    aggregate_id=event.aggregate_id,
+                    receiver_scope_type=SyncProjectionState.ReceiverScope.REGION,
+                    receiver_scope_key=region_code,
+                    defaults={
+                        "receiver_label": f"Region {region_code}",
+                        "last_event_type": event.event_type,
+                        "last_entity_version": event.entity_version,
+                        "source_scope": event.source_scope,
+                        "payload_snapshot": event.payload,
+                    },
+                )
+
+            # Create global projection
             SyncProjectionState.objects.update_or_create(
                 aggregate_type=event.aggregate_type,
                 aggregate_id=event.aggregate_id,
-                receiver_scope_type=SyncProjectionState.ReceiverScope.REGION,
-                receiver_scope_key=region_code,
+                receiver_scope_type=SyncProjectionState.ReceiverScope.GLOBAL,
+                receiver_scope_key="super_admin",
                 defaults={
-                    "receiver_label": f"Region {region_code}",
+                    "receiver_label": "Global Administrator",
                     "last_event_type": event.event_type,
                     "last_entity_version": event.entity_version,
                     "source_scope": event.source_scope,
                     "payload_snapshot": event.payload,
                 },
             )
-
-        # Create global projection
-        SyncProjectionState.objects.update_or_create(
-            aggregate_type=event.aggregate_type,
-            aggregate_id=event.aggregate_id,
-            receiver_scope_type=SyncProjectionState.ReceiverScope.GLOBAL,
-            receiver_scope_key="super_admin",
-            defaults={
-                "receiver_label": "Global Administrator",
-                "last_event_type": event.event_type,
-                "last_entity_version": event.entity_version,
-                "source_scope": event.source_scope,
-                "payload_snapshot": event.payload,
-            },
-        )
-
-        # If this was a stale event, log it
-        if is_stale:
+        else:
+            # If this was a stale event, log it
             SyncConflictLog.objects.create(
                 receiver_scope_type=SyncConflictLog.ReceiverScope.GLOBAL,
                 receiver_scope_key="super_admin",
