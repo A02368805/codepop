@@ -13,7 +13,7 @@ from django.db import transaction
 from django.forms.models import model_to_dict
 from django.utils import timezone
 
-from .models import AuditLog, SyncOutboxEvent
+from .models import AuditLog, SyncConflictLog, SyncOutboxEvent, SyncProjectionState
 
 
 def _serialize_value(value):
@@ -155,16 +155,97 @@ def process_outbox_event(event):
     if event.status == SyncOutboxEvent.Status.DISPATCHED:
         return event
 
+    # Check for invalid scope (empty source_scope)
+    if not event.source_scope:
+        event.status = SyncOutboxEvent.Status.FAILED
+        event.last_error = "Invalid scope: source_scope is empty"
+        event.save(update_fields=["status", "last_error", "updated_at"])
+        SyncConflictLog.objects.create(
+            receiver_scope_type=SyncConflictLog.ReceiverScope.GLOBAL,
+            receiver_scope_key="super_admin",
+            receiver_label="Global Administrator",
+            aggregate_type=event.aggregate_type,
+            aggregate_id=event.aggregate_id,
+            conflict_type=SyncConflictLog.ConflictType.INVALID_SCOPE,
+            message="Event has empty source_scope",
+            details={"event_type": event.event_type},
+            outbox_event=event,
+        )
+        create_audit_log(
+            action="sync.outbox_processed",
+            instance=event,
+            after=serialize_instance(event),
+        )
+        return event
+
     before = serialize_instance(event)
     event.status = SyncOutboxEvent.Status.PROCESSING
     event.attempt_count += 1
     event.last_error = ""
     event.save(update_fields=["status", "attempt_count", "last_error", "updated_at"])
+
+    # Check if this is a stale event
+    existing_projection = SyncProjectionState.objects.filter(
+        aggregate_type=event.aggregate_type,
+        aggregate_id=event.aggregate_id,
+    ).order_by("-last_entity_version").first()
+
+    is_stale = existing_projection and event.entity_version <= existing_projection.last_entity_version
+
     try:
         _dispatch_outbox_event(event)
         event.status = SyncOutboxEvent.Status.DISPATCHED
         event.next_attempt_at = None
         event.save(update_fields=["status", "next_attempt_at", "updated_at"])
+
+        # Create or update projection state records
+        region_code = event.source_scope.get("region_code", "")
+        store_id = event.source_scope.get("store_id", "")
+
+        if region_code:
+            SyncProjectionState.objects.update_or_create(
+                aggregate_type=event.aggregate_type,
+                aggregate_id=event.aggregate_id,
+                receiver_scope_type=SyncProjectionState.ReceiverScope.REGION,
+                receiver_scope_key=region_code,
+                defaults={
+                    "receiver_label": f"Region {region_code}",
+                    "last_event_type": event.event_type,
+                    "last_entity_version": event.entity_version,
+                    "source_scope": event.source_scope,
+                    "payload_snapshot": event.payload,
+                },
+            )
+
+        # Create global projection
+        SyncProjectionState.objects.update_or_create(
+            aggregate_type=event.aggregate_type,
+            aggregate_id=event.aggregate_id,
+            receiver_scope_type=SyncProjectionState.ReceiverScope.GLOBAL,
+            receiver_scope_key="super_admin",
+            defaults={
+                "receiver_label": "Global Administrator",
+                "last_event_type": event.event_type,
+                "last_entity_version": event.entity_version,
+                "source_scope": event.source_scope,
+                "payload_snapshot": event.payload,
+            },
+        )
+
+        # If this was a stale event, log it
+        if is_stale:
+            SyncConflictLog.objects.create(
+                receiver_scope_type=SyncConflictLog.ReceiverScope.GLOBAL,
+                receiver_scope_key="super_admin",
+                receiver_label="Global Administrator",
+                aggregate_type=event.aggregate_type,
+                aggregate_id=event.aggregate_id,
+                conflict_type=SyncConflictLog.ConflictType.STALE_EVENT,
+                resolution_status=SyncConflictLog.ResolutionStatus.IGNORED,
+                message=f"Event version {event.entity_version} is stale (current version: {existing_projection.last_entity_version})",
+                details={"event_type": event.event_type},
+                outbox_event=event,
+            )
     except Exception as exc:  # pragma: no cover - defensive
         event.status = SyncOutboxEvent.Status.FAILED
         event.last_error = str(exc)

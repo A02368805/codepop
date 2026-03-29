@@ -1,11 +1,12 @@
 from apps.users.models import User
 from apps.users.permissions import RoleRequiredMixin
 from django.http import HttpResponse
+from django.shortcuts import get_object_or_404
 from django.template.loader import render_to_string
 from django.views import View
 from django.views.generic import TemplateView
 
-from .models import SyncOutboxEvent
+from .models import SyncConflictLog, SyncOutboxEvent
 from .services import retry_failed_outbox_events
 from .tasks import process_pending_outbox_events_async
 
@@ -78,3 +79,22 @@ class SyncRetryFailedView(RoleRequiredMixin, View):
     def post(self, request, *args, **kwargs):
         retry_failed_outbox_events(limit=40)
         return _render_sync_panel(request)
+
+
+class SyncResolveConflictView(RoleRequiredMixin, View):
+    allowed_roles = (
+        User.Role.LOGISTICS_MANAGER,
+        User.Role.SUPER_ADMIN,
+    )
+
+    def post(self, request, *args, **kwargs):
+        conflict = get_object_or_404(SyncConflictLog, pk=kwargs["conflict_id"])
+        resolution_status = request.POST.get("resolution_status")
+
+        if resolution_status:
+            conflict.resolution_status = resolution_status
+            conflict.save(update_fields=["resolution_status"])
+
+        return HttpResponse(
+            '<div class="alert alert-info">Conflict Log</div>'
+        )
