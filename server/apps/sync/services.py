@@ -77,13 +77,8 @@ def create_audit_log(
 
 def _enqueue_outbox_processing():
     from .tasks import process_pending_outbox_events_async
-    from django.conf import settings
 
-    # In test environments, process synchronously
-    if getattr(settings, "CELERY_TASK_ALWAYS_EAGER", False):
-        process_pending_outbox_events(limit=25)
-    else:
-        process_pending_outbox_events_async.delay(25)
+    process_pending_outbox_events_async.delay(25)
 
 
 def _dispatch_outbox_event(event):
