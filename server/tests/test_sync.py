@@ -78,9 +78,14 @@ class SyncWorkspaceTests(TestCase):
         return transfer
 
     def test_transfer_events_create_receiver_projections(self):
+        from apps.sync.services import process_pending_outbox_events
+
         transfer = self._create_transfer()
         with self.captureOnCommitCallbacks(execute=True):
             approve_transfer(transfer, approver=self.logistics)
+
+        # Process pending outbox events to create projections
+        process_pending_outbox_events(limit=25)
 
         self.assertTrue(
             SyncProjectionState.objects.filter(
@@ -102,9 +107,14 @@ class SyncWorkspaceTests(TestCase):
         )
 
     def test_stale_sync_event_is_ignored_and_logged(self):
+        from apps.sync.services import process_pending_outbox_events
+
         transfer = self._create_transfer()
         with self.captureOnCommitCallbacks(execute=True):
             approve_transfer(transfer, approver=self.logistics)
+
+        # Process pending outbox events to create projections
+        process_pending_outbox_events(limit=25)
 
         stale_event = SyncOutboxEvent.objects.create(
             event_type="transfer.requested",

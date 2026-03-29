@@ -14,6 +14,7 @@ def create_notification(
     message,
     category=Notification.Category.INFO,
     notification_type=None,
+    payload_json=None,
 ):
     if user is None:
         return None
@@ -24,6 +25,7 @@ def create_notification(
         category=category,
         notification_type=notification_type or Notification.NotificationType.GENERIC,
         delivery_channel=Notification.DeliveryChannel.IN_APP,
+        payload_json=payload_json or {},
     )
     from .tasks import dispatch_notification_async
 
@@ -40,6 +42,7 @@ def notify_user(
     message,
     category=Notification.Category.INFO,
     notification_type=None,
+    payload_json=None,
 ):
     return create_notification(
         user=user,
@@ -47,6 +50,7 @@ def notify_user(
         message=message,
         category=category,
         notification_type=notification_type,
+        payload_json=payload_json,
     )
 
 
@@ -57,6 +61,7 @@ def notify_users(
     message,
     category=Notification.Category.INFO,
     notification_type=None,
+    payload_json=None,
 ):
     notifications = []
     for user in users.distinct():
@@ -66,6 +71,7 @@ def notify_users(
             message=message,
             category=category,
             notification_type=notification_type,
+            payload_json=payload_json,
         )
         if notification is not None:
             notifications.append(notification)
@@ -96,6 +102,7 @@ def notify_store_roles(
     message,
     category=Notification.Category.ALERT,
     notification_type=None,
+    payload_json=None,
 ):
     return notify_users(
         users=users_for_store_roles(store, roles),
@@ -103,6 +110,7 @@ def notify_store_roles(
         message=message,
         category=category,
         notification_type=notification_type,
+        payload_json=payload_json,
     )
 
 
@@ -114,6 +122,7 @@ def notify_region_roles(
     message,
     category=Notification.Category.ALERT,
     notification_type=None,
+    payload_json=None,
 ):
     return notify_users(
         users=users_for_region_roles(region, roles),
@@ -121,4 +130,5 @@ def notify_region_roles(
         message=message,
         category=category,
         notification_type=notification_type,
+        payload_json=payload_json,
     )
