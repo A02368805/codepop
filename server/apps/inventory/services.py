@@ -480,7 +480,6 @@ def approve_transfer(transfer, *, approver, approved_quantities=None):
         instance=transfer,
         payload={"status": transfer.status},
         source_scope={"region_code": transfer.destination_store.region.code},
-        entity_version=2,
     )
     create_audit_log(
         actor=approver,
@@ -528,7 +527,6 @@ def reserve_transfer_inventory(transfer):
         instance=transfer,
         payload={"status": transfer.status},
         source_scope={"region_code": transfer.destination_store.region.code},
-        entity_version=3,
     )
     create_audit_log(
         action="transfer.reserved",
@@ -567,7 +565,6 @@ def ship_transfer(transfer):
         instance=transfer,
         payload={"status": transfer.status},
         source_scope={"region_code": transfer.destination_store.region.code},
-        entity_version=4,
     )
     create_audit_log(
         action="transfer.shipped",
@@ -592,7 +589,6 @@ def deliver_transfer(transfer):
         instance=transfer,
         payload={"status": transfer.status},
         source_scope={"region_code": transfer.destination_store.region.code},
-        entity_version=5,
     )
     create_audit_log(
         action="transfer.delivered",
@@ -633,7 +629,6 @@ def receive_transfer(transfer, *, actor=None):
         instance=transfer,
         payload={"status": transfer.status},
         source_scope={"region_code": transfer.destination_store.region.code},
-        entity_version=6,
     )
     create_audit_log(
         actor=actor,
