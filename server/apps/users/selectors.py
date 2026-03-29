@@ -127,17 +127,9 @@ def build_navigation(user) -> list[dict]:
         return items
 
     metadata = get_role_metadata(user.role)
-    unread_notifications = user.notifications.filter(is_read=False).count()
     items.append({"label": "Dashboard", "url": reverse(metadata["dashboard_route"])})
     for nav_item in metadata["navigation"]:
         items.append({"label": nav_item.label, "url": reverse(nav_item.route_name)})
-    items.append(
-        {
-            "label": "Notifications",
-            "url": reverse("notifications:index"),
-            "badge": unread_notifications,
-            "badge_id": "nav-notification-badge",
-        }
-    )
+    items.append({"label": "Notifications", "url": reverse("notifications:index")})
     items.append({"label": "Log out", "url": reverse("logout"), "method": "post"})
     return items

@@ -9,6 +9,11 @@ class Notification(models.Model):
         ALERT = "alert", "Alert"
         TASK = "task", "Task"
 
+    class DeliveryChannel(models.TextChoices):
+        IN_APP = "in_app", "In-App"
+        PUSH = "push", "Push"
+        EMAIL = "email", "Email"
+
     class NotificationType(models.TextChoices):
         GENERIC = "generic", "Generic"
         IMPORT_RESULT = "import_result", "Import Result"
@@ -16,11 +21,6 @@ class Notification(models.Model):
         ORDER_UPDATE = "order_update", "Order Update"
         REPAIR_ASSIGNMENT = "repair_assignment", "Repair Assignment"
         TRANSFER_UPDATE = "transfer_update", "Transfer Update"
-
-    class DeliveryChannel(models.TextChoices):
-        IN_APP = "in_app", "In-App"
-        PUSH = "push", "Push"
-        EMAIL = "email", "Email"
 
     class DeliveryStatus(models.TextChoices):
         PENDING = "pending", "Pending"
@@ -81,19 +81,17 @@ class DeviceRegistration(models.Model):
 
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     user = models.ForeignKey(
-        "users.User", related_name="notification_devices", on_delete=models.CASCADE
+        "users.User",
+        related_name="notification_devices",
+        on_delete=models.CASCADE,
     )
     device_token = models.CharField(max_length=255, unique=True)
     device_label = models.CharField(max_length=120, blank=True)
     platform = models.CharField(
-        max_length=16,
-        choices=Platform.choices,
-        default=Platform.WEB,
+        max_length=16, choices=Platform.choices, default=Platform.WEB
     )
     push_provider = models.CharField(
-        max_length=16,
-        choices=PushProvider.choices,
-        default=PushProvider.WEB_PUSH,
+        max_length=16, choices=PushProvider.choices, default=PushProvider.WEB_PUSH
     )
     is_active = models.BooleanField(default=True)
     created_at = models.DateTimeField(auto_now_add=True)
@@ -102,7 +100,9 @@ class DeviceRegistration(models.Model):
 
     class Meta:
         ordering = ("-last_seen_at",)
-        indexes = [models.Index(fields=("user", "is_active", "-last_seen_at"))]
+        indexes = [
+            models.Index(fields=("user", "is_active", "-last_seen_at")),
+        ]
 
     def __str__(self):
-        return f"{self.user.email} / {self.platform} / {self.push_provider}"
+        return f"{self.user.email} / {self.device_token[:20]}"

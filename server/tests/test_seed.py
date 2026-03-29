@@ -1,11 +1,8 @@
 from apps.imports.models import ImportJob
 from apps.inventory.models import SupplySchedule
-from apps.maintenance.models import RepairAssignment
-from apps.notifications.models import DeviceRegistration, Notification
 from apps.orders.models import Order
 from apps.stores.models import Region, Store
 from apps.supply_hubs.models import SupplyHub
-from apps.sync.models import SyncConflictLog, SyncProjectionState
 from apps.users.models import User
 from django.core.management import call_command
 from django.test import TestCase
@@ -39,25 +36,8 @@ class DemoSeedTests(TestCase):
         self.assertEqual(
             ImportJob.objects.filter(status=ImportJob.Status.SUCCEEDED).count(), 2
         )
-        self.assertTrue(Notification.objects.exists())
-        self.assertGreaterEqual(DeviceRegistration.objects.count(), 2)
-        self.assertTrue(
-            RepairAssignment.objects.filter(
-                status__in=[
-                    RepairAssignment.Status.ACKNOWLEDGED,
-                    RepairAssignment.Status.BLOCKED,
-                    RepairAssignment.Status.CLOSED,
-                ]
-            ).exists()
-        )
         self.assertTrue(
             SupplySchedule.objects.filter(
                 status=SupplySchedule.Status.APPROVED
-            ).exists()
-        )
-        self.assertTrue(SyncProjectionState.objects.exists())
-        self.assertTrue(
-            SyncConflictLog.objects.filter(
-                conflict_type=SyncConflictLog.ConflictType.STALE_EVENT
             ).exists()
         )

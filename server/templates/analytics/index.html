@@ -1,6 +1,6 @@
 {% extends "base/base.html" %}
 
-{% block title %}Analytics | CodePop{% endblock %}
+{% block title %}Analytics | FloatStack{% endblock %}
 
 {% block content %}
 <section class="panel">
@@ -44,14 +44,6 @@
             <p>Machine Issues</p>
             <strong>{{ machine_issues }}</strong>
         </article>
-        <article class="metric {% if sync_conflict_count %}metric--warning{% else %}metric--info{% endif %}">
-            <p>Open Sync Conflicts</p>
-            <strong>{{ sync_conflict_count }}</strong>
-        </article>
-        <article class="metric">
-            <p>Tracked Sync Projections</p>
-            <strong>{{ sync_projection_count }}</strong>
-        </article>
     </div>
 </section>
 
@@ -74,36 +66,6 @@
 </section>
 
 <section class="page-grid page-grid--sidebar">
-    <div class="panel">
-        <div class="section-heading">
-            <div>
-                <p class="eyebrow">Daily Revenue</p>
-                <h2>Recent ledger timeline</h2>
-            </div>
-        </div>
-        <table class="data-table">
-            <thead>
-                <tr>
-                    <th>Date</th>
-                    <th>Orders</th>
-                    <th>Gross</th>
-                    <th>Net</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for row in daily_revenue_rows %}
-                    <tr>
-                        <td>{{ row.posted_at__date }}</td>
-                        <td>{{ row.order_count }}</td>
-                        <td>${{ row.gross }}</td>
-                        <td>${{ row.net }}</td>
-                    </tr>
-                {% empty %}
-                    <tr><td colspan="4">No daily revenue has posted in this date range.</td></tr>
-                {% endfor %}
-            </tbody>
-        </table>
-    </div>
     <div class="panel">
         <div class="section-heading">
             <div>
@@ -191,95 +153,6 @@
     </table>
 </section>
 
-<section class="page-grid page-grid--sidebar">
-    <div class="panel">
-        <div class="section-heading">
-            <div>
-                <p class="eyebrow">Maintenance Summary</p>
-                <h2>Store-level repair and machine pressure</h2>
-            </div>
-        </div>
-        <table class="data-table">
-            <thead>
-                <tr>
-                    <th>Store</th>
-                    <th>Machine Issues</th>
-                    <th>Open Assignments</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for row in maintenance_summary_rows %}
-                    <tr>
-                        <td>{{ row.store__name }}</td>
-                        <td>{{ row.machine_issues }}</td>
-                        <td>{{ row.open_assignments }}</td>
-                    </tr>
-                {% empty %}
-                    <tr><td colspan="3">No maintenance pressure is recorded in this scope.</td></tr>
-                {% endfor %}
-            </tbody>
-        </table>
-    </div>
-
-    <div class="panel">
-        <div class="section-heading">
-            <div>
-                <p class="eyebrow">AI Draft Schedules</p>
-                <h2>Supply suggestions awaiting action</h2>
-            </div>
-        </div>
-        <div class="surface-list">
-            {% for schedule in draft_schedule_rows %}
-                <article class="list-card">
-                    <div class="list-card__main">
-                        <h3>{{ schedule.store.name }} · {{ schedule.inventory_item.name }}</h3>
-                        <p class="muted">{{ schedule.get_status_display }} · {{ schedule.recommended_quantity }}</p>
-                    </div>
-                </article>
-            {% empty %}
-                <div class="empty-state">
-                    <p>No AI-generated schedule drafts are visible in this scope.</p>
-                </div>
-            {% endfor %}
-        </div>
-    </div>
-</section>
-
-<section class="panel">
-    <div class="section-heading">
-        <div>
-            <p class="eyebrow">Order-Backed Financials</p>
-            <h2>Ledger entries tied to real orders</h2>
-        </div>
-    </div>
-    <table class="data-table">
-        <thead>
-            <tr>
-                <th>When</th>
-                <th>Order</th>
-                <th>Store</th>
-                <th>Entry</th>
-                <th>Gross</th>
-                <th>Net</th>
-            </tr>
-        </thead>
-        <tbody>
-            {% for entry in order_financial_rows %}
-                <tr>
-                    <td>{{ entry.posted_at|date:"M j, g:i A" }}</td>
-                    <td>{{ entry.order.public_order_code }}</td>
-                    <td>{{ entry.store.name }}</td>
-                    <td>{{ entry.get_entry_type_display }}</td>
-                    <td>${{ entry.gross_amount }}</td>
-                    <td>${{ entry.net_amount }}</td>
-                </tr>
-            {% empty %}
-                <tr><td colspan="6">No order-backed financial entries are visible in this range.</td></tr>
-            {% endfor %}
-        </tbody>
-    </table>
-</section>
-
 <section class="panel">
     <div class="section-heading">
         <div>
@@ -310,37 +183,6 @@
                 <tr>
                     <td colspan="5">No audit events available.</td>
                 </tr>
-            {% endfor %}
-        </tbody>
-    </table>
-</section>
-
-<section class="panel">
-    <div class="section-heading">
-        <div>
-            <p class="eyebrow">Recent Imports</p>
-            <h2>Operational uploads feeding analytics</h2>
-        </div>
-    </div>
-    <table class="data-table">
-        <thead>
-            <tr>
-                <th>File</th>
-                <th>Type</th>
-                <th>Status</th>
-                <th>Uploaded By</th>
-            </tr>
-        </thead>
-        <tbody>
-            {% for job in recent_imports %}
-                <tr>
-                    <td>{{ job.original_filename }}</td>
-                    <td>{{ job.get_import_type_display }}</td>
-                    <td>{{ job.get_status_display }}</td>
-                    <td>{{ job.uploaded_by.email|default:"system" }}</td>
-                </tr>
-            {% empty %}
-                <tr><td colspan="4">No recent imports are available in this scope.</td></tr>
             {% endfor %}
         </tbody>
     </table>

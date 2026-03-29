@@ -184,21 +184,6 @@ h3 {
     cursor: pointer;
 }
 
-.nav-badge {
-    min-width: 1.35rem;
-    padding: 0.1rem 0.38rem;
-    border-radius: 999px;
-    background: rgba(184, 59, 72, 0.12);
-    color: #8f4a61;
-    font-size: 0.78rem;
-    font-weight: 700;
-    text-align: center;
-}
-
-.nav-badge:empty {
-    display: none;
-}
-
 .content {
     display: grid;
     gap: 1.5rem;
@@ -636,18 +621,6 @@ h3 {
     align-items: flex-end;
 }
 
-.list-card__actions textarea,
-.panel-stack textarea {
-    width: 100%;
-    min-height: 88px;
-    border-radius: 16px;
-    border: 1px solid var(--line);
-    padding: 0.85rem 0.95rem;
-    background: white;
-    color: var(--ink);
-    resize: vertical;
-}
-
 .section-heading--tight {
     margin-bottom: 0.4rem;
 }
@@ -710,6 +683,19 @@ h3 {
 
 .htmx-indicator {
     display: none;
+}
+
+.htmx-request .htmx-indicator,
+.htmx-request.htmx-indicator {
+    display: block;
+}
+
+#card-element {
+    border: 1px solid var(--border-soft);
+    border-radius: 0.7rem;
+    background: var(--surface-card);
+    padding: 0.8rem;
+    min-height: 44px;
 }
 
 .footer {

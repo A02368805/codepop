@@ -1,6 +1,6 @@
-# CodePop
+# FloatStack
 
-This repository contains the canonical Django workspace for the rewritten CodePop architecture. The active implementation path is the Django + HTMX application in `server/`, while seeded emails keep the `floatstack.local` domain purely for demo convenience.
+FloatStack is a Django-first, web-first implementation of the rewritten beverage-operations architecture. The active product uses server-rendered templates, HTMX partials, strict server-side RBAC, PostgreSQL-ready configuration, and background jobs for imports, notifications, sync processing, and recommendation refreshes.
 
 The rewritten design documents remain the source of truth:
 
@@ -8,7 +8,7 @@ The rewritten design documents remain the source of truth:
 - `Docs/CodePop_Low_Level_Design_Rewritten.md`
 - `Docs/RequirementsDoc_Rewritten.md`
 
-This repo no longer ships an active `legacy/` application tree. Older migration notes still refer to archived starter code, but in this workspace only the rewritten docs, old design docs, and legacy CSV seed samples remain.
+The old Expo/mobile starter is archived under `legacy/` and is no longer the primary architecture.
 
 ## Architecture Summary
 
@@ -19,7 +19,7 @@ This repo no longer ships an active `legacy/` application tree. Older migration 
 - PostgreSQL as the primary runtime target with SQLite fallback for quick local development
 - Celery + Redis for queued imports, outbox sync processing, notification dispatch hooks, and recommendation refreshes
 - Stripe-ready payment boundary with a robust `mock` demo mode
-- In-app notifications, scoped dashboards, analytics summaries, audit logs, and observable outbox sync projections/conflicts
+- In-app notifications, analytics summaries, audit logs, and outbox sync visibility
 
 ## Repo Layout
 
@@ -142,9 +142,19 @@ Seed/demo variables:
 Payment variables:
 
 - `PAYMENT_MODE` with `mock` or `stripe`
+- `PAYMENT_CHECKOUT_FLOW` with `hosted` or `elements`
 - `STRIPE_SECRET_KEY`
 - `STRIPE_PUBLISHABLE_KEY`
 - `STRIPE_WEBHOOK_SECRET`
+
+AI provider variables:
+
+- `AI_RECOMMENDATION_PROVIDER` with `deterministic`, `mock-external`, or `anthropic`
+- `ANTHROPIC_API_KEY`
+- `ANTHROPIC_MODEL`
+- `ANTHROPIC_API_BASE_URL`
+- `AI_PROVIDER_TIMEOUT_SECONDS`
+- `AI_PROVIDER_MAX_RETRIES`
 
 Location and notification hook variables:
 
@@ -157,7 +167,18 @@ Location and notification hook variables:
 
 - `PAYMENT_MODE=mock` is the safest default for demos and local setup. Server-side pricing still runs, but checkout completes immediately without an external processor.
 - `PAYMENT_MODE=stripe` enables the Stripe checkout boundary and webhook route. Add real Stripe credentials before using it.
+- `PAYMENT_CHECKOUT_FLOW=hosted` uses Stripe-hosted checkout redirect.
+- `PAYMENT_CHECKOUT_FLOW=elements` keeps card entry inside the app with Stripe Elements + PaymentIntents.
 - Client-submitted totals are never trusted. Order pricing is recalculated on the server before payment records are written.
+
+### Keys-Last Activation Checklist
+
+1. Keep defaults during development: `PAYMENT_MODE=mock`, `AI_RECOMMENDATION_PROVIDER=deterministic`.
+2. Set Stripe test credentials and webhook secret.
+3. Switch `PAYMENT_MODE=stripe` and choose `PAYMENT_CHECKOUT_FLOW=elements` (or `hosted`).
+4. Set Anthropic settings and switch `AI_RECOMMENDATION_PROVIDER=anthropic`.
+5. Run focused tests, then perform one checkout smoke test and one recommendation smoke test.
+6. Run `python manage.py prelive_integrations_check` to validate launch configuration.
 
 ## Seed Data And Demo Credentials
 
@@ -215,7 +236,7 @@ Seeded guest lookup example:
 2. Open Supply Hubs, Imports, Sync, and Analytics.
 3. Upload a supply usage CSV.
 4. Approve AI-generated supply schedule drafts.
-5. Review pending transfers, sync projections, and conflict visibility.
+5. Review pending transfers and outbox visibility.
 
 ### 5. Repair Workflow
 
@@ -228,8 +249,7 @@ Seeded guest lookup example:
 
 1. Sign in as `superadmin@floatstack.local`.
 2. Open the system-wide dashboard.
-3. Review analytics, scoped user oversight, sync health, and operations comparisons.
-4. Open the Sync workspace to inspect receiver projections and ignored/resolved conflicts.
+3. Review analytics, scoped user oversight, audit visibility, sync health, and operations comparisons.
 
 ## Commands
 
@@ -261,6 +281,13 @@ cd server
 ../.venv/bin/python manage.py check
 ```
 
+Run integrations readiness check:
+
+```bash
+cd server
+../.venv/bin/python manage.py prelive_integrations_check --allow-warnings
+```
+
 Run the dev server:
 
 ```bash
@@ -274,11 +301,9 @@ Implementation notes and migration details live in:
 
 - `Docs/migration-plan.md`
 - `Docs/demo-readiness.md`
-- `Docs/demo-runbook.md`
-- `Docs/acceptance-checklist.md`
-- `Docs/deployment-notes.md`
-- `Docs/presentation-script.md`
 - `STATUS.md`
+
+Duplicate lowercase copies exist under `docs/` for compatibility with the original repo layout.
 
 ## Known Limitations
 
@@ -286,5 +311,4 @@ Implementation notes and migration details live in:
 - Web push and FCM are exposed as hooks, not as a full subscription/device-management system.
 - Geolocation uses browser coordinates with server-side distance heuristics. Real map-provider features can be layered in later via `MAPBOX_PUBLIC_TOKEN`.
 - The sync pipeline is intentionally internal and observable, but it does not yet push to external downstream systems.
-- The sync workspace now simulates receiver projections and conflict logging, but it is still an internal demo of regional coordination rather than a real multi-node deployment.
 - Demo analytics are useful and seeded, but they are not a BI replacement.

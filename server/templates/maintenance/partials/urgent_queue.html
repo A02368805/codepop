@@ -5,60 +5,16 @@
                 <th>Store</th>
                 <th>Machine</th>
                 <th>Status</th>
-                <th>Assignment</th>
-                <th>Route</th>
-                <th>Priority</th>
                 <th>Priority Reason</th>
-                <th>Actions</th>
             </tr>
         </thead>
         <tbody>
-            {% for row in machines %}
-                <tr>
+                {% for row in machines %}
+                    <tr>
                     <td>{{ row.machine.store.name }}</td>
-                    <td>
-                        <strong>{{ row.machine.display_name }}</strong>
-                        <div class="muted">{{ row.machine.machine_type.name }}</div>
-                    </td>
-                    <td>
-                        <span class="pill {% if row.machine.current_status == 'out-of-order' %}pill--critical{% elif row.machine.current_status == 'warning' or row.machine.current_status == 'error' %}pill--warning{% endif %}">
-                            {{ row.machine.get_current_status_display }}
-                        </span>
-                        {% if row.days_in_status %}
-                            <div class="muted">{{ row.days_in_status }} day{{ row.days_in_status|pluralize }} in status</div>
-                        {% endif %}
-                    </td>
-                    <td>
-                        {% if row.assignment %}
-                            <strong>{{ row.assignment.assigned_to.get_full_name|default:row.assignment.assigned_to.email }}</strong>
-                            <div class="muted">{{ row.assignment.get_status_display }}</div>
-                        {% else %}
-                            <span class="pill pill--warning">Needs assignee</span>
-                        {% endif %}
-                    </td>
-                    <td><code>{{ row.route_batch_key }}</code></td>
-                    <td>{{ row.priority_score }}</td>
-                    <td>{{ row.explanation }}</td>
-                    <td>
-                        {% if row.can_claim or row.can_auto_assign %}
-                            <form
-                                method="post"
-                                hx-post="{% url 'maintenance:machine-assign' row.machine.id %}"
-                                hx-target="#maintenance-workspace"
-                                hx-swap="innerHTML"
-                            >
-                                {% csrf_token %}
-                                <input type="hidden" name="status" value="{{ status_filter }}">
-                                <button class="button button--ghost" type="submit">
-                                    {% if row.can_claim %}Claim{% else %}Auto-assign{% endif %}
-                                </button>
-                            </form>
-                        {% elif row.assignment %}
-                            <a href="#assignment-{{ row.assignment.id }}">Open assignment</a>
-                        {% else %}
-                            <span class="muted">No scoped repair staff available.</span>
-                        {% endif %}
-                    </td>
+                        <td>{{ row.machine.display_name }}</td>
+                        <td>{{ row.machine.get_current_status_display }}</td>
+                        <td>{{ row.explanation }}</td>
                 </tr>
             {% endfor %}
         </tbody>

@@ -1,7 +1,12 @@
+from apps.inventory.services import request_transfer
 from apps.stores.selectors import regions_visible_to_user, stores_visible_to_user
 from apps.supply_hubs.models import SupplyTransfer
 from apps.users.permissions import (
+    user_can_approve_transfer,
     user_can_manage_machine,
+    user_can_progress_transfer,
+    user_can_receive_transfer,
+    user_can_request_transfer,
     user_has_global_access,
     user_has_region_scope,
     user_has_store_scope,
@@ -11,6 +16,7 @@ from django.test import TestCase
 from .helpers import (
     assign_region,
     assign_store,
+    make_inventory_item,
     make_machine,
     make_machine_type,
     make_region,
@@ -97,6 +103,32 @@ class RBACScopeTests(TestCase):
 
         cls.machine_type = make_machine_type()
         cls.machine = make_machine(store=cls.store_c1, machine_type=cls.machine_type)
+        cls.inventory_item = make_inventory_item(sku="SYRUP-RBAC")
+
+        cls.transfer_same_region = request_transfer(
+            requested_by=cls.logistics,
+            source_store=cls.store_c1,
+            destination_store=cls.store_c2,
+            line_items=[
+                {
+                    "inventory_item": cls.inventory_item,
+                    "quantity_requested": "1.00",
+                }
+            ],
+            notes="rbac same region",
+        )
+        cls.transfer_other_region = request_transfer(
+            requested_by=cls.super_admin,
+            source_store=cls.store_g1,
+            destination_store=cls.store_g1,
+            line_items=[
+                {
+                    "inventory_item": cls.inventory_item,
+                    "quantity_requested": "1.00",
+                }
+            ],
+            notes="rbac other region",
+        )
 
     def test_store_scope_only_matches_explicit_assignments(self):
         self.assertTrue(user_has_store_scope(self.manager, self.store_c1))
@@ -138,3 +170,41 @@ class RBACScopeTests(TestCase):
         self.assertFalse(user_can_manage_machine(self.admin, self.machine))
         self.assertTrue(user_can_manage_machine(self.super_admin, self.machine))
         self.assertTrue(user_has_global_access(self.super_admin))
+
+    def test_transfer_request_permissions_respect_destination_scope(self):
+        self.assertTrue(user_can_request_transfer(self.logistics, self.store_c2))
+        self.assertTrue(user_can_request_transfer(self.manager, self.store_c1))
+        self.assertFalse(user_can_request_transfer(self.manager, self.store_c2))
+        self.assertFalse(user_can_request_transfer(self.repair, self.store_c1))
+
+    def test_transfer_approval_requires_logistics_region_scope_or_global(self):
+        self.assertTrue(
+            user_can_approve_transfer(self.logistics, self.transfer_same_region)
+        )
+        self.assertFalse(
+            user_can_approve_transfer(self.logistics, self.transfer_other_region)
+        )
+        self.assertFalse(
+            user_can_approve_transfer(self.manager, self.transfer_same_region)
+        )
+        self.assertTrue(
+            user_can_approve_transfer(self.super_admin, self.transfer_other_region)
+        )
+
+    def test_transfer_progress_and_receive_permissions_follow_scope_rules(self):
+        self.assertTrue(
+            user_can_progress_transfer(self.logistics, self.transfer_same_region)
+        )
+        self.assertTrue(
+            user_can_progress_transfer(self.manager, self.transfer_same_region)
+        )
+        self.assertFalse(
+            user_can_progress_transfer(self.repair, self.transfer_same_region)
+        )
+
+        self.assertTrue(
+            user_can_receive_transfer(self.manager, self.transfer_same_region)
+        )
+        self.assertFalse(
+            user_can_receive_transfer(self.repair, self.transfer_same_region)
+        )

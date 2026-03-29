@@ -1,6 +1,6 @@
 {% extends "base/base.html" %}
 
-{% block title %}{{ order.public_order_code }} | CodePop{% endblock %}
+{% block title %}{{ order.public_order_code }} | FloatStack{% endblock %}
 
 {% block content %}
 <section class="hero hero--dashboard">
@@ -87,6 +87,76 @@
         {% endif %}
         {% if order.order_type == "guest" and order.guest_contact %}
             <p class="muted">Guest lookup code: <strong>{{ order.guest_contact.lookup_code }}</strong></p>
+        {% endif %}
+        <hr>
+        <p class="eyebrow">Payment</p>
+        <p class="muted">
+            {% if payment_mode_is_mock %}
+                Demo payment mode is active.
+            {% else %}
+                Stripe payment mode is active.
+            {% endif %}
+        </p>
+        {% if payment_transaction %}
+            <dl class="summary-list">
+                <div><dt>Status</dt><dd>{{ payment_transaction.get_status_display }}</dd></div>
+                <div><dt>Provider</dt><dd>{{ payment_transaction.get_provider_display }}</dd></div>
+                <div><dt>Captured</dt><dd>${{ payment_transaction.amount_captured }}</dd></div>
+                <div><dt>Refunded</dt><dd>${{ payment_transaction.amount_refunded }}</dd></div>
+                <div><dt>Failure</dt><dd>{{ payment_transaction.failure_reason|default:"-" }}</dd></div>
+            </dl>
+            {% if payment_transaction.status == "pending" and payment_mode == "stripe" and payment_checkout_flow == "elements" and stripe_publishable_key %}
+                <div
+                    id="stripe-elements-panel"
+                    data-endpoint="{% url 'payments:payment-intent' %}"
+                    data-status-endpoint="{% url 'payments:payment-status' %}"
+                    data-order-code="{{ order.public_order_code }}"
+                    data-publishable-key="{{ stripe_publishable_key }}"
+                >
+                    <div id="card-element" class="field"></div>
+                    <div class="action-row">
+                        <button class="button button--primary" type="button" id="stripe-pay-btn">Pay now</button>
+                    </div>
+                    <p class="muted" id="stripe-pay-status">Enter your card details to complete checkout.</p>
+                </div>
+            {% endif %}
+        {% else %}
+            <p class="muted">No payment transaction record exists yet.</p>
+            {% if order.status == "pricing_validated" or order.status == "payment_pending" %}
+                {% if payment_mode == "stripe" and payment_checkout_flow == "elements" and stripe_publishable_key %}
+                    <div
+                        id="stripe-elements-panel"
+                        data-endpoint="{% url 'payments:payment-intent' %}"
+                        data-status-endpoint="{% url 'payments:payment-status' %}"
+                        data-order-code="{{ order.public_order_code }}"
+                        data-publishable-key="{{ stripe_publishable_key }}"
+                    >
+                        <div id="card-element" class="field"></div>
+                        <div class="action-row">
+                            <button class="button button--primary" type="button" id="stripe-pay-btn">Pay now</button>
+                        </div>
+                        <p class="muted" id="stripe-pay-status">Enter your card details to complete checkout.</p>
+                    </div>
+                {% else %}
+                    {% if payment_mode != "stripe" %}
+                    <div class="flash flash--warning">
+                        Card entry UI is disabled because <strong>PAYMENT_MODE</strong> is not set to <strong>stripe</strong>.
+                    </div>
+                    {% elif payment_checkout_flow != "elements" %}
+                    <div class="flash flash--warning">
+                        Card entry UI is disabled because <strong>PAYMENT_CHECKOUT_FLOW</strong> is not set to <strong>elements</strong>.
+                    </div>
+                    {% elif not stripe_publishable_key %}
+                    <div class="flash flash--warning">
+                        Card entry UI is disabled because <strong>STRIPE_PUBLISHABLE_KEY</strong> is missing.
+                    </div>
+                    {% endif %}
+                <div id="payment-intent-panel" data-endpoint="{% url 'payments:payment-intent' %}" data-order-code="{{ order.public_order_code }}">
+                    <button class="button button--ghost" type="button" id="payment-intent-btn">Generate payment intent</button>
+                    <p class="muted" id="payment-intent-status">Creates a provider intent so checkout can continue with the payment processor.</p>
+                </div>
+                {% endif %}
+            {% endif %}
         {% endif %}
     </div>
 </section>

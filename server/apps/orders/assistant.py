@@ -49,7 +49,7 @@ def build_drink_builder_assistance(
     )
 
     if ai_applied and ai_reasons:
-        summary = "CodePop AI filled the builder with a recommendation you can still edit freely."
+        summary = "FloatStack AI filled the builder with a recommendation you can still edit freely."
         tips = list(ai_reasons)
     elif selected_ice_cream:
         summary = f"This build leans into float territory with {selected_soda_label} and {selected_ice_cream.lower()} ice cream."
@@ -60,7 +60,7 @@ def build_drink_builder_assistance(
         summary = f"Your current cup starts with {selected_soda_label} and already has a clear flavor direction."
         tips = []
     else:
-        summary = f"You have a clean {selected_soda_label.lower()} base. Let CodePop AI fill the rest if you want a stronger starting point."
+        summary = f"You have a clean {selected_soda_label.lower()} base. Let FloatStack AI fill the rest if you want a stronger starting point."
         tips = []
 
     if not ai_applied:
@@ -93,7 +93,7 @@ def build_drink_builder_assistance(
         selected_snapshot.append(f"{selected_ice_cream} ice cream")
 
     return {
-        "title": "CodePop AI",
+        "title": "FloatStack AI",
         "summary": summary,
         "tips": tips[:3],
         "size_label": size.title(),

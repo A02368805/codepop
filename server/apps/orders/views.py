@@ -16,6 +16,7 @@ from apps.users.permissions import (
     user_can_use_customer_ordering,
 )
 from apps.users.services import remove_favorite_drink, save_favorite_drink
+from django.conf import settings
 from django.contrib import messages
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.core.exceptions import PermissionDenied
@@ -407,6 +408,12 @@ class CheckoutView(CustomerOrderingRequiredMixin, TemplateView):
                 "form": kwargs.get("form") or CheckoutForm(),
                 "payment_mode": get_payment_mode(),
                 "payment_mode_is_mock": get_payment_mode() == PaymentMode.MOCK,
+                "payment_checkout_flow": getattr(
+                    settings, "PAYMENT_CHECKOUT_FLOW", "hosted"
+                ),
+                "stripe_publishable_key": getattr(
+                    settings, "STRIPE_PUBLISHABLE_KEY", ""
+                ),
             }
         )
         return context
@@ -417,6 +424,19 @@ class CheckoutView(CustomerOrderingRequiredMixin, TemplateView):
             messages.error(request, "Your cart is empty.")
             return redirect("orders:cart")
         store = get_object_or_404(Store, store_code=cart["store_code"])
+        mismatched_items = [
+            item
+            for item in cart["items"]
+            if item.get("store_code_snapshot")
+            and item.get("store_code_snapshot") != store.store_code
+        ]
+        if mismatched_items:
+            messages.error(
+                request,
+                "Your cart includes items from a different store. Please rebuild your cart for one store.",
+            )
+            clear_cart(request.session)
+            return redirect("orders:cart")
         form = CheckoutForm(request.POST)
         if not form.is_valid():
             return self.render_to_response(self.get_context_data(form=form))
@@ -539,9 +559,18 @@ class OrderDetailView(TemplateView):
         context.update(
             {
                 "order": order,
+                "payment_transaction": getattr(order, "payment_transaction", None),
                 "can_manage": user_can_transition_order(self.request.user, order),
                 "can_cancel": can_cancel,
                 "cancel_reason": refund_message,
+                "payment_mode": get_payment_mode(),
+                "payment_mode_is_mock": get_payment_mode() == PaymentMode.MOCK,
+                "payment_checkout_flow": getattr(
+                    settings, "PAYMENT_CHECKOUT_FLOW", "hosted"
+                ),
+                "stripe_publishable_key": getattr(
+                    settings, "STRIPE_PUBLISHABLE_KEY", ""
+                ),
             }
         )
         return context

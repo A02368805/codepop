@@ -1,4 +1,4 @@
-# CodePop Migration Plan
+# FloatStack Migration Plan
 
 ## Source Of Truth
 
@@ -21,13 +21,15 @@ The migration follows the rewritten documents, not the old starter assumptions:
 - token-first/mobile-first starter assumptions
 - unused placeholder dashboard base templates from the early scaffold
 
-The archived starter application code is not present in this workspace. What remains are the rewritten docs, older design documents, and copied legacy CSV assets under `server/seed/csv/legacy_catalog/`.
+Archived starter code lives under `legacy/` instead of remaining active.
 
 ## What Was Moved
 
-- The historical starter code was removed from the active repo tree during the Django cutover.
-- The useful parts that were intentionally preserved are the legacy catalog CSVs now stored in `server/seed/csv/legacy_catalog/`.
-- Old design documents remain in `Docs/OLD*.md` for reference only and are not the source of truth.
+- `codepop/` -> `legacy/expo_starter/codepop/`
+- root `package.json` and `package-lock.json` -> `legacy/expo_starter/`
+- `codepop_backend/backend/` -> `legacy/django_starter_backend/backend/`
+- `codepop_backend/codepop_backend/` -> `legacy/django_starter_backend/codepop_backend/`
+- old cleanup scripts -> `legacy/django_starter_backend/`
 
 ## Active Architecture Decisions
 
@@ -40,7 +42,7 @@ The archived starter application code is not present in this workspace. What rem
 - payments are server-authoritative and routed through a clean `mock` or Stripe-ready gateway boundary
 - the sync outbox and audit log are first-class internal operational surfaces, not hidden internals
 
-## Canonical Django Completion Notes
+## Prompt 4 Completion Notes
 
 - Added background tasks for queued CSV imports, notification dispatch hooks, sync processing, and recommendation refreshes
 - Added geolocation-assisted store recommendation with browser fallback to manual selection
@@ -50,7 +52,7 @@ The archived starter application code is not present in this workspace. What rem
 
 ## Starter Reuse Rationale
 
-- The old Expo frontend did not fit the rewritten multi-dashboard web-first product, so it was retired from the active repo.
+- The old Expo frontend did not fit the rewritten multi-dashboard web-first product, so it was archived.
 - The old backend internals were too tightly coupled to the starter’s token/API assumptions, so a clean modular monolith was safer.
 - Legacy CSVs were still useful for seed references and import examples, so they were preserved in the new seed area.
 
@@ -59,9 +61,3 @@ The archived starter application code is not present in this workspace. What rem
 - Swap from demo/mock configuration to live Stripe and external notification credentials when a real deployment is ready
 - Add true downstream sync connectors if the outbox needs to publish beyond the local monolith
 - Expand push-notification subscriptions, production monitoring, and accessibility polish as a post-demo hardening pass
-
-## Final Cutover Notes
-
-- The active shared layout is `server/templates/base/base.html`.
-- Unreferenced starter-era Tailwind templates such as the old root `base.html`, `login.html`, `drink_builder.html`, and `drink_list.html` were removed from the active template tree.
-- The active dashboard, ordering, maintenance, analytics, and sync surfaces all route through the canonical Django apps under `server/apps/`.

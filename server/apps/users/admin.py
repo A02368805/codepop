@@ -37,7 +37,7 @@ class UserAdmin(BaseUserAdmin):
             },
         ),
         (
-            "CodePop Access",
+            "FloatStack Access",
             {
                 "fields": (
                     "role",

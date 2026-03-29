@@ -1,6 +1,6 @@
 {% extends "base/base.html" %}
 
-{% block title %}Imports | CodePop{% endblock %}
+{% block title %}Imports | FloatStack{% endblock %}
 
 {% block content %}
 <section class="page-grid page-grid--sidebar">
@@ -19,6 +19,7 @@
                 hx-post="{% url 'imports:supply-usage' %}"
                 hx-target="#import-history"
                 hx-swap="innerHTML"
+                hx-indicator="#import-history-indicator"
             >
                 {% csrf_token %}
                 <label class="field">
@@ -36,6 +37,7 @@
                 hx-post="{% url 'imports:repair-status' %}"
                 hx-target="#import-history"
                 hx-swap="innerHTML"
+                hx-indicator="#import-history-indicator"
             >
                 {% csrf_token %}
                 <label class="field">
@@ -46,7 +48,8 @@
             </form>
         {% endif %}
     </div>
-    <div class="panel" id="import-history">
+    <div class="panel" id="import-history" hx-get="{% url 'imports:history' %}" hx-trigger="every 8s" hx-swap="innerHTML" hx-indicator="#import-history-indicator">
+        <p class="muted htmx-indicator" id="import-history-indicator">Refreshing import status…</p>
         {% include "imports/partials/history.html" %}
     </div>
 </section>

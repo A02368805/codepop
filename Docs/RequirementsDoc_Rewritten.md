@@ -1,4 +1,4 @@
-# CodePop 2026 Requirements
+yy# CodePop 2026 Requirements
 
 ## Introduction
 
@@ -34,16 +34,16 @@ To manage scope and prioritize development effort, this project uses **MoSCoW an
 
 The four MoSCoW categories are defined as follows:
 
-- **Must Have (M):**
+- **Must Have (M):**  
   Requirements that are essential for the system to function and meet core project objectives. The system is considered incomplete if any Must Have requirements are not satisfied.
 
-- **Should Have (S):**
+- **Should Have (S):**  
   High-priority requirements that significantly improve usability, performance, or maintainability but are not strictly required for minimal system operation.
 
-- **Could Have (C):**
+- **Could Have (C):**  
   Desirable features that add value to the system but are not critical. These are typically implemented if time and resources allow.
 
-- **Won’t Have (W):**
+- **Won’t Have (W):**  
   Features that are explicitly excluded from the current project scope and will not be implemented during this development cycle.
 
 Each requirement in this document is labeled with its MoSCoW priority to ensure clarity and consistency across the development team.
@@ -72,26 +72,26 @@ These requirements established the foundational user experience and automation g
 
 #### Implemented
 
-- **Mobile Application Functionality** – Core application is fully functional on mobile devices with responsive design.
-- **User Authentication** – Secure login system allowing users to create accounts, sign in, and manage their profiles.
-- **AI-Powered Drink Generation** – Intelligent system that recommends or creates custom drinks based on user input or preferences.
-- **Inventory Tracking** – Database integration that monitors ingredient usage in real-time to maintain stock levels, including frozen storage for ice cream.
+- **Mobile Application Functionality** – Core application is fully functional on mobile devices with responsive design. 
+- **User Authentication** – Secure login system allowing users to create accounts, sign in, and manage their profiles. 
+- **AI-Powered Drink Generation** – Intelligent system that recommends or creates custom drinks based on user input or preferences. 
+- **Inventory Tracking** – Database integration that monitors ingredient usage in real-time to maintain stock levels, including frozen storage for ice cream. 
 
 #### In Progress / Incomplete
 
-- **Ordering System** – Platform for users to place, modify, and track drink orders; backend logic and UI require further refinement.
-- **AI Customer Service** – Initial AI assistant implemented, but responses lack depth and contextual understanding; needs improvement for robust user interaction.
+- **Ordering System** – Platform for users to place, modify, and track drink orders; backend logic and UI require further refinement. 
+- **AI Customer Service** – Initial AI assistant implemented, but responses lack depth and contextual understanding; needs improvement for robust user interaction. 
 
 #### Planned / Not Implemented
 
-- **Payment Processing Integration** – Secure system to handle user payments, including credit card and digital wallet options.
-- **Geolocation Services** – Ability to detect user location to provide location-based services such as nearest store, delivery options, or pickup timing.
-- **Favorites Functionality** – Users can save and quickly reorder preferred drinks.
-- **Personalized Drink Preferences** – System to remember individual flavor profiles, dietary restrictions, and customizations.
-- **First-Time User Tutorial** – Onboarding flow guiding new users through app features and ordering process.
-- **Seasonal Menu Implementation** – Dynamic menu updates for seasonal or promotional drinks.
-- **Scheduled Drink Preparation** – Option for users to specify a desired ready-time instead of automatic preparation based on location.
-- **Order Expiration System** – Logic to discard drinks that have been in the cooler for too long, ensuring freshness and safety.
+- **Payment Processing Integration** – Secure system to handle user payments, including credit card and digital wallet options. 
+- **Geolocation Services** – Ability to detect user location to provide location-based services such as nearest store, delivery options, or pickup timing. 
+- **Favorites Functionality** – Users can save and quickly reorder preferred drinks. 
+- **Personalized Drink Preferences** – System to remember individual flavor profiles, dietary restrictions, and customizations. 
+- **First-Time User Tutorial** – Onboarding flow guiding new users through app features and ordering process. 
+- **Seasonal Menu Implementation** – Dynamic menu updates for seasonal or promotional drinks. 
+- **Scheduled Drink Preparation** – Option for users to specify a desired ready-time instead of automatic preparation based on location. 
+- **Order Expiration System** – Logic to discard drinks that have been in the cooler for too long, ensuring freshness and safety. 
 
 ## User Requirements
 

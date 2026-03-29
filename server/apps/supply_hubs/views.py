@@ -19,7 +19,12 @@ from apps.inventory.services import (
 )
 from apps.stores.selectors import scoped_region_store_options
 from apps.users.models import User
-from apps.users.permissions import RoleRequiredMixin
+from apps.users.permissions import (
+    RoleRequiredMixin,
+    user_can_approve_transfer,
+    user_can_progress_transfer,
+    user_can_receive_transfer,
+)
 from django.contrib import messages
 from django.core.exceptions import PermissionDenied
 from django.db.models import Sum
@@ -37,6 +42,54 @@ ALLOWED_WORKSPACE_ROLES = (
     User.Role.LOGISTICS_MANAGER,
     User.Role.SUPER_ADMIN,
 )
+
+
+def _decorate_transfer_actions(*, transfers, user):
+    decorated = []
+    for transfer in transfers:
+        transfer.next_action = {
+            "label": "",
+            "url_name": "",
+            "allowed": False,
+            "denied_reason": "",
+        }
+        if transfer.status == SupplyTransfer.Status.REQUESTED:
+            transfer.next_action = {
+                "label": "Approve",
+                "url_name": "supply_hubs:approve-transfer",
+                "allowed": user_can_approve_transfer(user, transfer),
+                "denied_reason": "Approval requires logistics scope for this destination region.",
+            }
+        elif transfer.status == SupplyTransfer.Status.APPROVED:
+            transfer.next_action = {
+                "label": "Reserve",
+                "url_name": "supply_hubs:reserve-transfer",
+                "allowed": user_can_progress_transfer(user, transfer),
+                "denied_reason": "You do not have scope to reserve this transfer.",
+            }
+        elif transfer.status == SupplyTransfer.Status.RESERVED:
+            transfer.next_action = {
+                "label": "Ship",
+                "url_name": "supply_hubs:ship-transfer",
+                "allowed": user_can_progress_transfer(user, transfer),
+                "denied_reason": "You do not have scope to ship this transfer.",
+            }
+        elif transfer.status == SupplyTransfer.Status.IN_TRANSIT:
+            transfer.next_action = {
+                "label": "Mark delivered",
+                "url_name": "supply_hubs:deliver-transfer",
+                "allowed": user_can_progress_transfer(user, transfer),
+                "denied_reason": "You do not have scope to mark this transfer as delivered.",
+            }
+        elif transfer.status == SupplyTransfer.Status.DELIVERED:
+            transfer.next_action = {
+                "label": "Receive",
+                "url_name": "supply_hubs:receive-transfer",
+                "allowed": user_can_receive_transfer(user, transfer),
+                "denied_reason": "You do not have scope to receive this transfer.",
+            }
+        decorated.append(transfer)
+    return decorated
 
 
 def _request_value(request, key, default=""):
@@ -121,6 +174,12 @@ def _filtered_supply_context(request, *, transfer_form=None, supplier_order_form
         if recommendation["source_type"] == "Supplier fallback"
     ]
 
+    transfer_rows = list(transfers.order_by("-requested_at"))
+    transfer_rows = _decorate_transfer_actions(
+        transfers=transfer_rows,
+        user=request.user,
+    )
+
     return {
         "scope": scope,
         "window": window,
@@ -128,7 +187,7 @@ def _filtered_supply_context(request, *, transfer_form=None, supplier_order_form
         "date_to": date_to,
         "visible_regions": visible_regions,
         "visible_stores": visible_stores,
-        "transfers": transfers.order_by("-requested_at"),
+        "transfers": transfer_rows,
         "schedule_rows": [
             {"schedule": schedule, "explanation": explain_supply_schedule(schedule)}
             for schedule in schedules.order_by("-created_at")

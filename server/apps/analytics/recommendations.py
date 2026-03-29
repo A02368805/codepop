@@ -2,11 +2,14 @@ from __future__ import annotations
 
 from apps.inventory.models import SupplyUsageRecord
 from apps.maintenance.services import resolve_effective_policy
-from apps.orders.personalization import recommend_drink_menu_scores
+
+from .providers import get_recommendation_provider
 
 
 def recommend_drinks_for_user(user, *, limit=4):
-    return recommend_drink_menu_scores(user)[:limit]
+    provider = get_recommendation_provider()
+    result = provider.recommend_drinks(user, limit=limit)
+    return result.recommendations
 
 
 def explain_supply_schedule(schedule):

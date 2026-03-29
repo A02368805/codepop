@@ -1,9 +1,17 @@
 {% extends "base/base.html" %}
 
-{% block title %}Notifications | CodePop{% endblock %}
+{% block title %}Notifications | FloatStack{% endblock %}
 
 {% block content %}
-<div id="notification-workspace">
-    {% include "notifications/partials/workspace.html" %}
-</div>
+<section class="panel">
+    <div class="section-heading">
+        <div>
+            <p class="eyebrow">Notifications</p>
+            <h1>Unread and recent updates</h1>
+        </div>
+    </div>
+    <div id="notification-list">
+        {% include "notifications/partials/list.html" %}
+    </div>
+</section>
 {% endblock %}

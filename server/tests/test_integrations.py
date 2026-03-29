@@ -92,6 +92,9 @@ class PromptFourIntegrationTests(TestCase):
                 follow=True,
             )
 
+        from apps.analytics.tasks import refresh_account_recommendations
+        from apps.sync.services import process_pending_outbox_events
+
         order = Order.objects.get(customer=self.customer)
         payment = order.payment_transaction
         self.assertEqual(order.status, Order.Status.QUEUED)
@@ -100,6 +103,14 @@ class PromptFourIntegrationTests(TestCase):
         self.assertContains(
             response, "Demo payment mode completed the order instantly."
         )
+
+        # Process pending sync events to dispatch notifications
+        process_pending_outbox_events(limit=25)
+        # Manually trigger recommendation task (should have been triggered by transaction.on_commit)
+        refresh_account_recommendations(
+            str(self.customer.pk), reason="Based on your latest order"
+        )
+
         self.assertTrue(
             Notification.objects.filter(
                 user=self.customer,
@@ -148,6 +159,8 @@ class PromptFourIntegrationTests(TestCase):
         self.assertContains(response, "Checkout was canceled.")
 
     def test_order_ready_dispatches_customer_notification_and_sync_audit(self):
+        from apps.sync.services import process_pending_outbox_events
+
         order = create_order(
             store=self.store,
             customer=self.customer,
@@ -180,6 +193,9 @@ class PromptFourIntegrationTests(TestCase):
             transition_order_status(order, Order.Status.QUEUED, actor=self.customer)
             transition_order_status(order, Order.Status.PREPARING, actor=self.manager)
             transition_order_status(order, Order.Status.READY, actor=self.manager)
+
+        # Process pending sync events to dispatch notifications
+        process_pending_outbox_events(limit=25)
 
         self.assertTrue(
             SyncOutboxEvent.objects.filter(

@@ -10,11 +10,22 @@ class PaymentMode:
     STRIPE = "stripe"
 
 
+class CheckoutFlow:
+    HOSTED = "hosted"
+    ELEMENTS = "elements"
+
+
 @dataclass(frozen=True)
 class CheckoutSessionResult:
     checkout_url: str
     checkout_session_id: str
     payment_intent_id: str
+
+
+@dataclass(frozen=True)
+class PaymentIntentResult:
+    payment_intent_id: str
+    client_secret: str
 
 
 def get_payment_mode():
@@ -28,6 +39,14 @@ def get_payment_mode():
 
 def stripe_is_configured():
     return get_payment_mode() == PaymentMode.STRIPE
+
+
+def get_checkout_flow():
+    configured_flow = getattr(settings, "PAYMENT_CHECKOUT_FLOW", CheckoutFlow.HOSTED)
+    configured_flow = str(configured_flow or CheckoutFlow.HOSTED).strip().lower()
+    if configured_flow == CheckoutFlow.ELEMENTS:
+        return CheckoutFlow.ELEMENTS
+    return CheckoutFlow.HOSTED
 
 
 def _import_stripe():
@@ -48,6 +67,7 @@ def _client():
 
 def create_stripe_checkout_session(*, order, success_url, cancel_url):
     client = _client()
+    idempotency_key = f"checkout:{order.public_order_code}"
     session = client.checkout.Session.create(
         mode="payment",
         success_url=success_url,
@@ -67,11 +87,36 @@ def create_stripe_checkout_session(*, order, success_url, cancel_url):
             }
             for item in order.items.all()
         ],
+        idempotency_key=idempotency_key,
     )
     return CheckoutSessionResult(
         checkout_url=session.url,
         checkout_session_id=session.id,
         payment_intent_id=getattr(session, "payment_intent", "") or "",
+    )
+
+
+def create_stripe_payment_intent(*, order):
+    client = _client()
+    idempotency_key = f"payment_intent:{order.public_order_code}"
+    payment_intent = client.PaymentIntent.create(
+        amount=int(order.total_amount * 100),
+        currency=order.currency.lower(),
+        metadata={"order_id": str(order.pk), "order_code": order.public_order_code},
+        automatic_payment_methods={"enabled": True},
+        idempotency_key=idempotency_key,
+    )
+    return PaymentIntentResult(
+        payment_intent_id=payment_intent.id,
+        client_secret=getattr(payment_intent, "client_secret", "") or "",
+    )
+
+
+def retrieve_stripe_payment_intent(payment_intent_id):
+    payment_intent = _client().PaymentIntent.retrieve(payment_intent_id)
+    return PaymentIntentResult(
+        payment_intent_id=getattr(payment_intent, "id", "") or payment_intent_id,
+        client_secret=getattr(payment_intent, "client_secret", "") or "",
     )
 
 

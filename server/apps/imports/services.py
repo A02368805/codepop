@@ -11,9 +11,10 @@ from apps.inventory.services import draft_supply_schedule_from_usage
 from apps.maintenance.models import Machine, MachineType
 from apps.maintenance.services import (
     append_machine_status_event,
-    evaluate_error_escalation,
     evaluate_warning_escalation,
 )
+from apps.notifications.models import Notification
+from apps.notifications.services import notify_user
 from apps.stores.models import Store
 from apps.sync.services import create_audit_log, create_outbox_event, serialize_instance
 from apps.users.permissions import user_has_region_scope, user_has_store_scope
@@ -167,13 +168,6 @@ def _mark_job_processing(job):
     return job
 
 
-def _job_source_scope(job):
-    user = job.uploaded_by
-    if not user or not user.default_region_id:
-        return {}
-    return {"region_code": user.default_region.code}
-
-
 def _finalize_job_success(job, *, row_count):
     job.row_count = row_count
     job.success_count = row_count
@@ -189,7 +183,7 @@ def _finalize_job_success(job, *, row_count):
             "row_count": row_count,
             "uploaded_by_id": str(job.uploaded_by_id or ""),
         },
-        source_scope=_job_source_scope(job),
+        source_scope={},
     )
     create_audit_log(
         actor=job.uploaded_by,
@@ -197,6 +191,13 @@ def _finalize_job_success(job, *, row_count):
         instance=job,
         after=serialize_instance(job),
     )
+    if job.uploaded_by_id:
+        notify_user(
+            user=job.uploaded_by,
+            title="Import completed",
+            message=f"{job.original_filename} finished with {row_count} successful row(s).",
+            category=Notification.Category.INFO,
+        )
     return job
 
 
@@ -213,7 +214,7 @@ def _finalize_job_failure(job, exc):
             "error_count": job.error_count,
             "uploaded_by_id": str(job.uploaded_by_id or ""),
         },
-        source_scope=_job_source_scope(job),
+        source_scope={},
     )
     create_audit_log(
         actor=job.uploaded_by,
@@ -221,6 +222,13 @@ def _finalize_job_failure(job, exc):
         instance=job,
         after=serialize_instance(job),
     )
+    if job.uploaded_by_id:
+        notify_user(
+            user=job.uploaded_by,
+            title="Import failed",
+            message=f"{job.original_filename} failed validation. Review the import history panel for details.",
+            category=Notification.Category.ALERT,
+        )
     raise exc
 
 
@@ -246,7 +254,11 @@ def _process_supply_usage_import(job, csv_text):
                     source_type="hub",
                     source_reference={"region_code": parsed_row.store.region.code},
                 )
-        return _finalize_job_success(job, row_count=len(parsed_rows))
+        completed_job = _finalize_job_success(job, row_count=len(parsed_rows))
+        from apps.analytics.tasks import analyze_supply_usage_import
+
+        analyze_supply_usage_import.delay(str(completed_job.pk))
+        return completed_job
     except CSVImportError as exc:
         _finalize_job_failure(job, exc)
 
@@ -288,9 +300,6 @@ def _process_repair_status_import(job, csv_text, *, allow_machine_create=True):
                     actor=job.uploaded_by,
                 )
                 evaluate_warning_escalation(
-                    machine, as_of_date=parsed_row.status_date, actor=job.uploaded_by
-                )
-                evaluate_error_escalation(
                     machine, as_of_date=parsed_row.status_date, actor=job.uploaded_by
                 )
         return _finalize_job_success(job, row_count=len(parsed_rows))

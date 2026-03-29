@@ -3,9 +3,8 @@ from __future__ import annotations
 from apps.users.models import User
 from django.db import transaction
 from django.db.models import Q
-from django.utils import timezone
 
-from .models import DeviceRegistration, Notification
+from .models import Notification
 
 
 def create_notification(
@@ -14,9 +13,8 @@ def create_notification(
     title,
     message,
     category=Notification.Category.INFO,
-    notification_type=Notification.NotificationType.GENERIC,
+    notification_type=None,
     payload_json=None,
-    delivery_channel=Notification.DeliveryChannel.IN_APP,
 ):
     if user is None:
         return None
@@ -25,10 +23,9 @@ def create_notification(
         title=title,
         message=message,
         category=category,
-        notification_type=notification_type,
+        notification_type=notification_type or Notification.NotificationType.GENERIC,
+        delivery_channel=Notification.DeliveryChannel.IN_APP,
         payload_json=payload_json or {},
-        delivery_channel=delivery_channel,
-        delivery_status=Notification.DeliveryStatus.PENDING,
     )
     from .tasks import dispatch_notification_async
 
@@ -44,9 +41,8 @@ def notify_user(
     title,
     message,
     category=Notification.Category.INFO,
-    notification_type=Notification.NotificationType.GENERIC,
+    notification_type=None,
     payload_json=None,
-    delivery_channel=Notification.DeliveryChannel.IN_APP,
 ):
     return create_notification(
         user=user,
@@ -55,7 +51,6 @@ def notify_user(
         category=category,
         notification_type=notification_type,
         payload_json=payload_json,
-        delivery_channel=delivery_channel,
     )
 
 
@@ -65,22 +60,11 @@ def notify_users(
     title,
     message,
     category=Notification.Category.INFO,
-    notification_type=Notification.NotificationType.GENERIC,
+    notification_type=None,
     payload_json=None,
-    delivery_channel=Notification.DeliveryChannel.IN_APP,
 ):
     notifications = []
-    if hasattr(users, "distinct"):
-        user_iterable = users.distinct()
-    else:
-        seen = set()
-        user_iterable = []
-        for user in users:
-            if user.pk in seen:
-                continue
-            seen.add(user.pk)
-            user_iterable.append(user)
-    for user in user_iterable:
+    for user in users.distinct():
         notification = create_notification(
             user=user,
             title=title,
@@ -88,7 +72,6 @@ def notify_users(
             category=category,
             notification_type=notification_type,
             payload_json=payload_json,
-            delivery_channel=delivery_channel,
         )
         if notification is not None:
             notifications.append(notification)
@@ -118,7 +101,7 @@ def notify_store_roles(
     title,
     message,
     category=Notification.Category.ALERT,
-    notification_type=Notification.NotificationType.GENERIC,
+    notification_type=None,
     payload_json=None,
 ):
     return notify_users(
@@ -138,7 +121,7 @@ def notify_region_roles(
     title,
     message,
     category=Notification.Category.ALERT,
-    notification_type=Notification.NotificationType.GENERIC,
+    notification_type=None,
     payload_json=None,
 ):
     return notify_users(
@@ -149,24 +132,3 @@ def notify_region_roles(
         notification_type=notification_type,
         payload_json=payload_json,
     )
-
-
-def register_device(
-    *,
-    user,
-    device_token,
-    platform=DeviceRegistration.Platform.WEB,
-    push_provider=DeviceRegistration.PushProvider.WEB_PUSH,
-    device_label="",
-):
-    return DeviceRegistration.objects.update_or_create(
-        device_token=device_token,
-        defaults={
-            "user": user,
-            "platform": platform,
-            "push_provider": push_provider,
-            "device_label": device_label,
-            "is_active": True,
-            "last_seen_at": timezone.now(),
-        },
-    )[0]

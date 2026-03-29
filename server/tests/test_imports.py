@@ -1,4 +1,5 @@
 from datetime import date
+from unittest.mock import patch
 
 from apps.imports.models import ImportJob
 from apps.imports.services import (
@@ -84,12 +85,11 @@ class CSVImportTests(TestCase):
                 "C002,SYRUP-STRAWBERRY,2026-03-18,2.00",
             ]
         )
-        with self.captureOnCommitCallbacks(execute=True):
-            job = import_supply_usage_csv(
-                csv_text,
-                uploaded_by=self.logistics,
-                original_filename="usage.csv",
-            )
+        job = import_supply_usage_csv(
+            csv_text,
+            uploaded_by=self.logistics,
+            original_filename="usage.csv",
+        )
 
         self.assertEqual(job.status, ImportJob.Status.SUCCEEDED)
         self.assertEqual(SupplyUsageRecord.objects.count(), 2)
@@ -109,6 +109,23 @@ class CSVImportTests(TestCase):
             ).exists()
         )
 
+    @patch("apps.analytics.tasks.analyze_supply_usage_import.delay")
+    def test_supply_usage_import_enqueues_ai_analysis_trigger(self, mock_delay):
+        csv_text = "\n".join(
+            [
+                "store_code,inventory_sku,usage_date,quantity_used",
+                "C001,SYRUP-STRAWBERRY,2026-03-18,4.50",
+            ]
+        )
+        job = import_supply_usage_csv(
+            csv_text,
+            uploaded_by=self.logistics,
+            original_filename="usage-ai-trigger.csv",
+        )
+
+        self.assertEqual(job.status, ImportJob.Status.SUCCEEDED)
+        mock_delay.assert_called_once_with(str(job.pk))
+
     def test_supply_usage_validation_prevents_partial_writes(self):
         csv_text = "\n".join(
             [
@@ -118,12 +135,11 @@ class CSVImportTests(TestCase):
             ]
         )
         with self.assertRaises(CSVImportError):
-            with self.captureOnCommitCallbacks(execute=True):
-                import_supply_usage_csv(
-                    csv_text,
-                    uploaded_by=self.logistics,
-                    original_filename="bad-usage.csv",
-                )
+            import_supply_usage_csv(
+                csv_text,
+                uploaded_by=self.logistics,
+                original_filename="bad-usage.csv",
+            )
 
         self.assertEqual(SupplyUsageRecord.objects.count(), 0)
         failed_job = ImportJob.objects.get(original_filename="bad-usage.csv")
@@ -157,12 +173,11 @@ class CSVImportTests(TestCase):
                 "123 Main St Logan UT,MIXER_A,2025-07-01,warning,2026-03-18",
             ]
         )
-        with self.captureOnCommitCallbacks(execute=True):
-            job = import_repair_status_csv(
-                valid_csv,
-                uploaded_by=self.repair,
-                original_filename="repair.csv",
-            )
+        job = import_repair_status_csv(
+            valid_csv,
+            uploaded_by=self.repair,
+            original_filename="repair.csv",
+        )
 
         machine = Machine.objects.get(
             store=self.store_c1, machine_type=self.machine_type
@@ -180,3 +195,25 @@ class CSVImportTests(TestCase):
                 title="Import completed",
             ).exists()
         )
+
+    def test_repair_import_rolls_back_when_machine_creation_is_disallowed(self):
+        csv_text = "\n".join(
+            [
+                "store_address,machine_type_code,machine_operational_from_date,machine_status,status_date",
+                "123 Main St Logan UT,MIXER_A,2025-07-01,warning,2026-03-18",
+            ]
+        )
+
+        with self.assertRaises(CSVImportError):
+            import_repair_status_csv(
+                csv_text,
+                uploaded_by=self.repair,
+                original_filename="repair-no-create.csv",
+                allow_machine_create=False,
+            )
+
+        self.assertEqual(Machine.objects.count(), 0)
+        self.assertEqual(MachineStatusEvent.objects.count(), 0)
+        failed_job = ImportJob.objects.get(original_filename="repair-no-create.csv")
+        self.assertEqual(failed_job.status, ImportJob.Status.FAILED)
+        self.assertGreater(failed_job.error_count, 0)

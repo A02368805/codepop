@@ -130,15 +130,6 @@ class RepairAssignment(models.Model):
         ordering = ("scheduled_for", "-priority_score")
         indexes = [models.Index(fields=("assigned_to", "status", "scheduled_for"))]
 
-    @classmethod
-    def actionable_statuses(cls):
-        return [
-            cls.Status.SCHEDULED,
-            cls.Status.ACKNOWLEDGED,
-            cls.Status.IN_PROGRESS,
-            cls.Status.BLOCKED,
-        ]
-
     def __str__(self):
         return f"{self.machine.machine_uid} / {self.status}"
 

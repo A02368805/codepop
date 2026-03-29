@@ -64,16 +64,9 @@ class RepairAssignmentAdmin(admin.ModelAdmin):
         "priority_score",
         "status",
         "scheduled_for",
-        "follow_up_required",
     )
     list_filter = ("status", "store__region")
-    search_fields = (
-        "machine__machine_uid",
-        "assigned_to__email",
-        "store__store_code",
-        "route_batch_key",
-        "blocker_summary",
-    )
+    search_fields = ("machine__machine_uid", "assigned_to__email", "store__store_code")
 
 
 @admin.register(MaintenancePolicy)

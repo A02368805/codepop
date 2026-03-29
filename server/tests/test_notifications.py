@@ -109,6 +109,8 @@ class NotificationScopingTests(TestCase):
         balance.save()
 
     def test_machine_alerts_only_reach_scoped_store_roles(self):
+        from apps.sync.services import process_pending_outbox_events
+
         with self.captureOnCommitCallbacks(execute=True):
             append_machine_status_event(
                 self.machine,
@@ -116,6 +118,9 @@ class NotificationScopingTests(TestCase):
                 status_date=date(2026, 3, 25),
                 actor=self.repair_c,
             )
+
+        # Process pending sync events to dispatch notifications
+        process_pending_outbox_events(limit=25)
 
         self.assertTrue(
             Notification.objects.filter(
@@ -137,6 +142,8 @@ class NotificationScopingTests(TestCase):
         )
 
     def test_transfer_updates_respect_store_and_region_scope(self):
+        from apps.sync.services import process_pending_outbox_events
+
         transfer = request_transfer(
             requested_by=self.logistics_c,
             source_store=self.store_c1,
@@ -153,6 +160,9 @@ class NotificationScopingTests(TestCase):
 
         with self.captureOnCommitCallbacks(execute=True):
             approve_transfer(transfer, approver=self.logistics_c)
+
+        # Process pending sync events to dispatch notifications
+        process_pending_outbox_events(limit=25)
 
         self.assertTrue(
             Notification.objects.filter(

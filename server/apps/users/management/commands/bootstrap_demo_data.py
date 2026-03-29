@@ -34,19 +34,11 @@ from apps.maintenance.models import (
     RepairAssignment,
 )
 from apps.maintenance.services import (
-    acknowledge_repair_assignment,
     append_machine_status_event,
-    block_repair_assignment,
-    close_repair_assignment,
-    complete_repair_assignment,
     create_repair_assignment,
-    evaluate_error_escalation,
-    evaluate_service_window,
     evaluate_warning_escalation,
-    start_repair_assignment,
 )
-from apps.notifications.models import DeviceRegistration, Notification
-from apps.notifications.services import create_notification, register_device
+from apps.notifications.models import Notification
 from apps.orders.catalog import build_cart_item, catalog_inventory_definitions
 from apps.orders.models import Order
 from apps.orders.services import create_order, transition_order_status
@@ -58,13 +50,7 @@ from apps.payments.services import (
 )
 from apps.stores.models import Region, Store
 from apps.supply_hubs.models import HubInventoryBalance, SupplyHub, SupplyTransfer
-from apps.sync.models import (
-    AuditLog,
-    SyncConflictLog,
-    SyncOutboxEvent,
-    SyncProjectionState,
-)
-from apps.sync.services import process_outbox_event, process_pending_outbox_events
+from apps.sync.models import AuditLog, SyncOutboxEvent
 from apps.users.models import User, UserRegionAssignment, UserStoreAssignment
 from apps.users.services import save_favorite_drink, save_preference_profile
 from django.core.management.base import BaseCommand
@@ -536,9 +522,7 @@ REPAIR_ASSIGNMENTS = {
 
 
 class Command(BaseCommand):
-    help = (
-        "Bootstraps the canonical demo dataset for the Django-first CodePop workspace."
-    )
+    help = "Bootstraps prompt-2 demo data for the Django-first FloatStack architecture."
 
     def add_arguments(self, parser):
         parser.add_argument(
@@ -590,7 +574,6 @@ class Command(BaseCommand):
             self._seed_repair_work(users=users)
 
         self._seed_notifications(users=users)
-        self._seed_sync_demo_artifacts()
         self.stdout.write(
             self.style.SUCCESS(
                 "Demo data bootstrapped: "
@@ -602,12 +585,9 @@ class Command(BaseCommand):
         )
 
     def _reset_demo_data(self):
-        self.stdout.write("Resetting canonical demo data...")
+        self.stdout.write("Resetting prompt-2 demo data...")
         Notification.objects.all().delete()
-        DeviceRegistration.objects.all().delete()
         AuditLog.objects.all().delete()
-        SyncConflictLog.objects.all().delete()
-        SyncProjectionState.objects.all().delete()
         SyncOutboxEvent.objects.all().delete()
         RevenueLedgerEntry.objects.all().delete()
         PaymentTransaction.objects.all().delete()
@@ -1350,18 +1330,8 @@ class Command(BaseCommand):
                 as_of_date=date(2026, 3, 18),
                 actor=users["repair.north@floatstack.local"],
             )
-            warning_assignment = (
-                warning_machine.repair_assignments.exclude(
-                    status__in=[
-                        RepairAssignment.Status.CLOSED,
-                        RepairAssignment.Status.CANCELED,
-                    ]
-                )
-                .order_by("-created_at")
-                .first()
-            )
-            if warning_assignment is None:
-                warning_assignment = create_repair_assignment(
+            if not warning_machine.repair_assignments.exists():
+                create_repair_assignment(
                     warning_machine,
                     assigned_to=users["repair.north@floatstack.local"],
                     priority_score=Decimal("90.00"),
@@ -1369,171 +1339,46 @@ class Command(BaseCommand):
                     created_by_system=True,
                     notes="Escalated warning demo assignment.",
                 )
-            if warning_assignment.status == RepairAssignment.Status.SCHEDULED:
-                acknowledge_repair_assignment(
-                    warning_assignment,
-                    actor=users["repair.north@floatstack.local"],
-                    note="Acknowledged and queued for the next Region C stop.",
-                )
 
         error_machine = Machine.objects.filter(
             store__store_code="C002",
             machine_type__code="CARBONATOR_X",
         ).first()
-        if error_machine:
-            evaluate_error_escalation(
+        if error_machine and not error_machine.repair_assignments.exists():
+            create_repair_assignment(
                 error_machine,
-                as_of_date=date(2026, 3, 18),
-                actor=users["repair.north@floatstack.local"],
-            )
-            error_assignment = (
-                error_machine.repair_assignments.exclude(
-                    status__in=[
-                        RepairAssignment.Status.CLOSED,
-                        RepairAssignment.Status.CANCELED,
-                    ]
-                )
-                .order_by("-created_at")
-                .first()
-            )
-            if error_assignment is None:
-                error_assignment = create_repair_assignment(
-                    error_machine,
-                    assigned_to=users["repair.north@floatstack.local"],
-                    priority_score=Decimal("75.00"),
-                    scheduled_for=timezone.now() + timedelta(hours=4),
-                    created_by_system=True,
-                    notes="Imported error status demo assignment.",
-                )
-            if error_assignment.status == RepairAssignment.Status.SCHEDULED:
-                acknowledge_repair_assignment(
-                    error_assignment,
-                    actor=users["repair.north@floatstack.local"],
-                    note="Waiting on site access after the imported error.",
-                )
-
-        service_window_machine = Machine.objects.filter(
-            store__store_code="C003",
-            machine_type__code="FREEZER_SOFTSERVE",
-        ).first()
-        if service_window_machine:
-            evaluate_service_window(
-                service_window_machine,
-                as_of_date=date(2026, 3, 25),
-                actor=users["repair.north@floatstack.local"],
-            )
-            service_assignment = (
-                service_window_machine.repair_assignments.exclude(
-                    status__in=[
-                        RepairAssignment.Status.CLOSED,
-                        RepairAssignment.Status.CANCELED,
-                    ]
-                )
-                .order_by("-created_at")
-                .first()
-            )
-            if (
-                service_assignment
-                and service_assignment.status == RepairAssignment.Status.SCHEDULED
-            ):
-                acknowledge_repair_assignment(
-                    service_assignment,
-                    actor=users["repair.north@floatstack.local"],
-                    note="Preventive visit acknowledged for the freezer service window.",
-                )
-            if (
-                service_assignment
-                and service_assignment.status == RepairAssignment.Status.ACKNOWLEDGED
-            ):
-                block_repair_assignment(
-                    service_assignment,
-                    actor=users["repair.north@floatstack.local"],
-                    note="Awaiting a replacement freezer seal kit before the stop can finish.",
-                )
-
-        resolved_machine = Machine.objects.filter(
-            store__store_code="C004",
-            machine_type__code="MIXER_A",
-        ).first()
-        if (
-            resolved_machine
-            and not resolved_machine.repair_assignments.exclude(
-                status=RepairAssignment.Status.CLOSED
-            ).exists()
-        ):
-            append_machine_status_event(
-                resolved_machine,
-                status=Machine.Status.WARNING,
-                status_date=date(2026, 3, 20),
-                notes="Demo resolved-repair warning state.",
-                actor=users["repair.north@floatstack.local"],
-            )
-            resolved_assignment = create_repair_assignment(
-                resolved_machine,
                 assigned_to=users["repair.north@floatstack.local"],
-                priority_score=Decimal("65.00"),
-                scheduled_for=timezone.now() - timedelta(hours=6),
+                priority_score=Decimal("75.00"),
+                scheduled_for=timezone.now() + timedelta(hours=4),
                 created_by_system=True,
-                notes="Demo completed assignment for history visibility.",
-            )
-            acknowledge_repair_assignment(
-                resolved_assignment,
-                actor=users["repair.north@floatstack.local"],
-                note="Resolved assignment acknowledged.",
-            )
-            start_repair_assignment(
-                resolved_assignment,
-                actor=users["repair.north@floatstack.local"],
-                note="Repair work started on the mixer housing.",
-            )
-            complete_repair_assignment(
-                resolved_assignment,
-                actor=users["repair.north@floatstack.local"],
-                note="Mixer housing tightened and returned to normal.",
-            )
-            close_repair_assignment(
-                resolved_assignment,
-                actor=users["super_admin"],
-                note="Super admin closed the resolved demo assignment after verification.",
+                notes="Imported error status demo assignment.",
             )
 
     def _seed_notifications(self, *, users):
-        register_device(
-            user=users["repair.north@floatstack.local"],
-            device_token="demo-repair-north-web",
-            platform=DeviceRegistration.Platform.WEB,
-            push_provider=DeviceRegistration.PushProvider.WEB_PUSH,
-            device_label="Repair dashboard browser",
-        )
-        register_device(
-            user=users["logistics.c@floatstack.local"],
-            device_token="demo-logistics-c-fcm",
-            platform=DeviceRegistration.Platform.ANDROID,
-            push_provider=DeviceRegistration.PushProvider.FCM,
-            device_label="Regional logistics tablet",
-        )
-        create_notification(
-            user=users["superadmin@floatstack.local"],
-            title="Operational demo seed ready",
-            message="Event-driven maintenance, transfer, import, and order notifications are seeded for the current demo dataset.",
-            category=Notification.Category.INFO,
-        )
-
-    def _seed_sync_demo_artifacts(self):
-        process_pending_outbox_events(limit=500)
-        demo_transfer = SupplyTransfer.objects.order_by("-requested_at").first()
-        if not demo_transfer:
-            return
-
-        stale_event = SyncOutboxEvent.objects.create(
-            event_type="transfer.requested",
-            aggregate_type="SupplyTransfer",
-            aggregate_id=str(demo_transfer.pk),
-            entity_version=1,
-            source_scope={
-                "region_code": demo_transfer.destination_store.region.code,
-                "store_id": str(demo_transfer.destination_store_id),
-            },
-            payload={"status": SupplyTransfer.Status.REQUESTED},
-        )
-        process_outbox_event(stale_event)
+        notification_rows = [
+            (
+                "manager.c001@floatstack.local",
+                "Low stock watch",
+                "Logan Main has balances below threshold after queued demo orders.",
+            ),
+            (
+                "logistics.c@floatstack.local",
+                "Import review",
+                "Supply usage import produced review-ready AI schedule drafts for Region C.",
+            ),
+            (
+                "repair.north@floatstack.local",
+                "Repair escalation",
+                "A Region C machine escalated from warning to out-of-order.",
+            ),
+        ]
+        for user_email, title, message in notification_rows:
+            Notification.objects.get_or_create(
+                user=users[user_email],
+                title=title,
+                defaults={
+                    "message": message,
+                    "category": Notification.Category.ALERT,
+                    "is_read": False,
+                },
+            )

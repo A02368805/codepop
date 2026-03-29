@@ -1,6 +1,6 @@
 {% extends "base/base.html" %}
 
-{% block title %}Manager Dashboard | CodePop{% endblock %}
+{% block title %}Manager Dashboard | FloatStack{% endblock %}
 
 {% block content %}
 <section class="hero hero--dashboard">
@@ -47,75 +47,25 @@
     </div>
 </section>
 
-<section class="page-grid page-grid--sidebar">
-    <div class="panel">
-        <div class="section-heading">
-            <div>
-                <p class="eyebrow">Low Stock Alerts</p>
-                <h2>Items to watch today</h2>
-            </div>
-            <a href="{% url 'inventory:index' %}">Open inventory details</a>
-        </div>
-        <div class="surface-list">
-            {% for alert in low_stock_alerts %}
-                <article class="list-card">
-                    <div class="list-card__main">
-                        <h3>{{ alert.inventory_item.name }}</h3>
-                        <p class="muted">{{ alert.store.name }} · {{ alert.get_severity_display }}</p>
-                    </div>
-                </article>
-            {% empty %}
-                <div class="empty-state"><p>No open low-stock alerts.</p></div>
-            {% endfor %}
-        </div>
-    </div>
-
-    <div class="panel">
-        <div class="section-heading">
-            <div>
-                <p class="eyebrow">Inventory Overview</p>
-                <h2>Tracked stock health</h2>
-            </div>
-        </div>
-        <table class="data-table">
-            <thead>
-                <tr>
-                    <th>Store</th>
-                    <th>Tracked</th>
-                    <th>Below Threshold</th>
-                    <th>On Hand</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for row in inventory_health_rows %}
-                    <tr>
-                        <td>{{ row.store__name }}</td>
-                        <td>{{ row.tracked_items }}</td>
-                        <td>{{ row.below_threshold }}</td>
-                        <td>{{ row.on_hand_total|default:"0" }}</td>
-                    </tr>
-                {% empty %}
-                    <tr><td colspan="4">No inventory balances are in scope.</td></tr>
-                {% endfor %}
-            </tbody>
-        </table>
-    </div>
-</section>
-
 <section class="panel">
     <div class="section-heading">
         <div>
-            <p class="eyebrow">Unread Notifications</p>
-            <h2>Store updates requiring attention</h2>
+            <p class="eyebrow">Low Stock Alerts</p>
+            <h2>Items to watch today</h2>
         </div>
-        <a href="{% url 'notifications:index' %}">Open notifications</a>
+        <a href="{% url 'inventory:index' %}">Open inventory details</a>
     </div>
-    <ul class="mini-list">
-        {% for notification in notifications %}
-            <li>{{ notification.title }} · {{ notification.created_at|date:"M j, g:i a" }}</li>
+    <div class="surface-list">
+        {% for alert in low_stock_alerts %}
+            <article class="list-card">
+                <div class="list-card__main">
+                    <h3>{{ alert.inventory_item.name }}</h3>
+                    <p class="muted">{{ alert.store.name }} · {{ alert.get_severity_display }}</p>
+                </div>
+            </article>
         {% empty %}
-            <li>No unread manager notifications.</li>
+            <div class="empty-state"><p>No open low-stock alerts.</p></div>
         {% endfor %}
-    </ul>
+    </div>
 </section>
 {% endblock %}

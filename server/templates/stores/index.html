@@ -1,16 +1,16 @@
 {% extends "base/base.html" %}
 
-{% block title %}Choose a Store | CodePop{% endblock %}
+{% block title %}Choose a Store | FloatStack{% endblock %}
 
 {% block content %}
 <section class="hero hero--dashboard">
     <div>
         <p class="eyebrow">Stores</p>
         {% if can_start_order %}
-            <h1>Pick your CodePop pickup store.</h1>
+            <h1>Pick your FloatStack pickup store.</h1>
             <p class="lede">Search by ZIP code or address, or use your location to get the best pickup option quickly.</p>
         {% else %}
-            <h1>Browse the CodePop store network in your current scope.</h1>
+            <h1>Browse the FloatStack store network in your current scope.</h1>
             <p class="lede">Operational roles can review locations here, but drink ordering stays limited to guests and customer accounts.</p>
         {% endif %}
     </div>
@@ -59,6 +59,7 @@
             hx-get="{% url 'stores:index' %}"
             hx-target="#store-recommendations"
             hx-push-url="true"
+            hx-indicator="#recommendation-indicator"
             data-mapbox-token="{{ mapbox_public_token }}"
         >
             <label class="field">
@@ -79,6 +80,7 @@
                 <button class="button button--primary" type="submit">Show stores</button>
                 <button class="button button--ghost" type="button" id="geo-locate-btn">Use my location</button>
             </div>
+            <p class="muted htmx-indicator" id="recommendation-indicator">Refreshing store recommendations…</p>
         </form>
     </div>
 

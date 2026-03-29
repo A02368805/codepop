@@ -1,13 +1,13 @@
 {% extends "base/base.html" %}
 
-{% block title %}Checkout | CodePop{% endblock %}
+{% block title %}Checkout | FloatStack{% endblock %}
 
 {% block content %}
 <section class="hero hero--dashboard">
     <div>
         <p class="eyebrow">Checkout</p>
         <h1>Confirm pickup details and place the order.</h1>
-        <p class="lede">CodePop keeps checkout simple for guests and account users while re-validating pricing on the server before payment is recorded.</p>
+        <p class="lede">Checkout supports guests and account users while the server re-validates pricing before payment is finalized.</p>
     </div>
     <div class="hero-card">
         <p class="eyebrow">Pickup Store</p>
@@ -29,9 +29,27 @@
                     <strong>Payment mode:</strong>
                     {% if payment_mode_is_mock %}
                         Demo mode is active. Orders complete with a mock payment on the server so the local workflow stays self-contained.
+                    {% elif payment_checkout_flow == "elements" %}
+                        Stripe Elements is active. After you place the order, you'll enter card details on the next step.
                     {% else %}
                         Stripe checkout is active. You will be redirected to Stripe after the server validates pricing.
                     {% endif %}
+                </div>
+                {% if payment_mode != "stripe" %}
+                    <div class="flash flash--warning">
+                        Card entry UI is disabled because <strong>PAYMENT_MODE</strong> is not set to <strong>stripe</strong>.
+                    </div>
+                {% elif payment_checkout_flow != "elements" %}
+                    <div class="flash flash--warning">
+                        Card entry UI is disabled because <strong>PAYMENT_CHECKOUT_FLOW</strong> is not set to <strong>elements</strong>.
+                    </div>
+                {% elif not stripe_publishable_key %}
+                    <div class="flash flash--warning">
+                        Card entry UI is disabled because <strong>STRIPE_PUBLISHABLE_KEY</strong> is missing.
+                    </div>
+                {% endif %}
+                <div class="callout">
+                    <strong>Server authority:</strong> totals are recomputed at order commit, and payment records are linked to the created order before queueing.
                 </div>
                 <label class="field">
                     <span>{{ form.pickup_time_choice.label }}</span>

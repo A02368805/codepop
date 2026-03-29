@@ -8,6 +8,8 @@ document.addEventListener("DOMContentLoaded", () => {
 
     initStoreRecommendation();
     initDrinkBuilder();
+    initStripeElementsPanel();
+    initPaymentIntentPanel();
 });
 
 function getCsrfToken() {
@@ -382,6 +384,154 @@ function initDrinkBuilder() {
 
     renderPreview();
     refreshAssistant();
+}
+
+function initPaymentIntentPanel() {
+    const panel = document.querySelector("#payment-intent-panel");
+    const button = document.querySelector("#payment-intent-btn");
+    const status = document.querySelector("#payment-intent-status");
+    if (!panel || !button || !status) {
+        return;
+    }
+
+    button.addEventListener("click", async () => {
+        const endpoint = panel.dataset.endpoint;
+        const orderCode = panel.dataset.orderCode;
+        if (!endpoint || !orderCode) {
+            status.textContent = "Payment intent endpoint metadata is missing.";
+            return;
+        }
+
+        button.disabled = true;
+        status.textContent = "Creating payment intent...";
+        const body = new URLSearchParams({ order_code: orderCode });
+
+        try {
+            const response = await window.fetch(endpoint, {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/x-www-form-urlencoded;charset=UTF-8",
+                    "X-CSRFToken": getCsrfToken(),
+                },
+                body: body.toString(),
+            });
+            const payload = await response.json();
+            if (!response.ok) {
+                status.textContent = payload.error || "Unable to create payment intent.";
+                button.disabled = false;
+                return;
+            }
+
+            status.textContent = `Payment intent ready via ${payload.provider}. Continue checkout in the payment flow.`;
+            button.textContent = "Payment intent created";
+        } catch (error) {
+            status.textContent = "Failed to create payment intent. Try again.";
+            button.disabled = false;
+        }
+    });
+}
+
+function initStripeElementsPanel() {
+    const panel = document.querySelector("#stripe-elements-panel");
+    const button = document.querySelector("#stripe-pay-btn");
+    const status = document.querySelector("#stripe-pay-status");
+    const cardElementContainer = document.querySelector("#card-element");
+    if (!panel || !button || !status || !cardElementContainer) {
+        return;
+    }
+    if (!window.Stripe) {
+        status.textContent = "Stripe.js failed to load. Refresh the page and try again.";
+        return;
+    }
+
+    const publishableKey = panel.dataset.publishableKey || "";
+    const endpoint = panel.dataset.endpoint;
+    const statusEndpoint = panel.dataset.statusEndpoint;
+    const orderCode = panel.dataset.orderCode;
+    if (!publishableKey || !endpoint || !statusEndpoint || !orderCode) {
+        status.textContent = "Stripe configuration is incomplete for this environment.";
+        return;
+    }
+
+    const stripe = window.Stripe(publishableKey);
+    const elements = stripe.elements();
+    const card = elements.create("card", {
+        hidePostalCode: true,
+    });
+    card.mount("#card-element");
+
+    const pollFinalStatus = async () => {
+        for (let attempt = 0; attempt < 12; attempt += 1) {
+            try {
+                const url = new URL(statusEndpoint, window.location.origin);
+                url.searchParams.set("order_code", orderCode);
+                const response = await window.fetch(url.toString(), {
+                    method: "GET",
+                    headers: {
+                        "X-CSRFToken": getCsrfToken(),
+                    },
+                });
+                const payload = await response.json();
+                if (response.ok && payload.finalized && payload.redirect_url) {
+                    window.location.assign(payload.redirect_url);
+                    return true;
+                }
+                if (payload.payment_status === "failed") {
+                    status.textContent = "Payment failed during finalization. Please try again.";
+                    return false;
+                }
+            } catch (error) {
+                // Continue polling for transient errors.
+            }
+            await new Promise((resolve) => window.setTimeout(resolve, 1500));
+        }
+        status.textContent = "Payment submitted, but final confirmation is still processing. Refresh this page in a moment.";
+        return false;
+    };
+
+    button.addEventListener("click", async () => {
+        button.disabled = true;
+        status.textContent = "Preparing secure payment...";
+
+        let payload;
+        try {
+            const response = await window.fetch(endpoint, {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/x-www-form-urlencoded;charset=UTF-8",
+                    "X-CSRFToken": getCsrfToken(),
+                },
+                body: new URLSearchParams({ order_code: orderCode }).toString(),
+            });
+            payload = await response.json();
+            if (!response.ok) {
+                status.textContent = payload.error || "Unable to create payment intent.";
+                button.disabled = false;
+                return;
+            }
+        } catch (error) {
+            status.textContent = "Unable to start payment right now. Try again.";
+            button.disabled = false;
+            return;
+        }
+
+        status.textContent = "Confirming card details...";
+        const result = await stripe.confirmCardPayment(payload.client_secret, {
+            payment_method: { card },
+        });
+
+        if (result.error) {
+            status.textContent = result.error.message || "Payment failed. Please try another card.";
+            button.disabled = false;
+            return;
+        }
+
+        status.textContent = "Payment submitted. Finalizing order...";
+        const finalized = await pollFinalStatus();
+        if (!finalized) {
+            button.disabled = false;
+        }
+    });
 }
 
 function getCheckedLabels(form, fieldName) {
