@@ -7,7 +7,14 @@ from django.db.models import Q
 from .models import Notification
 
 
-def create_notification(*, user, title, message, category=Notification.Category.INFO):
+def create_notification(
+    *,
+    user,
+    title,
+    message,
+    category=Notification.Category.INFO,
+    notification_type=None,
+):
     if user is None:
         return None
     notification = Notification.objects.create(
@@ -15,6 +22,7 @@ def create_notification(*, user, title, message, category=Notification.Category.
         title=title,
         message=message,
         category=category,
+        notification_type=notification_type or Notification.NotificationType.GENERIC,
         delivery_channel=Notification.DeliveryChannel.IN_APP,
     )
     from .tasks import dispatch_notification_async
@@ -25,16 +33,31 @@ def create_notification(*, user, title, message, category=Notification.Category.
     return notification
 
 
-def notify_user(*, user, title, message, category=Notification.Category.INFO):
+def notify_user(
+    *,
+    user,
+    title,
+    message,
+    category=Notification.Category.INFO,
+    notification_type=None,
+):
     return create_notification(
         user=user,
         title=title,
         message=message,
         category=category,
+        notification_type=notification_type,
     )
 
 
-def notify_users(*, users, title, message, category=Notification.Category.INFO):
+def notify_users(
+    *,
+    users,
+    title,
+    message,
+    category=Notification.Category.INFO,
+    notification_type=None,
+):
     notifications = []
     for user in users.distinct():
         notification = create_notification(
@@ -42,6 +65,7 @@ def notify_users(*, users, title, message, category=Notification.Category.INFO):
             title=title,
             message=message,
             category=category,
+            notification_type=notification_type,
         )
         if notification is not None:
             notifications.append(notification)
@@ -65,22 +89,36 @@ def users_for_region_roles(region, roles):
 
 
 def notify_store_roles(
-    *, store, roles, title, message, category=Notification.Category.ALERT
+    *,
+    store,
+    roles,
+    title,
+    message,
+    category=Notification.Category.ALERT,
+    notification_type=None,
 ):
     return notify_users(
         users=users_for_store_roles(store, roles),
         title=title,
         message=message,
         category=category,
+        notification_type=notification_type,
     )
 
 
 def notify_region_roles(
-    *, region, roles, title, message, category=Notification.Category.ALERT
+    *,
+    region,
+    roles,
+    title,
+    message,
+    category=Notification.Category.ALERT,
+    notification_type=None,
 ):
     return notify_users(
         users=users_for_region_roles(region, roles),
         title=title,
         message=message,
         category=category,
+        notification_type=notification_type,
     )

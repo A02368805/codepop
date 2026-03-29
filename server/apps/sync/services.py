@@ -99,6 +99,7 @@ def _dispatch_outbox_event(event):
                 title="Your order is ready",
                 message=f"{order.public_order_code} is ready for pickup at {order.store.name}.",
                 category=Notification.Category.TASK,
+                notification_type=Notification.NotificationType.ORDER_UPDATE,
             )
     elif event.event_type == "order.refunded":
         order = (
@@ -112,6 +113,7 @@ def _dispatch_outbox_event(event):
                 title="Refund completed",
                 message=f"{order.public_order_code} has been refunded.",
                 category=Notification.Category.INFO,
+                notification_type=Notification.NotificationType.ORDER_UPDATE,
             )
     elif event.event_type == "order.failed":
         order = (
@@ -125,6 +127,7 @@ def _dispatch_outbox_event(event):
                 title="Payment issue",
                 message=f"We could not complete payment for {order.public_order_code}. Please try again.",
                 category=Notification.Category.ALERT,
+                notification_type=Notification.NotificationType.ORDER_UPDATE,
             )
     elif event.event_type == "transfer.approved":
         transfer = (
@@ -134,27 +137,23 @@ def _dispatch_outbox_event(event):
         )
         if transfer:
             # Notify the requester
-            notif = notify_user(
+            notify_user(
                 user=transfer.requested_by,
                 title="Transfer approved",
                 message=f"Transfer to {transfer.destination_store.name} was approved.",
                 category=Notification.Category.TASK,
+                notification_type=Notification.NotificationType.TRANSFER_UPDATE,
             )
-            if notif:
-                notif.notification_type = Notification.NotificationType.TRANSFER_UPDATE
-                notif.save(update_fields=["notification_type"])
 
             # Notify managers and logistics in destination store's region
-            notifications = notify_region_roles(
+            notify_region_roles(
                 region=transfer.destination_store.region,
                 roles=[User.Role.LOGISTICS_MANAGER],
                 title="Transfer approved",
                 message=f"Transfer to {transfer.destination_store.name} was approved by {transfer.approved_by.email}.",
                 category=Notification.Category.TASK,
+                notification_type=Notification.NotificationType.TRANSFER_UPDATE,
             )
-            for notif in notifications:
-                notif.notification_type = Notification.NotificationType.TRANSFER_UPDATE
-                notif.save(update_fields=["notification_type"])
     elif event.event_type in {"machine.out-of-order", "machine.error", "machine.warning"}:
         aggregate_store_id = event.source_scope.get("store_id")
         from apps.stores.models import Store
@@ -163,17 +162,14 @@ def _dispatch_outbox_event(event):
             Store.objects.select_related("region").filter(pk=aggregate_store_id).first()
         )
         if store:
-            notifications = notify_store_roles(
+            notify_store_roles(
                 store=store,
                 roles=[User.Role.MANAGER, User.Role.REPAIR_STAFF, User.Role.ADMIN],
                 title="Machine escalation",
                 message=f"{store.name} has a machine in {event.event_type.split('.')[-1]} status.",
                 category=Notification.Category.ALERT,
+                notification_type=Notification.NotificationType.MACHINE_ALERT,
             )
-            # Update notification_type for machine alerts
-            for notification in notifications:
-                notification.notification_type = Notification.NotificationType.MACHINE_ALERT
-                notification.save(update_fields=["notification_type"])
 
 
 def process_outbox_event(event):
