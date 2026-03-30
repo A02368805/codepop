@@ -207,3 +207,26 @@ class SyncWorkspaceTests(TestCase):
             conflict.resolution_status, SyncConflictLog.ResolutionStatus.RESOLVED
         )
         self.assertContains(response, "Conflict Log")
+        self.assertIsNotNone(conflict.resolved_at)
+
+    def test_sync_panel_shows_projection_and_conflict_sections(self):
+        transfer = self._create_transfer()
+        with self.captureOnCommitCallbacks(execute=True):
+            approve_transfer(transfer, approver=self.logistics)
+
+        stale_event = SyncOutboxEvent.objects.create(
+            event_type="transfer.requested",
+            aggregate_type="SupplyTransfer",
+            aggregate_id=str(transfer.pk),
+            entity_version=0,
+            source_scope={"region_code": self.region.code},
+            payload={"status": "requested"},
+        )
+        process_outbox_event(stale_event)
+
+        self.client.force_login(self.logistics)
+        response = self.client.get(reverse("sync:panel"))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Conflict Log")
+        self.assertContains(response, "Receiver Projections")

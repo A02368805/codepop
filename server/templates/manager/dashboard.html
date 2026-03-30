@@ -68,4 +68,53 @@
         {% endfor %}
     </div>
 </section>
+
+<section class="page-grid page-grid--sidebar">
+    <div class="panel">
+        <div class="section-heading">
+            <div>
+                <p class="eyebrow">Inventory Overview</p>
+                <h2>Store health snapshot</h2>
+            </div>
+        </div>
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>Store</th>
+                    <th>Tracked</th>
+                    <th>Below Threshold</th>
+                    <th>Total On Hand</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for row in inventory_health_rows %}
+                    <tr>
+                        <td>{{ row.store__name }}</td>
+                        <td>{{ row.tracked_items }}</td>
+                        <td>{{ row.below_threshold }}</td>
+                        <td>{{ row.on_hand_total|default:"0" }}</td>
+                    </tr>
+                {% empty %}
+                    <tr><td colspan="4">No scoped inventory rows.</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    <div class="panel">
+        <div class="section-heading">
+            <div>
+                <p class="eyebrow">Unread Notifications</p>
+                <h2>Operational updates for this manager</h2>
+            </div>
+            <a href="{% url 'notifications:index' %}">Open notifications</a>
+        </div>
+        <ul class="mini-list">
+            {% for notification in notifications %}
+                <li>{{ notification.title }} · {{ notification.created_at|date:"M j, g:i A" }}</li>
+            {% empty %}
+                <li>No unread manager notifications.</li>
+            {% endfor %}
+        </ul>
+    </div>
+</section>
 {% endblock %}

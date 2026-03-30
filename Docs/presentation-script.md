@@ -9,10 +9,11 @@
 1. Show the home page and explain the web-first architecture plus role-scoped dashboards.
 2. Log in as manager and show the order queue, revenue summary, low-stock alerts, and scoped notifications.
 3. Log in as admin and show store-scoped user management plus audit activity.
-4. Log in as repair staff and show the urgency-first maintenance queue, route grouping, and assignment lifecycle.
+4. Log in as repair staff and show the urgency-first maintenance queue, route grouping, and one live assignment action.
 5. Log in as logistics and show transfers, supply imports, AI draft schedules, and sync projections/conflicts.
-6. Log in as super admin and show cross-region analytics, sync health, and oversight panels.
-7. End with a guest or account order flow to show the customer side is still integrated into the same system.
+6. In sync, resolve or ignore one conflict to show reconciliation controls.
+7. Log in as super admin and show cross-region analytics, daily revenue, order-backed financial rows, maintenance summaries, sync health, and oversight panels.
+8. End with a guest or account order flow to show the customer side is still integrated into the same system.
 
 ## Key Phrases
 

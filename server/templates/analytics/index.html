@@ -54,6 +54,7 @@
             <div><dt>Gross</dt><dd>${{ gross_revenue }}</dd></div>
             <div><dt>Net</dt><dd>${{ net_revenue }}</dd></div>
         </dl>
+        <p class="muted">Window: {{ date_from }} to {{ date_to }}</p>
     </div>
     <div class="panel">
         <p class="eyebrow">Region Comparison</p>
@@ -62,6 +63,71 @@
                 <li>{{ region.name }} · {{ region.store_count }} stores · {{ region.hub_count }} hubs</li>
             {% endfor %}
         </ul>
+    </div>
+</section>
+
+<section class="page-grid page-grid--sidebar">
+    <div class="panel">
+        <div class="section-heading">
+            <div>
+                <p class="eyebrow">Daily Revenue</p>
+                <h2>Day-by-day financial rollup</h2>
+            </div>
+        </div>
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>Date</th>
+                    <th>Entries</th>
+                    <th>Gross</th>
+                    <th>Net</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for row in daily_revenue_rows %}
+                    <tr>
+                        <td>{{ row.posted_at__date }}</td>
+                        <td>{{ row.row_count }}</td>
+                        <td>${{ row.gross }}</td>
+                        <td>${{ row.net }}</td>
+                    </tr>
+                {% empty %}
+                    <tr><td colspan="4">No daily revenue rows in this window.</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    <div class="panel">
+        <div class="section-heading">
+            <div>
+                <p class="eyebrow">Order-Backed Financial Rows</p>
+                <h2>Recent ledger entries with order links</h2>
+            </div>
+        </div>
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>When</th>
+                    <th>Store</th>
+                    <th>Type</th>
+                    <th>Order</th>
+                    <th>Net</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for entry in revenue_ledger_rows %}
+                    <tr>
+                        <td>{{ entry.posted_at|date:"M j, g:i A" }}</td>
+                        <td>{{ entry.store.name }}</td>
+                        <td>{{ entry.get_entry_type_display }}</td>
+                        <td>{% if entry.order %}<a href="{% url 'orders:detail' entry.order.public_order_code %}">{{ entry.order.public_order_code }}</a>{% else %}-{% endif %}</td>
+                        <td>${{ entry.net_amount }}</td>
+                    </tr>
+                {% empty %}
+                    <tr><td colspan="5">No ledger entries are available.</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
     </div>
 </section>
 
@@ -121,6 +187,78 @@
                 {% endfor %}
             </tbody>
         </table>
+    </div>
+</section>
+
+<section class="page-grid page-grid--sidebar">
+    <div class="panel">
+        <div class="section-heading">
+            <div>
+                <p class="eyebrow">Maintenance Summary</p>
+                <h2>Current machine + assignment status mix</h2>
+            </div>
+        </div>
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>Machine Status</th>
+                    <th>Count</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for row in machine_status_summary %}
+                    <tr>
+                        <td>{{ row.current_status|title }}</td>
+                        <td>{{ row.count }}</td>
+                    </tr>
+                {% empty %}
+                    <tr><td colspan="2">No machine summary rows.</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>Assignment Status</th>
+                    <th>Count</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for row in assignment_status_summary %}
+                    <tr>
+                        <td>{{ row.status|title }}</td>
+                        <td>{{ row.count }}</td>
+                    </tr>
+                {% empty %}
+                    <tr><td colspan="2">No assignment summary rows.</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    <div class="panel">
+        <div class="section-heading">
+            <div>
+                <p class="eyebrow">AI Supply Drafts</p>
+                <h2>Draft schedules awaiting human action</h2>
+            </div>
+        </div>
+        <div class="surface-list">
+            {% for schedule in ai_schedule_rows %}
+                <article class="list-card">
+                    <div class="list-card__main">
+                        <h3>{{ schedule.store.name }} · {{ schedule.inventory_item.name }}</h3>
+                        <p class="muted">{{ schedule.recommended_quantity }} every {{ schedule.recommended_frequency_days }} day{{ schedule.recommended_frequency_days|pluralize }}</p>
+                    </div>
+                    <div class="list-card__actions">
+                        <span class="pill {% if schedule.status == 'approved' %}pill--soft{% else %}pill--warning{% endif %}">
+                            {{ schedule.get_status_display }}
+                        </span>
+                    </div>
+                </article>
+            {% empty %}
+                <div class="empty-state"><p>No AI schedule rows in this scope.</p></div>
+            {% endfor %}
+        </div>
     </div>
 </section>
 

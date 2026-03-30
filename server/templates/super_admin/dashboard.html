@@ -26,25 +26,23 @@
             <div><dt>Staff</dt><dd>{{ account_summary.staff }}</dd></div>
             <div><dt>Stores</dt><dd>{{ account_summary.stores }}</dd></div>
         </dl>
+        <dl class="summary-list">
+            <div><dt>Pending Imports</dt><dd>{{ pending_import_count }}</dd></div>
+            <div><dt>Machine Issues</dt><dd>{{ machine_issue_count }}</dd></div>
+        </dl>
     </div>
     <div class="panel">
-        <p class="eyebrow">Recent Audit Events</p>
-        <ul class="mini-list">
-            {% for log in recent_audit_logs|slice:":6" %}
-                <li>
-                    {{ log.action }} ·
-                    {% if log.store %}
-                        {{ log.store.name }}
-                    {% elif log.region %}
-                        {{ log.region.name }}
-                    {% else %}
-                        global
-                    {% endif %}
-                </li>
-            {% empty %}
-                <li>No audit events recorded.</li>
-            {% endfor %}
-        </ul>
+        <p class="eyebrow">Sync / Exception Review</p>
+        <dl class="summary-list">
+            <div><dt>Outbox Pending</dt><dd>{{ sync_summary.pending }}</dd></div>
+            <div><dt>Outbox Failed</dt><dd>{{ sync_summary.failed }}</dd></div>
+            <div><dt>Open Conflicts</dt><dd>{{ sync_summary.conflicts }}</dd></div>
+            <div><dt>Projection Rows</dt><dd>{{ sync_summary.projections }}</dd></div>
+        </dl>
+        <div class="cta-row">
+            <a class="button button--ghost" href="{% url 'sync:index' %}">Open sync workspace</a>
+            <a class="button button--ghost" href="{% url 'analytics:index' %}">Open analytics</a>
+        </div>
     </div>
 </section>
 
@@ -73,5 +71,60 @@
             {% endfor %}
         </tbody>
     </table>
+</section>
+
+<section class="panel">
+    <div class="section-heading">
+        <div>
+            <p class="eyebrow">Regional Operations Comparison</p>
+            <h2>Transfers and machine issues by region</h2>
+        </div>
+    </div>
+    <table class="data-table">
+        <thead>
+            <tr>
+                <th>Region</th>
+                <th>Transfer Count</th>
+                <th>Machine Issues</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for row in region_operations %}
+                <tr>
+                    <td>{{ row.name }}</td>
+                    <td>{{ row.transfer_count }}</td>
+                    <td>{{ row.machine_issue_count }}</td>
+                </tr>
+            {% empty %}
+                <tr><td colspan="3">No regional operations rows.</td></tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</section>
+
+<section class="panel">
+    <div class="section-heading">
+        <div>
+            <p class="eyebrow">Recent Audit Events</p>
+            <h2>Cross-system operational trail</h2>
+        </div>
+    </div>
+    <ul class="mini-list">
+        {% for log in recent_audit_logs %}
+            <li>
+                {{ log.action }} ·
+                {% if log.store %}
+                    {{ log.store.name }}
+                {% elif log.region %}
+                    {{ log.region.name }}
+                {% else %}
+                    global
+                {% endif %}
+                · {{ log.created_at|date:"M j, g:i A" }}
+            </li>
+        {% empty %}
+            <li>No audit events recorded.</li>
+        {% endfor %}
+    </ul>
 </section>
 {% endblock %}
