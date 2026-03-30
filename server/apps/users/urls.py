@@ -4,9 +4,9 @@ from .views import (
     AdminDashboardView,
     AdminUserManagementView,
     AdminUserUpdateView,
+    CodePopLoginView,
+    CodePopLogoutView,
     CustomerDashboardView,
-    FloatStackLoginView,
-    FloatStackLogoutView,
     HomePageView,
     LogisticsDashboardView,
     ManagerDashboardView,
@@ -19,8 +19,8 @@ from .views import (
 
 urlpatterns = [
     path("", HomePageView.as_view(), name="home"),
-    path("login/", FloatStackLoginView.as_view(), name="login"),
-    path("logout/", FloatStackLogoutView.as_view(), name="logout"),
+    path("login/", CodePopLoginView.as_view(), name="login"),
+    path("logout/", CodePopLogoutView.as_view(), name="logout"),
     path("register/", RegisterView.as_view(), name="register"),
     path("dashboard/", RoleAwareDashboardRedirectView.as_view(), name="dashboard"),
     path("account/preferences/", PreferenceView.as_view(), name="account-preferences"),
