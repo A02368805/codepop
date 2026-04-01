@@ -582,7 +582,7 @@ class PreferenceView(RoleRequiredMixin, LoginRequiredMixin, FormView):
                     groups=[
                         {
                             "label": "Sodas",
-                            "description": "Bases CodePop should steer away from.",
+                            "description": "Bases FloatStack should steer away from.",
                             "items": [
                                 {"value": key, **value}
                                 for key, value in SODA_OPTIONS.items()

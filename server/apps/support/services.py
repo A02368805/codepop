@@ -19,12 +19,7 @@ logger = logging.getLogger(__name__)
 ORDER_CODE_PATTERN = re.compile(r"\bFS-[A-Z0-9-]+\b", re.IGNORECASE)
 LOOKUP_CODE_PATTERN = re.compile(r"\bGST-[A-Z0-9-]+\b", re.IGNORECASE)
 
-DEFAULT_QUICK_PROMPTS = [
-    "Where is my order?",
-    "Can I cancel my drink?",
-    "How does guest lookup work?",
-    "I need help with pickup timing",
-]
+DEFAULT_QUICK_PROMPTS = []
 
 
 def ensure_support_session(request):
@@ -82,7 +77,7 @@ def start_new_conversation(request):
         role=SupportMessage.Role.ASSISTANT,
         intent="welcome",
         content=(
-            "Hi, I am the CodePop support assistant. I can help with order status, "
+            "Hi, I am the FloatStack support assistant. I can help with order status, "
             "guest lookup, cancellation/refund rules, pickup timing, and account navigation."
         ),
     )
@@ -122,139 +117,38 @@ def _resolve_order_context(conversation, request, message_text):
     return order
 
 
-def _intent_for_message(text):
-    lowered = (text or "").lower()
-    if "guest" in lowered and ("lookup" in lowered or "track" in lowered):
-        return "guest_lookup"
-    if any(token in lowered for token in ["where", "status", "track", "order"]):
-        return "order_status"
-    if any(token in lowered for token in ["cancel", "refund"]):
-        return "refund_policy"
-    if any(token in lowered for token in ["favorite", "history", "preference", "account"]):
-        return "account_help"
-    if any(token in lowered for token in ["store", "pickup", "timing", "wait"]):
-        return "store_pickup_help"
-    if any(token in lowered for token in ["build", "drink", "recommend", "flavor"]):
-        return "drink_builder_help"
-    if any(token in lowered for token in ["issue", "problem", "complaint", "wrong"]):
-        return "escalation_help"
-    return "general_help"
+def _recent_conversation_messages(conversation, *, limit=10):
+    rows = (
+        conversation.messages.order_by("-created_at")
+        .values("role", "content")[:limit]
+    )
+    return list(reversed(rows))
 
 
-def _intent_response(*, intent, request, conversation, message_text, order):
-    quick_actions = []
-    links = []
-    suggest_escalation = False
-
-    if intent == "order_status":
-        if order:
-            reply = (
-                f"Your order {order.public_order_code} is currently {order.get_status_display().lower()}. "
-                f"Pickup store: {order.store.name}."
-            )
-            if order.pickup_time_requested:
-                reply += " I recommend arriving near your requested pickup time so freshness stays high."
-            links.append({"label": "Open order details", "url": reverse("orders:detail", args=[order.public_order_code])})
-        else:
-            reply = (
-                "I can help track an order if you share its public code (for example FS-C-C001-XXXXXX). "
-                "For guest orders, you can also use the guest lookup flow."
-            )
-            links.append({"label": "Guest order lookup", "url": reverse("orders:guest-lookup")})
-        quick_actions = ["How do I track a guest order?", "Can I cancel my drink?"]
-    elif intent == "refund_policy":
-        if order and order.status in {Order.Status.PAID, Order.Status.QUEUED, Order.Status.PAYMENT_PENDING}:
-            reply = (
-                "Based on the current order state, cancellation/refund is generally allowed before preparation begins. "
-                "Use the order details page to continue through the existing cancellation flow."
-            )
-            links.append({"label": "Open order details", "url": reverse("orders:detail", args=[order.public_order_code])})
-        elif order and order.status in {Order.Status.PREPARING, Order.Status.READY, Order.Status.PICKED_UP}:
-            reply = (
-                "Refund eligibility normally ends once preparation begins. "
-                "If you had a product issue, I can open a support escalation for human follow-up."
-            )
-            suggest_escalation = True
-        else:
-            reply = (
-                "CodePop policy is that refund eligibility ends when preparation begins. "
-                "Before that point, cancellation can be handled from the order details workflow."
-            )
-        quick_actions = ["Where is my order?", "I had an issue with my drink"]
-    elif intent == "guest_lookup":
-        lookup_code = _extract_lookup_code(message_text)
-        reply = (
-            "Guest orders are tracked through the guest lookup page using the checkout lookup code. "
-            "Guest users are not persisted as full account users."
-        )
-        if lookup_code:
-            reply += f" You can paste {lookup_code} on the guest lookup page now."
-        links.append({"label": "Open guest lookup", "url": reverse("orders:guest-lookup")})
-        quick_actions = ["Where is my order?", "How do favorites work?"]
-    elif intent == "account_help":
-        if getattr(request.user, "is_authenticated", False):
-            reply = (
-                "From your customer dashboard you can manage favorites, taste preferences, "
-                "and account order history without changing staff workflows."
-            )
-            links.extend(
-                [
-                    {"label": "Customer dashboard", "url": reverse("customer-dashboard")},
-                    {"label": "Favorites", "url": reverse("orders:favorites")},
-                    {"label": "Order history", "url": reverse("orders:history")},
-                ]
-            )
-        else:
-            reply = (
-                "Favorites and account history are available to account users after sign-in. "
-                "Guest checkout still works without creating a persistent user profile."
-            )
-            links.append({"label": "Sign in", "url": reverse("login")})
-        quick_actions = ["Can you help me build a drink?", "How do I choose the best store?"]
-    elif intent == "store_pickup_help":
-        reply = (
-            "Store selection and pickup timing are advisory choices you control before checkout. "
-            "A good default is the nearest open store with your preferred pickup window."
-        )
-        links.extend(
-            [
-                {"label": "Find stores", "url": reverse("stores:index")},
-                {"label": "Browse menu", "url": reverse("orders:index")},
-            ]
-        )
-        quick_actions = ["Where is my order?", "Can I cancel my drink?"]
-    elif intent == "drink_builder_help":
-        reply = (
-            "I can guide your drink builder choices with suggestions, but all final edits stay in your control. "
-            "Use the AI builder helper on a store menu item to refine soda, syrups, and add-ins."
-        )
-        links.append({"label": "Start with stores", "url": reverse("stores:index")})
-        quick_actions = ["Can you help me build a drink?", "How do favorites work?"]
-    elif intent == "escalation_help":
-        reply = (
-            "I am sorry this did not go smoothly. I can capture a support escalation with your summary "
-            "so the team can follow up."
-        )
-        suggest_escalation = True
-        quick_actions = ["I had an issue with my drink", "Still need help"]
-    else:
-        reply = (
-            "I can help with order tracking, guest lookup, cancellation/refund policy, "
-            "store and pickup guidance, drink builder help, and account navigation."
-        )
-        quick_actions = list(DEFAULT_QUICK_PROMPTS)
-
-    return {
-        "reply_text": reply,
-        "quick_actions": [{"label": text, "prompt": text} for text in quick_actions[:4]],
-        "links": links,
-        "suggest_escalation": suggest_escalation,
+def _build_support_context(*, request, conversation, order):
+    user = request.user
+    user_role = getattr(user, "role", "guest") if getattr(user, "is_authenticated", False) else "guest"
+    context = {
+        "conversation_id": str(conversation.id),
+        "user_role": user_role,
+        "history": _recent_conversation_messages(conversation),
+        "known_order": None,
     }
+    if order:
+        context["known_order"] = {
+            "public_order_code": order.public_order_code,
+            "status": order.status,
+            "status_display": order.get_status_display(),
+            "store_name": order.store.name,
+            "pickup_time_requested": order.pickup_time_requested.isoformat() if order.pickup_time_requested else "",
+        }
+    return context
 
 
-def _call_anthropic_support_ai(*, request, conversation, message_text, order, deterministic_response):
+def _call_anthropic_support_ai(*, request, conversation, message_text, order):
     api_key = str(getattr(settings, "ANTHROPIC_API_KEY", "") or "").strip()
     if not api_key:
+        logger.info("support_ai_skipped_missing_api_key")
         return None
 
     base_url = str(
@@ -265,37 +159,30 @@ def _call_anthropic_support_ai(*, request, conversation, message_text, order, de
     max_retries = int(getattr(settings, "AI_PROVIDER_MAX_RETRIES", 2))
 
     system_prompt = (
-        "You are the CodePop support assistant. Use the supplied policy context to write a short, helpful reply. "
-        "Do not change the policy facts, links, escalation guidance, or order status. "
-        "Return JSON only with this exact shape: {\"reply_text\": string}. "
-        "Keep the reply under 120 words and do not mention that you are an AI model."
+        "You are the FloatStack support chat assistant. Respond conversationally and helpfully. "
+        "If order details are missing, ask for the public order code. "
+        "Never invent order status, refunds, or pricing details. "
+        "Keep replies under 140 words and provide only plain response text."
+    )
+    support_context = _build_support_context(
+        request=request,
+        conversation=conversation,
+        order=order,
     )
     body = {
         "model": model,
-        "max_tokens": 220,
+        "max_tokens": 260,
         "messages": [
             {
                 "role": "user",
                 "content": json.dumps(
                     {
                         "message": message_text,
-                        "conversation": {
-                            "id": str(conversation.id),
-                            "status": conversation.status,
-                            "intent": deterministic_response.get("intent", "general_help"),
-                        },
-                        "order": {
-                            "public_order_code": getattr(order, "public_order_code", ""),
-                            "status": getattr(order, "status", ""),
-                            "store_name": getattr(getattr(order, "store", None), "name", ""),
-                        }
-                        if order
-                        else None,
-                        "deterministic_context": {
-                            "reply_text": deterministic_response.get("reply_text", ""),
-                            "quick_actions": deterministic_response.get("quick_actions", []),
-                            "links": deterministic_response.get("links", []),
-                            "suggest_escalation": deterministic_response.get("suggest_escalation", False),
+                        "support_context": support_context,
+                        "available_links": {
+                            "guest_lookup": reverse("orders:guest-lookup"),
+                            "stores": reverse("stores:index"),
+                            "orders_history": reverse("orders:history") if getattr(request.user, "is_authenticated", False) else "",
                         },
                     }
                 ),
@@ -328,11 +215,26 @@ def _call_anthropic_support_ai(*, request, conversation, message_text, order, de
             if not text_block:
                 raise ValueError("Anthropic response did not contain text content.")
 
-            parsed = json.loads(text_block)
-            reply_text = str(parsed.get("reply_text", "")).strip()
+            reply_text = str(text_block).strip()
             if not reply_text:
-                raise ValueError("Anthropic support response did not include reply_text.")
-            return {"reply_text": reply_text}
+                raise ValueError("Anthropic support response did not include text.")
+            links = []
+            if order:
+                links.append(
+                    {
+                        "label": "Open order details",
+                        "url": reverse("orders:detail", args=[order.public_order_code]),
+                    }
+                )
+            else:
+                links.append(
+                    {"label": "Guest lookup", "url": reverse("orders:guest-lookup")}
+                )
+            return {
+                "reply_text": reply_text,
+                "suggest_escalation": False,
+                "links": links,
+            }
         except (ValueError, json.JSONDecodeError, TimeoutError, url_error.URLError, url_error.HTTPError) as exc:
             logger.warning(
                 "support_ai_provider_attempt_failed",
@@ -350,6 +252,29 @@ def _call_anthropic_support_ai(*, request, conversation, message_text, order, de
     return None
 
 
+def _fallback_support_reply(*, order, message_text):
+    lowered = (message_text or "").lower()
+    links = []
+    suggest_escalation = any(word in lowered for word in ["issue", "wrong", "problem", "refund"])
+    if order:
+        reply = (
+            f"I found order {order.public_order_code}. It is currently {order.get_status_display().lower()} at {order.store.name}. "
+            "If you want, I can also help with pickup timing or cancellation guidance."
+        )
+        links.append({"label": "Open order details", "url": reverse("orders:detail", args=[order.public_order_code])})
+    else:
+        reply = (
+            "I can help with order status, refunds, pickup timing, and account questions. "
+            "If this is about a specific order, share your public order code so I can ground the response."
+        )
+        links.append({"label": "Guest lookup", "url": reverse("orders:guest-lookup")})
+    return {
+        "reply_text": reply,
+        "links": links,
+        "suggest_escalation": suggest_escalation,
+    }
+
+
 def process_support_message(*, request, conversation, message_text):
     trimmed = (message_text or "").strip()
     if not trimmed:
@@ -358,29 +283,23 @@ def process_support_message(*, request, conversation, message_text):
             "quick_actions": [{"label": text, "prompt": text} for text in DEFAULT_QUICK_PROMPTS],
             "links": [],
             "suggest_escalation": False,
-            "intent": "general_help",
+            "intent": "chat",
         }
 
-    intent = _intent_for_message(trimmed)
+    intent = "chat"
     order = _resolve_order_context(conversation, request, trimmed)
-    response = _intent_response(
-        intent=intent,
-        request=request,
-        conversation=conversation,
-        message_text=trimmed,
-        order=order,
-    )
-    response["intent"] = intent
-
     anthropic_response = _call_anthropic_support_ai(
         request=request,
         conversation=conversation,
         message_text=trimmed,
         order=order,
-        deterministic_response=response,
     )
-    if anthropic_response:
-        response["reply_text"] = anthropic_response["reply_text"]
+    response = anthropic_response or _fallback_support_reply(
+        order=order,
+        message_text=trimmed,
+    )
+    response["quick_actions"] = []
+    response["intent"] = intent
 
     SupportMessage.objects.create(
         conversation=conversation,

@@ -360,7 +360,7 @@ def _call_anthropic_menu_ai(*, user, store, prompt, menu_items, ingredient_catal
     system_prompt = (
         "You are FloatStack Menu AI, a concise assistant that creates a custom soda suggestion from the provided ingredient catalog. "
         "Only use the ingredient catalog and menu context provided to you. Do not invent ingredients, prices, or menu items. "
-        "Respect CodePop rules: orders stay scoped to one store, and you are only helping choose a drink. "
+        "Respect FloatStack rules: orders stay scoped to one store, and you are only helping choose a drink. "
         "Return JSON only with this exact shape: {\"answer\": string, \"recipe\": {\"name\": string, \"description\": string, \"reason\": string, \"base_soda_slug\": string, \"syrup_slugs\": [string, ...], \"add_in_slugs\": [string, ...], \"ice_cream_slug\": string, \"starter_menu_slug\": string}, \"quick_prompts\": [string, ...], \"menu_matches\": [{\"slug\": string, \"reason\": string}]}. "
         "Choose existing ingredients only. Keep the answer friendly and under 120 words."
     )

@@ -2,7 +2,7 @@
     <div class="section-heading section-heading--tight">
         <div>
             <p class="eyebrow">Conversation</p>
-            <h2>Support thread</h2>
+            <h2>Support chat</h2>
         </div>
         {% if conversation.linked_order %}
             <a href="{% url 'orders:detail' conversation.linked_order.public_order_code %}">Linked order {{ conversation.linked_order.public_order_code }}</a>
@@ -18,38 +18,10 @@
             </article>
         {% empty %}
             <div class="empty-state">
-                <p>Start with a quick prompt and I can guide you.</p>
+                <p>Send a message to start chatting with support.</p>
             </div>
         {% endfor %}
     </div>
-
-    {% if quick_actions %}
-        <div class="inline-cluster">
-            {% for action in quick_actions %}
-                <form
-                    method="post"
-                    hx-post="{% url 'support:send' conversation.id %}"
-                    hx-target="#support-workspace"
-                    hx-swap="innerHTML"
-                >
-                    {% csrf_token %}
-                    <input type="hidden" name="message" value="{{ action.prompt }}">
-                    <button class="button button--ghost" type="submit">{{ action.label }}</button>
-                </form>
-            {% endfor %}
-        </div>
-    {% endif %}
-
-    {% if related_links %}
-        <div class="panel" style="margin-top: 0;">
-            <p class="eyebrow">Related links</p>
-            <div class="inline-cluster">
-                {% for link in related_links %}
-                    <a class="button button--ghost" href="{{ link.url }}">{{ link.label }}</a>
-                {% endfor %}
-            </div>
-        </div>
-    {% endif %}
 
     <form
         method="post"
@@ -64,10 +36,21 @@
             {{ message_form.message }}
         </label>
         <div class="action-row">
-            <button class="button button--primary" type="submit">Send</button>
+            <button class="button button--primary" type="submit">Send message</button>
             <a class="button button--ghost" href="{% url 'support:conversation-detail' conversation.id %}">Open conversation page</a>
         </div>
     </form>
+
+    {% if related_links %}
+        <div class="panel" style="margin-top: 0;">
+            <p class="eyebrow">Suggested links</p>
+            <div class="inline-cluster">
+                {% for link in related_links %}
+                    <a class="button button--ghost" href="{{ link.url }}">{{ link.label }}</a>
+                {% endfor %}
+            </div>
+        </div>
+    {% endif %}
 
     <div class="panel" style="margin-top: 0;">
         <div class="section-heading section-heading--tight">

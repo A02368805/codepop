@@ -1,4 +1,5 @@
 from decimal import Decimal
+from unittest.mock import patch
 
 from apps.orders.models import Order
 from apps.orders.services import create_order, transition_order_status
@@ -151,26 +152,49 @@ class SupportAssistantServiceTests(TestCase):
             default_region=cls.region,
         )
 
-    def test_common_intents_return_grounded_responses(self):
+    @patch("apps.support.services._call_anthropic_support_ai")
+    def test_support_chat_uses_api_response(self, mock_ai_call):
+        mock_ai_call.return_value = {
+            "reply_text": "I can help with that. Please share your order code so I can check status.",
+            "links": [{"label": "Guest lookup", "url": reverse("orders:guest-lookup")}],
+            "suggest_escalation": False,
+        }
+
         conversation = SupportConversation.objects.create(user=self.customer)
         factory = RequestFactory()
 
-        checks = [
-            ("Where is my order?", "share its public code"),
-            ("How do I track a guest order?", "Guest orders are tracked"),
-            ("How do favorites work?", "favorites"),
-        ]
+        request = factory.get("/")
+        middleware = SessionMiddleware(lambda req: None)
+        middleware.process_request(request)
+        request.session.save()
+        request.user = self.customer
+        response = process_support_message(
+            request=request,
+            conversation=conversation,
+            message_text="Where is my order?",
+        )
 
-        for user_message, expected_text in checks:
-            with self.subTest(user_message=user_message):
-                request = factory.get("/")
-                middleware = SessionMiddleware(lambda req: None)
-                middleware.process_request(request)
-                request.session.save()
-                request.user = self.customer
-                response = process_support_message(
-                    request=request,
-                    conversation=conversation,
-                    message_text=user_message,
-                )
-                self.assertIn(expected_text.lower(), response["reply_text"].lower())
+        self.assertIn("please share your order code", response["reply_text"].lower())
+        self.assertEqual(response["intent"], "chat")
+        self.assertEqual(len(response["links"]), 1)
+        mock_ai_call.assert_called_once()
+
+    @patch("apps.support.services._call_anthropic_support_ai")
+    def test_support_chat_fallback_when_api_unavailable(self, mock_ai_call):
+        mock_ai_call.return_value = None
+        conversation = SupportConversation.objects.create(user=self.customer)
+        factory = RequestFactory()
+
+        request = factory.get("/")
+        middleware = SessionMiddleware(lambda req: None)
+        middleware.process_request(request)
+        request.session.save()
+        request.user = self.customer
+        response = process_support_message(
+            request=request,
+            conversation=conversation,
+            message_text="I need help with my order",
+        )
+
+        self.assertIn("public order code", response["reply_text"].lower())
+        self.assertEqual(response["intent"], "chat")

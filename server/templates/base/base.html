@@ -4,8 +4,8 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>{% block title %}CodePop{% endblock %}</title>
-    <meta name="description" content="CodePop is a polished soda ordering and operations platform for customers and regional teams.">
+    <title>{% block title %}FloatStack{% endblock %}</title>
+    <meta name="description" content="FloatStack is a polished soda ordering and operations platform for customers and regional teams.">
     <link rel="icon" type="image/png" href="{% static 'images/floatstack-favicon.png' %}">
     <link rel="stylesheet" href="{% static 'css/app.css' %}">
     <script src="https://unpkg.com/htmx.org@1.9.12" defer></script>
@@ -16,17 +16,17 @@
         <header class="topbar">
             {% if brandmark.is_clickable %}
                 <a class="brandmark" href="{{ brandmark.url }}">
-                    <img class="brandmark__logo" src="{% static 'images/floatstack-logo.png' %}" alt="CodePop">
+                    <img class="brandmark__logo" src="{% static 'images/floatstack-logo.png' %}" alt="FloatStack">
                     <span class="brandmark__wordmark">
-                        <span class="brandmark__text">CodePop</span>
+                        <span class="brandmark__text">FloatStack</span>
                         <span class="brandmark__subtext">Ordering + Operations</span>
                     </span>
                 </a>
             {% else %}
-                <div class="brandmark brandmark--static" aria-label="CodePop">
-                    <img class="brandmark__logo" src="{% static 'images/floatstack-logo.png' %}" alt="CodePop">
+                <div class="brandmark brandmark--static" aria-label="FloatStack">
+                    <img class="brandmark__logo" src="{% static 'images/floatstack-logo.png' %}" alt="FloatStack">
                     <span class="brandmark__wordmark">
-                        <span class="brandmark__text">CodePop</span>
+                        <span class="brandmark__text">FloatStack</span>
                         <span class="brandmark__subtext">Ordering + Operations</span>
                     </span>
                 </div>
@@ -76,7 +76,7 @@
         </main>
 
         <footer class="footer">
-            <p>CodePop keeps customer ordering and operational workflows in one responsive web product.</p>
+            <p>FloatStack keeps customer ordering and operational workflows in one responsive web product.</p>
             <p class="muted">Session auth, scoped dashboards, and server-side business rules stay aligned across the demo.</p>
         </footer>
     </div>
