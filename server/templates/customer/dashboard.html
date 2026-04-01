@@ -11,6 +11,7 @@
         <div class="cta-row">
             <a class="button button--primary" href="{% url 'stores:index' %}">Start an order</a>
             <a class="button button--ghost" href="{% url 'orders:history' %}">View order history</a>
+            <a class="button button--ghost" href="{% url 'support:index' %}">Get support</a>
         </div>
     </div>
     <div class="hero-card" id="dashboard-metrics" hx-get="{{ dashboard.refresh_url }}" hx-trigger="load, every 30s" hx-swap="innerHTML">

@@ -1,0 +1,626 @@
+{
+  "sodas": [
+    {
+      "slug": "coke",
+      "label": "Coke",
+      "price": "0.00",
+      "tags": [
+        "cola",
+        "classic",
+        "caffeinated"
+      ],
+      "description": "Classic cola finish",
+      "category": "soda"
+    },
+    {
+      "slug": "diet-coke",
+      "label": "Diet Coke",
+      "price": "0.00",
+      "tags": [
+        "cola",
+        "diet",
+        "zero-sugar",
+        "caffeinated"
+      ],
+      "description": "Zero-sugar cola",
+      "category": "soda"
+    },
+    {
+      "slug": "coke-zero",
+      "label": "Coke Zero",
+      "price": "0.00",
+      "tags": [
+        "cola",
+        "diet",
+        "zero-sugar",
+        "caffeinated"
+      ],
+      "description": "Bold zero-sugar cola",
+      "category": "soda"
+    },
+    {
+      "slug": "dr-pepper",
+      "label": "Dr Pepper",
+      "price": "0.00",
+      "tags": [
+        "cola",
+        "spiced",
+        "caffeinated"
+      ],
+      "description": "Spiced soda shop classic",
+      "category": "soda"
+    },
+    {
+      "slug": "diet-dr-pepper",
+      "label": "Diet Dr Pepper",
+      "price": "0.00",
+      "tags": [
+        "cola",
+        "spiced",
+        "diet",
+        "zero-sugar",
+        "caffeinated"
+      ],
+      "description": "Spiced zero-sugar option",
+      "category": "soda"
+    },
+    {
+      "slug": "pepsi",
+      "label": "Pepsi",
+      "price": "0.00",
+      "tags": [
+        "cola",
+        "classic",
+        "caffeinated"
+      ],
+      "description": "Smooth cola base",
+      "category": "soda"
+    },
+    {
+      "slug": "diet-pepsi",
+      "label": "Diet Pepsi",
+      "price": "0.00",
+      "tags": [
+        "cola",
+        "diet",
+        "zero-sugar",
+        "caffeinated"
+      ],
+      "description": "Zero-sugar Pepsi base",
+      "category": "soda"
+    },
+    {
+      "slug": "sprite",
+      "label": "Sprite",
+      "price": "0.00",
+      "tags": [
+        "citrus",
+        "clear",
+        "caffeine-free"
+      ],
+      "description": "Bright and bubbly",
+      "category": "soda"
+    },
+    {
+      "slug": "sprite-zero",
+      "label": "Sprite Zero",
+      "price": "0.00",
+      "tags": [
+        "citrus",
+        "clear",
+        "diet",
+        "zero-sugar",
+        "caffeine-free"
+      ],
+      "description": "Bright zero-sugar citrus",
+      "category": "soda"
+    },
+    {
+      "slug": "root-beer",
+      "label": "Root Beer",
+      "price": "0.00",
+      "tags": [
+        "classic",
+        "float-friendly",
+        "caffeine-free"
+      ],
+      "description": "Perfect float base",
+      "category": "soda"
+    },
+    {
+      "slug": "orange-soda",
+      "label": "Orange Soda",
+      "price": "0.00",
+      "tags": [
+        "fruit",
+        "citrus",
+        "caffeine-free"
+      ],
+      "description": "Bright orange pop",
+      "category": "soda"
+    },
+    {
+      "slug": "mountain-dew",
+      "label": "Mountain Dew",
+      "price": "0.00",
+      "tags": [
+        "citrus",
+        "bold",
+        "caffeinated"
+      ],
+      "description": "Bold citrus energy",
+      "category": "soda"
+    },
+    {
+      "slug": "diet-mountain-dew",
+      "label": "Diet Mountain Dew",
+      "price": "0.00",
+      "tags": [
+        "citrus",
+        "bold",
+        "diet",
+        "zero-sugar",
+        "caffeinated"
+      ],
+      "description": "Zero-sugar citrus energy",
+      "category": "soda"
+    },
+    {
+      "slug": "lemon-lime",
+      "label": "Lemon-Lime Soda",
+      "price": "0.00",
+      "tags": [
+        "citrus",
+        "clear",
+        "caffeine-free"
+      ],
+      "description": "Crisp citrus default",
+      "category": "soda"
+    },
+    {
+      "slug": "club-soda",
+      "label": "Club Soda",
+      "price": "0.00",
+      "tags": [
+        "clean",
+        "clear",
+        "caffeine-free",
+        "zero-sugar"
+      ],
+      "description": "Clean base for custom builds",
+      "category": "soda"
+    },
+    {
+      "slug": "cream-soda",
+      "label": "Cream Soda",
+      "price": "0.00",
+      "tags": [
+        "creamy",
+        "dessert",
+        "caffeine-free"
+      ],
+      "description": "Sweet vanilla-leaning base",
+      "category": "soda"
+    }
+  ],
+  "syrups": [
+    {
+      "slug": "vanilla",
+      "label": "Vanilla",
+      "price": "0.25",
+      "tags": [
+        "vanilla",
+        "dessert"
+      ],
+      "description": "",
+      "category": "syrup"
+    },
+    {
+      "slug": "french-vanilla",
+      "label": "French Vanilla",
+      "price": "0.25",
+      "tags": [
+        "vanilla",
+        "dessert"
+      ],
+      "description": "",
+      "category": "syrup"
+    },
+    {
+      "slug": "cherry",
+      "label": "Cherry",
+      "price": "0.25",
+      "tags": [
+        "fruit",
+        "bright"
+      ],
+      "description": "",
+      "category": "syrup"
+    },
+    {
+      "slug": "coconut",
+      "label": "Coconut",
+      "price": "0.30",
+      "tags": [
+        "tropical",
+        "creamy"
+      ],
+      "description": "",
+      "category": "syrup"
+    },
+    {
+      "slug": "lime",
+      "label": "Lime",
+      "price": "0.25",
+      "tags": [
+        "citrus",
+        "bright"
+      ],
+      "description": "",
+      "category": "syrup"
+    },
+    {
+      "slug": "lemon",
+      "label": "Lemon",
+      "price": "0.25",
+      "tags": [
+        "citrus",
+        "bright"
+      ],
+      "description": "",
+      "category": "syrup"
+    },
+    {
+      "slug": "raspberry",
+      "label": "Raspberry",
+      "price": "0.25",
+      "tags": [
+        "berry",
+        "fruit"
+      ],
+      "description": "",
+      "category": "syrup"
+    },
+    {
+      "slug": "strawberry",
+      "label": "Strawberry",
+      "price": "0.25",
+      "tags": [
+        "berry",
+        "fruit"
+      ],
+      "description": "",
+      "category": "syrup"
+    },
+    {
+      "slug": "peach",
+      "label": "Peach",
+      "price": "0.25",
+      "tags": [
+        "stone-fruit",
+        "fruit"
+      ],
+      "description": "",
+      "category": "syrup"
+    },
+    {
+      "slug": "mango",
+      "label": "Mango",
+      "price": "0.30",
+      "tags": [
+        "tropical",
+        "fruit"
+      ],
+      "description": "",
+      "category": "syrup"
+    },
+    {
+      "slug": "blackberry",
+      "label": "Blackberry",
+      "price": "0.30",
+      "tags": [
+        "berry",
+        "fruit"
+      ],
+      "description": "",
+      "category": "syrup"
+    },
+    {
+      "slug": "watermelon",
+      "label": "Watermelon",
+      "price": "0.25",
+      "tags": [
+        "fruit",
+        "melon"
+      ],
+      "description": "",
+      "category": "syrup"
+    },
+    {
+      "slug": "pineapple",
+      "label": "Pineapple",
+      "price": "0.30",
+      "tags": [
+        "tropical",
+        "fruit"
+      ],
+      "description": "",
+      "category": "syrup"
+    },
+    {
+      "slug": "blue-raspberry",
+      "label": "Blue Raspberry",
+      "price": "0.30",
+      "tags": [
+        "berry",
+        "fruit",
+        "playful"
+      ],
+      "description": "",
+      "category": "syrup"
+    },
+    {
+      "slug": "passion-fruit",
+      "label": "Passion Fruit",
+      "price": "0.30",
+      "tags": [
+        "tropical",
+        "fruit"
+      ],
+      "description": "",
+      "category": "syrup"
+    },
+    {
+      "slug": "pomegranate",
+      "label": "Pomegranate",
+      "price": "0.30",
+      "tags": [
+        "fruit",
+        "tart"
+      ],
+      "description": "",
+      "category": "syrup"
+    },
+    {
+      "slug": "hazelnut",
+      "label": "Hazelnut",
+      "price": "0.30",
+      "tags": [
+        "nutty",
+        "dessert"
+      ],
+      "description": "",
+      "category": "syrup"
+    },
+    {
+      "slug": "butterscotch",
+      "label": "Butterscotch",
+      "price": "0.30",
+      "tags": [
+        "dessert",
+        "caramelized"
+      ],
+      "description": "",
+      "category": "syrup"
+    },
+    {
+      "slug": "caramel",
+      "label": "Caramel",
+      "price": "0.30",
+      "tags": [
+        "dessert",
+        "caramelized"
+      ],
+      "description": "",
+      "category": "syrup"
+    },
+    {
+      "slug": "brown-sugar-cinnamon",
+      "label": "Brown Sugar Cinnamon",
+      "price": "0.30",
+      "tags": [
+        "spiced",
+        "dessert"
+      ],
+      "description": "",
+      "category": "syrup"
+    },
+    {
+      "slug": "grapefruit",
+      "label": "Grapefruit",
+      "price": "0.25",
+      "tags": [
+        "citrus",
+        "tart"
+      ],
+      "description": "",
+      "category": "syrup"
+    },
+    {
+      "slug": "guava",
+      "label": "Guava",
+      "price": "0.30",
+      "tags": [
+        "tropical",
+        "fruit"
+      ],
+      "description": "",
+      "category": "syrup"
+    },
+    {
+      "slug": "orange",
+      "label": "Orange",
+      "price": "0.25",
+      "tags": [
+        "citrus",
+        "fruit"
+      ],
+      "description": "",
+      "category": "syrup"
+    },
+    {
+      "slug": "lavender",
+      "label": "Lavender",
+      "price": "0.30",
+      "tags": [
+        "floral",
+        "aromatic"
+      ],
+      "description": "",
+      "category": "syrup"
+    },
+    {
+      "slug": "cinnamon",
+      "label": "Cinnamon",
+      "price": "0.25",
+      "tags": [
+        "spiced",
+        "warm"
+      ],
+      "description": "",
+      "category": "syrup"
+    }
+  ],
+  "add_ins": [
+    {
+      "slug": "cream",
+      "label": "Cream",
+      "price": "0.40",
+      "tags": [
+        "creamy",
+        "dairy"
+      ],
+      "description": "",
+      "category": "add_in"
+    },
+    {
+      "slug": "coconut-cream",
+      "label": "Coconut Cream",
+      "price": "0.50",
+      "tags": [
+        "creamy",
+        "tropical",
+        "dairy-free"
+      ],
+      "description": "",
+      "category": "add_in"
+    },
+    {
+      "slug": "half-and-half",
+      "label": "Half and Half",
+      "price": "0.45",
+      "tags": [
+        "creamy",
+        "dairy"
+      ],
+      "description": "",
+      "category": "add_in"
+    },
+    {
+      "slug": "whip",
+      "label": "Whip",
+      "price": "0.45",
+      "tags": [
+        "creamy",
+        "dessert",
+        "dairy"
+      ],
+      "description": "",
+      "category": "add_in"
+    },
+    {
+      "slug": "lime-wedge",
+      "label": "Lime Wedge",
+      "price": "0.20",
+      "tags": [
+        "citrus",
+        "fresh"
+      ],
+      "description": "",
+      "category": "add_in"
+    },
+    {
+      "slug": "lemon-wedge",
+      "label": "Lemon Wedge",
+      "price": "0.20",
+      "tags": [
+        "citrus",
+        "fresh"
+      ],
+      "description": "",
+      "category": "add_in"
+    },
+    {
+      "slug": "strawberry-puree",
+      "label": "Strawberry Puree",
+      "price": "0.45",
+      "tags": [
+        "berry",
+        "fruit"
+      ],
+      "description": "",
+      "category": "add_in"
+    },
+    {
+      "slug": "mango-puree",
+      "label": "Mango Puree",
+      "price": "0.45",
+      "tags": [
+        "tropical",
+        "fruit"
+      ],
+      "description": "",
+      "category": "add_in"
+    },
+    {
+      "slug": "fresh-mint",
+      "label": "Fresh Mint",
+      "price": "0.20",
+      "tags": [
+        "fresh",
+        "mint"
+      ],
+      "description": "",
+      "category": "add_in"
+    }
+  ],
+  "ice_cream": [
+    {
+      "slug": "scoop-vanilla",
+      "label": "Vanilla",
+      "price": "0.95",
+      "tags": [
+        "dessert",
+        "float",
+        "dairy"
+      ],
+      "description": "",
+      "category": "ice_cream"
+    },
+    {
+      "slug": "scoop-chocolate",
+      "label": "Chocolate",
+      "price": "0.95",
+      "tags": [
+        "dessert",
+        "float",
+        "dairy"
+      ],
+      "description": "",
+      "category": "ice_cream"
+    },
+    {
+      "slug": "scoop-strawberry",
+      "label": "Strawberry",
+      "price": "0.95",
+      "tags": [
+        "dessert",
+        "float",
+        "berry",
+        "dairy"
+      ],
+      "description": "",
+      "category": "ice_cream"
+    }
+  ]
+}

@@ -1,0 +1,39 @@
+{% extends "base/base.html" %}
+
+{% block title %}Customer Support | CodePop{% endblock %}
+
+{% block content %}
+<section class="hero hero--dashboard">
+    <div>
+        <p class="eyebrow">Customer Support</p>
+        <h1>Need help with your order or account?</h1>
+        <p class="lede">Use the support assistant for grounded answers about order status, guest lookup, refunds, pickup timing, and drink builder navigation.</p>
+        <div class="cta-row">
+            <form
+                method="post"
+                hx-post="{% url 'support:start' %}"
+                hx-target="#support-workspace"
+                hx-swap="innerHTML"
+            >
+                {% csrf_token %}
+                <button class="button button--ghost" type="submit">Start new conversation</button>
+            </form>
+            <a class="button button--ghost" href="{% url 'orders:guest-lookup' %}">Guest lookup</a>
+        </div>
+    </div>
+    <div class="hero-card">
+        <p class="eyebrow">What this assistant can do</p>
+        <ul class="mini-list">
+            <li>Explain order status and pickup timing</li>
+            <li>Guide guest order lookup flow</li>
+            <li>Clarify cancellation and refund policy</li>
+            <li>Point you to favorites, recommendations, and preferences</li>
+            <li>Create a support escalation if needed</li>
+        </ul>
+    </div>
+</section>
+
+<div id="support-workspace">
+    {% include "support/partials/workspace.html" %}
+</div>
+{% endblock %}

@@ -740,6 +740,66 @@ h3 {
     display: none;
 }
 
+.support-thread {
+    display: grid;
+    gap: 0.75rem;
+    max-height: 420px;
+    overflow-y: auto;
+    padding-right: 0.2rem;
+}
+
+.support-message {
+    border: 1px solid var(--line);
+    border-radius: 18px;
+    padding: 0.85rem 0.95rem;
+    background: rgba(255, 255, 255, 0.72);
+}
+
+.support-message--assistant {
+    background: linear-gradient(135deg, rgba(var(--accent-rgb), 0.11), rgba(var(--berry-rgb), 0.1));
+}
+
+.support-message--system {
+    background: rgba(var(--mint-rgb), 0.12);
+}
+
+.support-message__role {
+    margin-bottom: 0.35rem;
+    color: var(--muted);
+    font-size: 0.82rem;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+}
+
+.menu-ai-launcher {
+    display: grid;
+    gap: 0.85rem;
+    margin-top: 1rem;
+}
+
+.menu-ai-panel {
+    display: grid;
+    gap: 1rem;
+    padding: 1rem;
+    border: 1px solid var(--line);
+    border-radius: 20px;
+    background: rgba(255, 255, 255, 0.76);
+}
+
+.menu-ai-form {
+    display: grid;
+    gap: 1rem;
+}
+
+.menu-ai-result {
+    display: grid;
+    gap: 0.9rem;
+}
+
+.menu-ai-match-list .list-card__actions {
+    align-self: center;
+}
+
 .footer {
     margin-top: 1.5rem;
     padding: 1.2rem 1.4rem 0;

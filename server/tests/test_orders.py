@@ -1,5 +1,6 @@
 import threading
 from decimal import Decimal
+from unittest.mock import patch
 
 from apps.inventory.services import InventoryServiceError, get_store_balance
 from apps.orders.models import Order
@@ -16,8 +17,10 @@ from apps.payments.services import (
     record_payment_success,
     record_refund,
 )
+from apps.users.models import FavoriteDrink
 from django.db import close_old_connections, connections
 from django.test import TestCase, TransactionTestCase
+from django.urls import reverse
 
 from .helpers import make_inventory_item, make_region, make_store, make_user
 
@@ -292,3 +295,210 @@ class InventoryConcurrencyTests(TransactionTestCase):
             [order_one.status, order_two.status],
             [Order.Status.QUEUED, Order.Status.PAID],
         )
+
+
+class MenuAiAssistantViewTests(TestCase):
+    @classmethod
+    def setUpTestData(cls):
+        cls.region = make_region(code="C", name="Logan, UT")
+        cls.store = make_store(store_code="C001", region=cls.region, name="Logan Main")
+        cls.customer = make_user(
+            email="menu-ai@test.local",
+            preferred_store=cls.store,
+            default_region=cls.region,
+        )
+
+    def test_menu_page_exposes_ai_launcher(self):
+        self.client.force_login(self.customer)
+        response = self.client.get(reverse("orders:menu", args=[self.store.store_code]))
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Ask AI what to order")
+
+    @patch("apps.orders.assistant._call_anthropic_menu_ai")
+    def test_menu_ai_prompt_returns_menu_matches(self, mock_call):
+        mock_call.return_value = {
+            "title": "FloatStack Menu AI",
+            "prompt": "I want something fruity and refreshing",
+            "answer": "Start with Sprite or Lemon-Lime for a bright, refreshing build.",
+            "quick_prompts": ["I want a creamy float"],
+            "drink": {
+                "name": "Citrus Sprite Twist",
+                "recipe_key": "sprite",
+                "size_snapshot": "medium",
+                "base_price_snapshot": "2.95",
+                "description": "A bright, refreshing drink built from the catalog.",
+                "customizations_json": {
+                    "schema_version": 1,
+                    "menu_key": "sprite",
+                    "recipe": {"name": "Citrus Sprite Twist"},
+                },
+            },
+            "can_save": True,
+            "menu_matches": [
+                {
+                    "slug": "sprite",
+                    "name": "Sprite",
+                    "description": "Bright and bubbly",
+                    "reason": "Great bright citrus base.",
+                }
+            ],
+            "uses_ai": True,
+        }
+
+        self.client.force_login(self.customer)
+        response = self.client.post(
+            reverse("orders:menu-ai", args=[self.store.store_code]),
+            {"prompt": "I want something fruity and refreshing"},
+            HTTP_HX_REQUEST="true",
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Start with Sprite or Lemon-Lime")
+        self.assertContains(response, "Customize")
+        mock_call.assert_called_once()
+
+    @patch("apps.orders.assistant._call_anthropic_menu_ai")
+    def test_menu_ai_generated_drink_can_be_saved_to_favorites(self, mock_call):
+        mock_call.return_value = {
+            "title": "FloatStack Menu AI",
+            "prompt": "I want something fruity and refreshing",
+            "answer": "Start with Sprite or Lemon-Lime for a bright, refreshing build.",
+            "quick_prompts": ["I want a creamy float"],
+            "recipe": {
+                "name": "Citrus Sprite Twist",
+                "description": "A bright, refreshing drink built from the catalog.",
+                "reason": "Built from existing ingredients to give you something new to try.",
+                "base_soda": {
+                    "slug": "sprite",
+                    "label": "Sprite",
+                },
+                "syrups": [],
+                "add_ins": [],
+                "ice_cream": None,
+                "starter_menu_item": {
+                    "slug": "berry-burst",
+                    "name": "Berry Burst",
+                    "description": "Bright berry fizz with a crisp, easy-to-love finish.",
+                },
+            },
+            "drink": {
+                "name": "Citrus Sprite Twist",
+                "recipe_key": "berry-burst",
+                "size_snapshot": "medium",
+                "base_price_snapshot": "2.95",
+                "description": "A bright, refreshing drink built from the catalog.",
+                "customizations_json": {
+                    "schema_version": 1,
+                    "source": "anthropic",
+                    "ai_generated": True,
+                    "menu_key": "berry-burst",
+                    "recipe": {"name": "Citrus Sprite Twist"},
+                },
+            },
+            "can_save": True,
+            "menu_matches": [],
+            "uses_ai": True,
+        }
+
+        self.client.force_login(self.customer)
+        response = self.client.post(
+            reverse("orders:menu-ai", args=[self.store.store_code]),
+            {"prompt": "I want something fruity and refreshing"},
+            HTTP_HX_REQUEST="true",
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "New drink record")
+        self.assertContains(response, "Save this drink")
+
+        save_response = self.client.post(
+            reverse("orders:menu-ai-save", args=[self.store.store_code]),
+            HTTP_HX_REQUEST="true",
+        )
+        self.assertEqual(save_response.status_code, 200)
+        self.assertContains(save_response, "Saved to favorites")
+
+        favorite = FavoriteDrink.objects.get(user=self.customer)
+        self.assertTrue(favorite.customizations_json.get("ai_generated"))
+        self.assertEqual(favorite.recipe_key, "berry-burst")
+        self.assertEqual(favorite.size_snapshot, "medium")
+        self.assertTrue(favorite.description)
+
+    @patch("apps.orders.assistant._call_anthropic_menu_ai")
+    def test_menu_ai_generated_drink_can_be_added_to_cart(self, mock_call):
+        mock_call.return_value = {
+            "title": "FloatStack Menu AI",
+            "prompt": "I want something fruity and refreshing",
+            "answer": "Start with a bright citrus base.",
+            "quick_prompts": ["I want a creamy float"],
+            "recipe": {
+                "name": "Citrus Sprite Twist",
+                "description": "A bright, refreshing drink built from the catalog.",
+                "reason": "Built from existing ingredients.",
+                "base_soda": {"slug": "sprite", "label": "Sprite"},
+                "syrups": [],
+                "add_ins": [],
+                "ice_cream": None,
+                "starter_menu_item": {
+                    "slug": "berry-burst",
+                    "name": "Berry Burst",
+                    "description": "Bright berry fizz with a crisp, easy-to-love finish.",
+                },
+            },
+            "drink": {
+                "name": "Citrus Sprite Twist",
+                "recipe_key": "berry-burst",
+                "size_snapshot": "medium",
+                "base_price_snapshot": "2.95",
+                "extras_total": "0.00",
+                "description": "A bright, refreshing drink built from the catalog.",
+                "cart_item": {
+                    "menu_key": "berry-burst",
+                    "display_name": "Citrus Sprite Twist",
+                    "size": "medium",
+                    "base_price": "2.95",
+                    "extras_total": "0.00",
+                    "quantity": 1,
+                    "description": "A bright, refreshing drink built from the catalog.",
+                    "customizations": {
+                        "soda": "sprite",
+                        "syrups": [],
+                        "add_ins": [],
+                        "ice_cream": "",
+                        "notes": "AI-generated",
+                        "inventory_requirements": [],
+                    },
+                },
+                "customizations_json": {
+                    "schema_version": 1,
+                    "source": "anthropic",
+                    "ai_generated": True,
+                    "menu_key": "berry-burst",
+                    "recipe": {"name": "Citrus Sprite Twist"},
+                },
+            },
+            "can_save": True,
+            "menu_matches": [],
+            "uses_ai": True,
+        }
+
+        self.client.force_login(self.customer)
+        response = self.client.post(
+            reverse("orders:menu-ai", args=[self.store.store_code]),
+            {"prompt": "I want something fruity and refreshing"},
+            HTTP_HX_REQUEST="true",
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Add Citrus Sprite Twist to cart")
+
+        add_response = self.client.post(
+            reverse("orders:menu-ai-add-to-cart", args=[self.store.store_code]),
+            HTTP_HX_REQUEST="true",
+        )
+        self.assertEqual(add_response.status_code, 200)
+        self.assertContains(add_response, "Added to cart")
+
+        session = self.client.session
+        cart = session.get("codepop_cart", {})
+        self.assertEqual(cart.get("store_code"), self.store.store_code)
+        self.assertEqual(len(cart.get("items", [])), 1)
+        self.assertEqual(cart["items"][0]["display_name"], "Citrus Sprite Twist")

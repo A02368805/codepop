@@ -23,6 +23,7 @@ ROLE_METADATA = {
             NavigationItem("Stores", "stores:index"),
             NavigationItem("Orders", "orders:history"),
             NavigationItem("Cart", "orders:cart"),
+            NavigationItem("Support", "support:index"),
         ],
     },
     User.Role.MANAGER: {
@@ -134,6 +135,7 @@ def build_navigation(user) -> list[dict]:
     if not getattr(user, "is_authenticated", False):
         items = []
         items.append({"label": "Stores", "url": reverse("stores:index")})
+        items.append({"label": "Support", "url": reverse("support:index")})
         items.append({"label": "Sign In", "url": reverse("login")})
         items.append({"label": "Sign up", "url": reverse("register")})
         return items

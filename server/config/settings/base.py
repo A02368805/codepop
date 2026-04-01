@@ -44,6 +44,7 @@ INSTALLED_APPS = [
     "apps.users.apps.UsersConfig",
     "apps.stores.apps.StoresConfig",
     "apps.orders.apps.OrdersConfig",
+    "apps.support.apps.SupportConfig",
     "apps.payments.apps.PaymentsConfig",
     "apps.inventory.apps.InventoryConfig",
     "apps.supply_hubs.apps.SupplyHubsConfig",

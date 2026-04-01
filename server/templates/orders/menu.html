@@ -26,6 +26,31 @@
                 <li>Open any signature drink to let FloatStack start helping with the build.</li>
             {% endfor %}
         </ul>
+        <div class="menu-ai-launcher">
+            <button class="button button--ghost" type="button" id="menu-ai-open">Ask AI what to order</button>
+            <div class="menu-ai-panel" id="menu-ai-panel" hidden>
+                <form
+                    method="post"
+                    hx-post="{% url 'orders:menu-ai' store.store_code %}"
+                    hx-target="#menu-ai-result"
+                    hx-swap="innerHTML"
+                    class="menu-ai-form"
+                >
+                    {% csrf_token %}
+                    <label class="field">
+                        <span>What kind of drink do you want?</span>
+                        {{ menu_ai_form.prompt }}
+                    </label>
+                    <div class="action-row">
+                        <button class="button button--primary" type="submit">Get suggestions</button>
+                        <button class="button button--ghost" type="button" id="menu-ai-close">Close</button>
+                    </div>
+                </form>
+                <div id="menu-ai-result">
+                    {% include "orders/partials/menu_ai_result.html" %}
+                </div>
+            </div>
+        </div>
     </div>
 </section>
 

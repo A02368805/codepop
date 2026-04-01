@@ -8,6 +8,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
     initStoreRecommendation();
     initDrinkBuilder();
+    initMenuAiAssistant();
 });
 
 function getCsrfToken() {
@@ -382,6 +383,40 @@ function initDrinkBuilder() {
 
     renderPreview();
     refreshAssistant();
+}
+
+function initMenuAiAssistant() {
+    const openButton = document.querySelector("#menu-ai-open");
+    const closeButton = document.querySelector("#menu-ai-close");
+    const panel = document.querySelector("#menu-ai-panel");
+    const promptField = document.querySelector("#menu-ai-prompt");
+
+    const openPanel = () => {
+        if (!panel) {
+            return;
+        }
+        panel.hidden = false;
+        promptField?.focus();
+    };
+
+    const closePanel = () => {
+        if (!panel) {
+            return;
+        }
+        panel.hidden = true;
+    };
+
+    openButton?.addEventListener("click", openPanel);
+    closeButton?.addEventListener("click", closePanel);
+
+    document.body.addEventListener("click", (event) => {
+        const target = event.target.closest("[data-menu-ai-prompt]");
+        if (!target || !promptField || !panel) {
+            return;
+        }
+        openPanel();
+        promptField.value = target.getAttribute("data-menu-ai-prompt") || "";
+    });
 }
 
 function getCheckedLabels(form, fieldName) {
