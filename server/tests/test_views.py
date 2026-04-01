@@ -667,3 +667,13 @@ class DashboardAndHtmxViewTests(TestCase):
             },
         )
         self.assertContains(response, "usage.csv")
+
+    def test_analytics_workspace_surfaces_daily_and_ai_sections(self):
+        self.client.force_login(self.super_admin)
+        response = self.client.get(reverse("analytics:index"))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Daily Revenue")
+        self.assertContains(response, "Order-Backed Financial Rows")
+        self.assertContains(response, "Maintenance Summary")
+        self.assertContains(response, "AI Supply Drafts")

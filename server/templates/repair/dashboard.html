@@ -44,6 +44,40 @@
 <section class="panel">
     <div class="section-heading">
         <div>
+            <p class="eyebrow">Route / Schedule View</p>
+            <h2>Grouped assignment batches</h2>
+        </div>
+        <a href="{% url 'maintenance:index' %}">Open full maintenance workspace</a>
+    </div>
+    <table class="data-table">
+        <thead>
+            <tr>
+                <th>Batch</th>
+                <th>Jobs</th>
+                <th>Stores</th>
+                <th>Highest Priority</th>
+                <th>Next Stop</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for group in route_groups %}
+                <tr>
+                    <td><code>{{ group.key }}</code></td>
+                    <td>{{ group.assignment_count }}</td>
+                    <td>{{ group.store_names|join:", " }}</td>
+                    <td>{{ group.highest_priority }}</td>
+                    <td>{{ group.next_stop_at|date:"M j, g:i A"|default:"-" }}</td>
+                </tr>
+            {% empty %}
+                <tr><td colspan="5">No active route batches.</td></tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</section>
+
+<section class="panel">
+    <div class="section-heading">
+        <div>
             <p class="eyebrow">Recent Imports</p>
             <h2>Repair and maintenance history</h2>
         </div>
@@ -53,6 +87,23 @@
             <li>{{ job.original_filename }} · {{ job.get_status_display }}</li>
         {% empty %}
             <li>No maintenance imports have been processed yet.</li>
+        {% endfor %}
+    </ul>
+</section>
+
+<section class="panel">
+    <div class="section-heading">
+        <div>
+            <p class="eyebrow">Unread Notifications</p>
+            <h2>Assignment and escalation updates</h2>
+        </div>
+        <a href="{% url 'notifications:index' %}">Open notifications</a>
+    </div>
+    <ul class="mini-list">
+        {% for notification in notifications %}
+            <li>{{ notification.title }} · {{ notification.created_at|date:"M j, g:i A" }}</li>
+        {% empty %}
+            <li>No unread repair notifications.</li>
         {% endfor %}
     </ul>
 </section>

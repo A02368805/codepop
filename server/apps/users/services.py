@@ -20,6 +20,8 @@ def get_post_login_url(user) -> str:
     role = get_effective_role(user)
     if role is None:
         return reverse("home")
+    if role == User.Role.ACCOUNT_USER:
+        return reverse("orders:recommendations")
     return reverse(get_dashboard_route_name(role))
 
 

@@ -6,13 +6,21 @@ from django.template.loader import render_to_string
 from django.views import View
 from django.views.generic import TemplateView
 
-from .models import SyncConflictLog, SyncOutboxEvent
-from .services import retry_failed_outbox_events
+from .models import SyncConflictLog, SyncOutboxEvent, SyncProjectionState
+from .services import resolve_sync_conflict, retry_failed_outbox_events
 from .tasks import process_pending_outbox_events_async
 
 
 def _sync_context():
     queryset = SyncOutboxEvent.objects.order_by("-created_at")
+    conflict_queryset = SyncConflictLog.objects.order_by("-created_at")
+    projection_queryset = SyncProjectionState.objects.order_by("-updated_at")
+    events = list(queryset[:40])
+    for event in events:
+        source_scope = event.source_scope or {}
+        event.scope_label = (
+            source_scope.get("region_code") or source_scope.get("store_id") or "-"
+        )
     return {
         "event_counts": {
             "pending": queryset.filter(status=SyncOutboxEvent.Status.PENDING).count(),
@@ -24,7 +32,34 @@ def _sync_context():
                 status=SyncOutboxEvent.Status.DISPATCHED
             ).count(),
         },
-        "events": queryset[:40],
+        "events": events,
+        "conflict_counts": {
+            "open": conflict_queryset.filter(
+                resolution_status=SyncConflictLog.ResolutionStatus.OPEN
+            ).count(),
+            "resolved": conflict_queryset.filter(
+                resolution_status=SyncConflictLog.ResolutionStatus.RESOLVED
+            ).count(),
+            "ignored": conflict_queryset.filter(
+                resolution_status=SyncConflictLog.ResolutionStatus.IGNORED
+            ).count(),
+        },
+        "open_conflicts": conflict_queryset.filter(
+            resolution_status=SyncConflictLog.ResolutionStatus.OPEN
+        )[:20],
+        "recent_conflicts": conflict_queryset[:20],
+        "projection_counts": {
+            "region": projection_queryset.filter(
+                receiver_scope_type=SyncProjectionState.ReceiverScope.REGION
+            ).count(),
+            "store": projection_queryset.filter(
+                receiver_scope_type=SyncProjectionState.ReceiverScope.STORE
+            ).count(),
+            "global": projection_queryset.filter(
+                receiver_scope_type=SyncProjectionState.ReceiverScope.GLOBAL
+            ).count(),
+        },
+        "projections": projection_queryset[:25],
     }
 
 
@@ -89,10 +124,18 @@ class SyncResolveConflictView(RoleRequiredMixin, View):
 
     def post(self, request, *args, **kwargs):
         conflict = get_object_or_404(SyncConflictLog, pk=kwargs["conflict_id"])
-        resolution_status = request.POST.get("resolution_status")
+        resolution_status = (
+            request.POST.get("resolution_status")
+            or SyncConflictLog.ResolutionStatus.RESOLVED
+        )
 
-        if resolution_status:
-            conflict.resolution_status = resolution_status
-            conflict.save(update_fields=["resolution_status"])
+        if resolution_status in {
+            SyncConflictLog.ResolutionStatus.RESOLVED,
+            SyncConflictLog.ResolutionStatus.IGNORED,
+        }:
+            resolve_sync_conflict(
+                conflict,
+                resolution_status=resolution_status,
+            )
 
-        return HttpResponse('<div class="alert alert-info">Conflict Log</div>')
+        return _render_sync_panel(request)

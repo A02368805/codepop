@@ -8,6 +8,7 @@ from decimal import ROUND_HALF_UP, Decimal
 from apps.sync.services import create_audit_log, create_outbox_event, serialize_instance
 from core.exceptions import ConflictError, ServiceError, ValidationError
 from django.db import transaction
+from django.db.utils import OperationalError
 from django.utils import timezone
 
 from .models import GuestOrderContact, Order, OrderItem
@@ -223,9 +224,19 @@ def transition_order_status(order, new_status, *, actor=None, reason=""):
         order.placed_at = now
     if new_status == Order.Status.QUEUED and order.queued_at is None:
         order.queued_at = now
-        from apps.inventory.services import reserve_order_inventory
+        from apps.inventory.services import (
+            InventoryServiceError,
+            reserve_order_inventory,
+        )
 
-        reserve_order_inventory(order)
+        try:
+            reserve_order_inventory(order)
+        except OperationalError as exc:
+            if "locked" in str(exc).lower():
+                raise InventoryServiceError(
+                    "Inventory reservation is temporarily locked. Please retry."
+                ) from exc
+            raise
     if new_status == Order.Status.PREPARING and order.preparing_at is None:
         order.preparing_at = now
     if new_status == Order.Status.READY and order.ready_at is None:

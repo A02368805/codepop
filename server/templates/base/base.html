@@ -14,13 +14,23 @@
 <body>
     <div class="page-shell">
         <header class="topbar">
-            <a class="brandmark" href="{% url 'home' %}">
-                <img class="brandmark__logo" src="{% static 'images/floatstack-logo.png' %}" alt="CodePop">
-                <span class="brandmark__wordmark">
-                    <span class="brandmark__text">CodePop</span>
-                    <span class="brandmark__subtext">Ordering + Operations</span>
-                </span>
-            </a>
+            {% if brandmark.is_clickable %}
+                <a class="brandmark" href="{{ brandmark.url }}">
+                    <img class="brandmark__logo" src="{% static 'images/floatstack-logo.png' %}" alt="CodePop">
+                    <span class="brandmark__wordmark">
+                        <span class="brandmark__text">CodePop</span>
+                        <span class="brandmark__subtext">Ordering + Operations</span>
+                    </span>
+                </a>
+            {% else %}
+                <div class="brandmark brandmark--static" aria-label="CodePop">
+                    <img class="brandmark__logo" src="{% static 'images/floatstack-logo.png' %}" alt="CodePop">
+                    <span class="brandmark__wordmark">
+                        <span class="brandmark__text">CodePop</span>
+                        <span class="brandmark__subtext">Ordering + Operations</span>
+                    </span>
+                </div>
+            {% endif %}
             <nav class="topnav" aria-label="Primary">
                 {% for item in navigation_items %}
                     {% if item.method == "post" %}
@@ -29,7 +39,20 @@
                             <button type="submit" class="nav-button">{{ item.label }}</button>
                         </form>
                     {% else %}
-                        <a href="{{ item.url }}">
+                        <a href="{{ item.url }}" class="topnav__link">
+                            {% if item.icon == "notification" %}
+                                <span class="nav-icon" aria-hidden="true">
+                                    <svg viewBox="0 0 24 24" focusable="false">
+                                        <path d="M12 3a5 5 0 0 0-5 5v2.9c0 .8-.3 1.6-.8 2.2L4.7 15h14.6l-1.5-1.9a3.5 3.5 0 0 1-.8-2.2V8a5 5 0 0 0-5-5Zm0 18a2.4 2.4 0 0 0 2.2-1.4h-4.4A2.4 2.4 0 0 0 12 21Z"></path>
+                                    </svg>
+                                </span>
+                            {% elif item.icon == "sync" %}
+                                <span class="nav-icon" aria-hidden="true">
+                                    <svg viewBox="0 0 24 24" focusable="false">
+                                        <path d="M12 4a8 8 0 0 1 7.5 5.2h-2.4l3.4 3.7 3.4-3.7h-2A10.5 10.5 0 0 0 3 10h2.2A8 8 0 0 1 12 4Zm8.8 10A8.8 8.8 0 0 1 12 21a8 8 0 0 1-7.5-5.2h2.4l-3.4-3.7-3.4 3.7h2A10.5 10.5 0 0 0 12 23a11 11 0 0 0 10.8-9Z"></path>
+                                    </svg>
+                                </span>
+                            {% endif %}
                             <span>{{ item.label }}</span>
                             {% if item.badge_id %}
                                 <span id="{{ item.badge_id|default:'nav-badge' }}" class="nav-badge">{% if item.badge %}{{ item.badge }}{% endif %}</span>

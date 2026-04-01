@@ -17,6 +17,25 @@
     </article>
 </div>
 
+<div class="metric-grid metric-grid--compact">
+    <article class="metric metric--warning">
+        <p>Open conflicts</p>
+        <strong>{{ conflict_counts.open }}</strong>
+    </article>
+    <article class="metric">
+        <p>Resolved conflicts</p>
+        <strong>{{ conflict_counts.resolved }}</strong>
+    </article>
+    <article class="metric">
+        <p>Ignored conflicts</p>
+        <strong>{{ conflict_counts.ignored }}</strong>
+    </article>
+    <article class="metric metric--info">
+        <p>Projection rows</p>
+        <strong>{{ projections|length }}</strong>
+    </article>
+</div>
+
 <div class="action-row">
     <form method="post" hx-post="{% url 'sync:process' %}" hx-target="#sync-panel" hx-swap="innerHTML">
         {% csrf_token %}
@@ -29,34 +48,145 @@
     <button class="button button--ghost" type="button" hx-get="{% url 'sync:panel' %}" hx-target="#sync-panel" hx-swap="innerHTML">Refresh</button>
 </div>
 
-{% if events %}
-    <table class="data-table">
-        <thead>
-            <tr>
-                <th>Event</th>
-                <th>Aggregate</th>
-                <th>Status</th>
-                <th>Attempts</th>
-                <th>Scope</th>
-                <th>Error</th>
-            </tr>
-        </thead>
-        <tbody>
-            {% for event in events %}
-                <tr>
-                    <td>{{ event.event_type }}</td>
-                    <td>{{ event.aggregate_type }} · {{ event.aggregate_id|slice:":8" }}</td>
-                    <td>{{ event.get_status_display }}</td>
-                    <td>{{ event.attempt_count }}</td>
-                    <td>{{ event.source_scope.region_code|default:event.source_scope.store_id|default:"-" }}</td>
-                    <td>{{ event.last_error|default:"-" }}</td>
-                </tr>
-            {% endfor %}
-        </tbody>
-    </table>
-{% else %}
-    <div class="empty-state">
-        <h3>No outbox events have been recorded yet.</h3>
-        <p>Place an order, approve a transfer, or run an import to see the sync pipeline populate.</p>
+<section class="panel-stack">
+    <div class="section-heading">
+        <div>
+            <p class="eyebrow">Outbox Events</p>
+            <h2>Dispatch queue and retry outcomes</h2>
+        </div>
     </div>
-{% endif %}
+    {% if events %}
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>Event</th>
+                    <th>Aggregate</th>
+                    <th>Status</th>
+                    <th>Attempts</th>
+                    <th>Scope</th>
+                    <th>Error</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for event in events %}
+                    <tr>
+                        <td>{{ event.event_type }}</td>
+                        <td>{{ event.aggregate_type }} · {{ event.aggregate_id|slice:":8" }}</td>
+                        <td>{{ event.get_status_display }}</td>
+                        <td>{{ event.attempt_count }}</td>
+                        <td>{{ event.scope_label }}</td>
+                        <td>{{ event.last_error|default:"-" }}</td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    {% else %}
+        <div class="empty-state">
+            <h3>No outbox events have been recorded yet.</h3>
+            <p>Place an order, approve a transfer, or run an import to see the sync pipeline populate.</p>
+        </div>
+    {% endif %}
+</section>
+
+<section class="panel-stack">
+    <div class="section-heading">
+        <div>
+            <p class="eyebrow">Conflict Log</p>
+            <h2>Open and recent sync conflicts</h2>
+        </div>
+    </div>
+    {% if recent_conflicts %}
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>Type</th>
+                    <th>Receiver</th>
+                    <th>Entity</th>
+                    <th>Status</th>
+                    <th>Action</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for conflict in recent_conflicts %}
+                    <tr>
+                        <td>{{ conflict.get_conflict_type_display }}</td>
+                        <td>{{ conflict.receiver_label }}</td>
+                        <td>{{ conflict.aggregate_type }} · {{ conflict.aggregate_id|slice:":8" }}</td>
+                        <td>{{ conflict.get_resolution_status_display }}</td>
+                        <td>
+                            {% if conflict.resolution_status == "open" %}
+                                <div class="action-row">
+                                    <form method="post" hx-post="{% url 'sync:resolve-conflict' conflict.id %}" hx-target="#sync-panel" hx-swap="innerHTML">
+                                        {% csrf_token %}
+                                        <input type="hidden" name="resolution_status" value="resolved">
+                                        <button class="button button--ghost" type="submit">Resolve</button>
+                                    </form>
+                                    <form method="post" hx-post="{% url 'sync:resolve-conflict' conflict.id %}" hx-target="#sync-panel" hx-swap="innerHTML">
+                                        {% csrf_token %}
+                                        <input type="hidden" name="resolution_status" value="ignored">
+                                        <button class="button button--ghost" type="submit">Ignore</button>
+                                    </form>
+                                </div>
+                            {% else %}
+                                <span class="muted">{{ conflict.resolved_at|date:"M j, g:i A"|default:"Resolved" }}</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    {% else %}
+        <div class="empty-state">
+            <p>No conflicts have been logged yet.</p>
+        </div>
+    {% endif %}
+</section>
+
+<section class="panel-stack">
+    <div class="section-heading">
+        <div>
+            <p class="eyebrow">Receiver Projections</p>
+            <h2>Simulated regional/store/global consumer state</h2>
+        </div>
+    </div>
+    <div class="metric-grid metric-grid--compact">
+        <article class="metric">
+            <p>Region rows</p>
+            <strong>{{ projection_counts.region }}</strong>
+        </article>
+        <article class="metric">
+            <p>Store rows</p>
+            <strong>{{ projection_counts.store }}</strong>
+        </article>
+        <article class="metric">
+            <p>Global rows</p>
+            <strong>{{ projection_counts.global }}</strong>
+        </article>
+    </div>
+    {% if projections %}
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>Receiver</th>
+                    <th>Entity</th>
+                    <th>Event</th>
+                    <th>Version</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for projection in projections %}
+                    <tr>
+                        <td>{{ projection.receiver_label }}</td>
+                        <td>{{ projection.aggregate_type }} · {{ projection.aggregate_id|slice:":8" }}</td>
+                        <td>{{ projection.last_event_type }}</td>
+                        <td>{{ projection.last_entity_version }}</td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    {% else %}
+        <div class="empty-state">
+            <p>No projections are stored yet.</p>
+        </div>
+    {% endif %}
+</section>

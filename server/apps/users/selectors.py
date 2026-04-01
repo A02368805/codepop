@@ -10,6 +10,7 @@ from .models import User
 class NavigationItem:
     label: str
     route_name: str
+    icon: str | None = None
 
 
 ROLE_METADATA = {
@@ -20,9 +21,6 @@ ROLE_METADATA = {
         "description": "Track orders, preferences, and your preferred pickup store.",
         "navigation": [
             NavigationItem("Stores", "stores:index"),
-            NavigationItem("Recommendations", "orders:recommendations"),
-            NavigationItem("Favorites", "orders:favorites"),
-            NavigationItem("Preferences", "account-preferences"),
             NavigationItem("Orders", "orders:history"),
             NavigationItem("Cart", "orders:cart"),
         ],
@@ -33,10 +31,11 @@ ROLE_METADATA = {
         "dashboard_route": "manager-dashboard",
         "description": "Run a single store with inventory, orders, and revenue visibility.",
         "navigation": [
-            NavigationItem("Order Queue", "orders:index"),
+            NavigationItem("Dashboard", "manager-dashboard"),
             NavigationItem("Inventory", "inventory:index"),
-            NavigationItem("Payments", "payments:index"),
             NavigationItem("Maintenance", "maintenance:index"),
+            NavigationItem("Order Queue", "orders:index"),
+            NavigationItem("Analytics", "analytics:index"),
         ],
     },
     User.Role.ADMIN: {
@@ -45,9 +44,13 @@ ROLE_METADATA = {
         "dashboard_route": "admin-dashboard",
         "description": "Manage accounts, roles, and store governance without owning operations.",
         "navigation": [
-            NavigationItem("Team", "admin-users"),
+            NavigationItem("Dashboard", "admin-dashboard"),
             NavigationItem("Inventory", "inventory:index"),
+            NavigationItem("Team", "admin-users"),
             NavigationItem("Analytics", "analytics:index"),
+        ],
+        "post_notification_navigation": [
+            NavigationItem("Sync", "sync:index", icon="sync"),
         ],
     },
     User.Role.LOGISTICS_MANAGER: {
@@ -56,7 +59,8 @@ ROLE_METADATA = {
         "dashboard_route": "logistics-dashboard",
         "description": "Coordinate supply hubs, regional transfers, imports, and sync health.",
         "navigation": [
-            NavigationItem("Supply Hubs", "supply_hubs:index"),
+            NavigationItem("Dashboard", "logistics-dashboard"),
+            NavigationItem("Supply Hub", "supply_hubs:index"),
             NavigationItem("Inventory", "inventory:index"),
             NavigationItem("Imports", "imports:index"),
             NavigationItem("Sync", "sync:index"),
@@ -69,8 +73,8 @@ ROLE_METADATA = {
         "dashboard_route": "repair-dashboard",
         "description": "Prioritize machine health, repair queues, and regional service coverage.",
         "navigation": [
+            NavigationItem("Dashboard", "repair-dashboard"),
             NavigationItem("Maintenance", "maintenance:index"),
-            NavigationItem("Stores", "stores:index"),
             NavigationItem("Imports", "imports:index"),
         ],
     },
@@ -80,15 +84,16 @@ ROLE_METADATA = {
         "dashboard_route": "super-admin-dashboard",
         "description": "See cross-region operations while preserving store and region ownership.",
         "navigation": [
-            NavigationItem("Stores", "stores:index"),
-            NavigationItem("Orders", "orders:index"),
-            NavigationItem("Payments", "payments:index"),
-            NavigationItem("Inventory", "inventory:index"),
-            NavigationItem("Supply Hubs", "supply_hubs:index"),
-            NavigationItem("Maintenance", "maintenance:index"),
-            NavigationItem("Imports", "imports:index"),
-            NavigationItem("Sync", "sync:index"),
+            NavigationItem("Dashboard", "super-admin-dashboard"),
             NavigationItem("Analytics", "analytics:index"),
+            NavigationItem("Inventory", "inventory:index"),
+            NavigationItem("Maintenance", "maintenance:index"),
+            NavigationItem("Order Queue", "orders:index"),
+            NavigationItem("Supply Hubs", "supply_hubs:index"),
+            NavigationItem("Imports", "imports:index"),
+        ],
+        "post_notification_navigation": [
+            NavigationItem("Sync", "sync:index", icon="sync"),
         ],
     },
 }
@@ -117,27 +122,43 @@ def get_dashboard_route_name(role: str) -> str:
     return ROLE_METADATA[role]["dashboard_route"]
 
 
-def build_navigation(user) -> list[dict]:
-    items = [{"label": "Home", "url": reverse("home")}]
+def build_brandmark(user) -> dict:
     if not getattr(user, "is_authenticated", False):
+        return {"url": reverse("home"), "is_clickable": True}
+    if user.role == User.Role.ACCOUNT_USER:
+        return {"url": reverse("orders:recommendations"), "is_clickable": True}
+    return {"url": "", "is_clickable": False}
+
+
+def build_navigation(user) -> list[dict]:
+    if not getattr(user, "is_authenticated", False):
+        items = []
         items.append({"label": "Stores", "url": reverse("stores:index")})
-        items.append({"label": "Guest Lookup", "url": reverse("orders:guest-lookup")})
-        items.append({"label": "Sign in", "url": reverse("login")})
-        items.append({"label": "Register", "url": reverse("register")})
+        items.append({"label": "Sign In", "url": reverse("login")})
+        items.append({"label": "Sign up", "url": reverse("register")})
         return items
 
     metadata = get_role_metadata(user.role)
+    items = []
     unread_notifications = user.notifications.filter(is_read=False).count()
-    items.append({"label": "Dashboard", "url": reverse(metadata["dashboard_route"])})
     for nav_item in metadata["navigation"]:
-        items.append({"label": nav_item.label, "url": reverse(nav_item.route_name)})
+        item = {"label": nav_item.label, "url": reverse(nav_item.route_name)}
+        if nav_item.icon:
+            item["icon"] = nav_item.icon
+        items.append(item)
     items.append(
         {
             "label": "Notifications",
             "url": reverse("notifications:index"),
             "badge": unread_notifications,
             "badge_id": "nav-notification-badge",
+            "icon": "notification",
         }
     )
+    for nav_item in metadata.get("post_notification_navigation", []):
+        item = {"label": nav_item.label, "url": reverse(nav_item.route_name)}
+        if nav_item.icon:
+            item["icon"] = nav_item.icon
+        items.append(item)
     items.append({"label": "Log out", "url": reverse("logout"), "method": "post"})
     return items

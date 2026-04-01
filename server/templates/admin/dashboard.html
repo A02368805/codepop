@@ -25,6 +25,9 @@
             <div><dt>Disabled</dt><dd>{{ disabled_count }}</dd></div>
             <div><dt>Pending</dt><dd>{{ pending_count }}</dd></div>
         </dl>
+        <dl class="summary-list">
+            <div><dt>Machine Issues</dt><dd>{{ machine_issue_count }}</dd></div>
+        </dl>
         {% if managed_store %}
             <p class="muted">Current management scope: {{ managed_store.name }}</p>
         {% else %}
@@ -32,12 +35,25 @@
         {% endif %}
     </div>
     <div class="panel">
-        <p class="eyebrow">Support / Complaints</p>
-        <ul class="mini-list">
-            <li>Complaint triage placeholder wired for prompt 4.</li>
-            <li>Account unlock and disable tools live in the team panel.</li>
-            <li>Store-scoped role changes stay server-enforced.</li>
-        </ul>
+        <p class="eyebrow">Role Distribution</p>
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>Role</th>
+                    <th>Count</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for row in role_breakdown %}
+                    <tr>
+                        <td>{{ row.label }}</td>
+                        <td>{{ row.count }}</td>
+                    </tr>
+                {% empty %}
+                    <tr><td colspan="2">No scoped role rows yet.</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
     </div>
 </section>
 
@@ -71,5 +87,39 @@
             {% endfor %}
         </tbody>
     </table>
+</section>
+
+<section class="page-grid page-grid--sidebar">
+    <div class="panel">
+        <div class="section-heading">
+            <div>
+                <p class="eyebrow">Recent Audit Activity</p>
+                <h2>Store-scoped governance trail</h2>
+            </div>
+        </div>
+        <ul class="mini-list">
+            {% for log in recent_audit_logs %}
+                <li>{{ log.action }} · {{ log.actor.email|default:"system" }} · {{ log.created_at|date:"M j, g:i A" }}</li>
+            {% empty %}
+                <li>No recent scoped audit events.</li>
+            {% endfor %}
+        </ul>
+    </div>
+    <div class="panel">
+        <div class="section-heading">
+            <div>
+                <p class="eyebrow">Unread Notifications</p>
+                <h2>Admin alert queue</h2>
+            </div>
+            <a href="{% url 'notifications:index' %}">Open notifications</a>
+        </div>
+        <ul class="mini-list">
+            {% for notification in recent_notifications %}
+                <li>{{ notification.title }} · {{ notification.created_at|date:"M j, g:i A" }}</li>
+            {% empty %}
+                <li>No unread admin notifications.</li>
+            {% endfor %}
+        </ul>
+    </div>
 </section>
 {% endblock %}

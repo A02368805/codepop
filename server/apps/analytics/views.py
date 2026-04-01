@@ -1,7 +1,7 @@
 from datetime import date, timedelta
 
-from apps.inventory.models import RestockAlert, SupplyUsageRecord
-from apps.maintenance.models import Machine, MachineStatusEvent
+from apps.inventory.models import RestockAlert, SupplySchedule, SupplyUsageRecord
+from apps.maintenance.models import Machine, MachineStatusEvent, RepairAssignment
 from apps.payments.models import RevenueLedgerEntry
 from apps.stores.models import Region
 from apps.stores.selectors import scoped_region_store_options
@@ -66,6 +66,18 @@ class AnalyticsWorkspaceView(RoleRequiredMixin, TemplateView):
             .annotate(gross=Sum("gross_amount"), net=Sum("net_amount"))
             .order_by("-net")[:10]
         )
+        daily_revenue_rows = (
+            revenue_entries.values("posted_at__date")
+            .annotate(
+                gross=Sum("gross_amount"),
+                net=Sum("net_amount"),
+                row_count=Count("id"),
+            )
+            .order_by("-posted_at__date")[:14]
+        )
+        revenue_ledger_rows = revenue_entries.select_related("store", "order").order_by(
+            "-posted_at"
+        )[:20]
         usage_trends = (
             SupplyUsageRecord.objects.filter(
                 store__in=visible_stores,
@@ -94,6 +106,23 @@ class AnalyticsWorkspaceView(RoleRequiredMixin, TemplateView):
             .annotate(event_count=Count("id"))
             .order_by("-event_count")[:12]
         )
+        machine_status_summary = (
+            Machine.objects.filter(store__in=visible_stores)
+            .values("current_status")
+            .annotate(count=Count("id"))
+            .order_by("-count", "current_status")
+        )
+        assignment_status_summary = (
+            RepairAssignment.objects.filter(store__in=visible_stores)
+            .values("status")
+            .annotate(count=Count("id"))
+            .order_by("-count", "status")
+        )
+        ai_schedule_rows = (
+            SupplySchedule.objects.filter(store__in=visible_stores, created_by_ai=True)
+            .select_related("store", "inventory_item", "approved_by")
+            .order_by("-updated_at")[:12]
+        )
         context.update(
             {
                 "visible_stores": visible_stores,
@@ -101,8 +130,13 @@ class AnalyticsWorkspaceView(RoleRequiredMixin, TemplateView):
                 "gross_revenue": revenue["gross"] or 0,
                 "net_revenue": revenue["net"] or 0,
                 "revenue_by_store": revenue_by_store,
+                "daily_revenue_rows": daily_revenue_rows,
+                "revenue_ledger_rows": revenue_ledger_rows,
                 "usage_trends": usage_trends,
                 "machine_failure_trends": machine_failure_trends,
+                "machine_status_summary": machine_status_summary,
+                "assignment_status_summary": assignment_status_summary,
+                "ai_schedule_rows": ai_schedule_rows,
                 "region_options": scope["region_options"],
                 "store_options": scope["store_options"],
                 "selected_region": scope["selected_region"],
