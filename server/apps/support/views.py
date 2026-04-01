@@ -19,7 +19,9 @@ from .services import (
 
 
 class CustomerSupportAccessMixin:
-    permission_denied_message = "Customer support is only available for guests and customer accounts."
+    permission_denied_message = (
+        "Customer support is only available for guests and customer accounts."
+    )
 
     def dispatch(self, request, *args, **kwargs):
         if not user_can_use_customer_ordering(request.user):
@@ -77,7 +79,9 @@ class SupportConversationDetailView(CustomerSupportAccessMixin, TemplateView):
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        conversation = get_object_or_404(SupportConversation, pk=kwargs["conversation_id"])
+        conversation = get_object_or_404(
+            SupportConversation, pk=kwargs["conversation_id"]
+        )
         if not user_can_access_conversation(self.request, conversation):
             raise PermissionDenied("This support conversation is outside your scope.")
         context.update(_workspace_context(self.request, conversation))
@@ -93,7 +97,9 @@ class SupportStartView(CustomerSupportAccessMixin, View):
 
 class SupportSendView(CustomerSupportAccessMixin, View):
     def post(self, request, *args, **kwargs):
-        conversation = get_object_or_404(SupportConversation, pk=kwargs["conversation_id"])
+        conversation = get_object_or_404(
+            SupportConversation, pk=kwargs["conversation_id"]
+        )
         if not user_can_access_conversation(request, conversation):
             raise PermissionDenied("This support conversation is outside your scope.")
 
@@ -113,7 +119,9 @@ class SupportSendView(CustomerSupportAccessMixin, View):
 
 class SupportEscalateView(CustomerSupportAccessMixin, View):
     def post(self, request, *args, **kwargs):
-        conversation = get_object_or_404(SupportConversation, pk=kwargs["conversation_id"])
+        conversation = get_object_or_404(
+            SupportConversation, pk=kwargs["conversation_id"]
+        )
         if not user_can_access_conversation(request, conversation):
             raise PermissionDenied("This support conversation is outside your scope.")
 
@@ -125,7 +133,10 @@ class SupportEscalateView(CustomerSupportAccessMixin, View):
                 summary=form.cleaned_data["summary"],
                 contact_email=form.cleaned_data["contact_email"],
             )
-            messages.success(request, "Support escalation submitted. A follow-up can be handled by the team.")
+            messages.success(
+                request,
+                "Support escalation submitted. A follow-up can be handled by the team.",
+            )
         else:
             messages.error(request, "Please provide a short escalation summary.")
 

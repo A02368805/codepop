@@ -32,7 +32,9 @@ class SupportConversation(models.Model):
         blank=True,
     )
     last_intent = models.CharField(max_length=64, blank=True)
-    status = models.CharField(max_length=16, choices=Status.choices, default=Status.OPEN)
+    status = models.CharField(
+        max_length=16, choices=Status.choices, default=Status.OPEN
+    )
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
@@ -44,7 +46,9 @@ class SupportConversation(models.Model):
         ]
 
     def __str__(self):
-        owner = self.user.email if self.user_id else f"guest:{self.guest_session_key[:8]}"
+        owner = (
+            self.user.email if self.user_id else f"guest:{self.guest_session_key[:8]}"
+        )
         return f"SupportConversation<{owner}>"
 
 
@@ -108,7 +112,9 @@ class SupportEscalation(models.Model):
     )
     contact_email = models.EmailField(blank=True)
     summary = models.TextField()
-    status = models.CharField(max_length=16, choices=Status.choices, default=Status.OPEN)
+    status = models.CharField(
+        max_length=16, choices=Status.choices, default=Status.OPEN
+    )
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 

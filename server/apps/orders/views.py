@@ -29,8 +29,7 @@ from django.utils import timezone
 from django.views import View
 from django.views.generic import FormView, TemplateView
 
-from .assistant import build_drink_builder_assistance
-from .assistant import build_menu_ai_assistance
+from .assistant import build_drink_builder_assistance, build_menu_ai_assistance
 from .cart import (
     add_cart_item,
     build_cart_pricing,
@@ -236,7 +235,11 @@ class MenuView(CustomerOrderingRequiredMixin, TemplateView):
                 ),
                 "menu_ai_form": MenuAiPromptForm(),
                 "menu_ai_result": build_menu_ai_assistance(
-                    user=self.request.user if self.request.user.is_authenticated else None,
+                    user=(
+                        self.request.user
+                        if self.request.user.is_authenticated
+                        else None
+                    ),
                     store=store,
                     prompt="",
                     menu_items=get_menu_items(),
@@ -259,7 +262,9 @@ class MenuAiAssistantView(CustomerOrderingRequiredMixin, View):
                 prompt="",
                 menu_items=get_menu_items(),
             )
-            response["answer"] = "Please describe the kind of drink you want so I can help."
+            response["answer"] = (
+                "Please describe the kind of drink you want so I can help."
+            )
         else:
             response = build_menu_ai_assistance(
                 user=request.user if request.user.is_authenticated else None,
@@ -310,7 +315,9 @@ class MenuAiSaveView(RoleRequiredMixin, LoginRequiredMixin, View):
                 name=drink["name"],
                 recipe_key=drink.get("recipe_key", ""),
                 size_snapshot=drink.get("size_snapshot", "medium"),
-                base_price_snapshot=Decimal(str(drink.get("base_price_snapshot", "0.00"))),
+                base_price_snapshot=Decimal(
+                    str(drink.get("base_price_snapshot", "0.00"))
+                ),
                 customizations_json=drink.get("customizations_json", {}),
                 description=drink.get("description", ""),
             )
@@ -344,7 +351,9 @@ class MenuAiAddToCartView(CustomerOrderingRequiredMixin, View):
         drink = latest_result.get("drink") or {}
         cart_item = drink.get("cart_item") or {}
         if not cart_item:
-            messages.error(request, "Generate a drink first so it can be added to cart.")
+            messages.error(
+                request, "Generate a drink first so it can be added to cart."
+            )
             response = build_menu_ai_assistance(
                 user=request.user if request.user.is_authenticated else None,
                 store=store,
@@ -355,10 +364,14 @@ class MenuAiAddToCartView(CustomerOrderingRequiredMixin, View):
         else:
             add_cart_item(request.session, store_code=store.store_code, item=cart_item)
             latest_result["added_to_cart"] = True
-            latest_result["added_to_cart_name"] = cart_item.get("display_name", "your drink")
+            latest_result["added_to_cart_name"] = cart_item.get(
+                "display_name", "your drink"
+            )
             request.session["menu_ai_latest_result"] = latest_result
             response = latest_result
-            messages.success(request, f"{cart_item.get('display_name', 'Drink')} added to your cart.")
+            messages.success(
+                request, f"{cart_item.get('display_name', 'Drink')} added to your cart."
+            )
 
         html = render_to_string(
             "orders/partials/menu_ai_result.html",

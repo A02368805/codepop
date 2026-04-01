@@ -33,7 +33,9 @@ def user_can_access_conversation(request, conversation):
     if getattr(user, "is_authenticated", False):
         return conversation.user_id == user.id
     session_key = ensure_support_session(request)
-    return conversation.user_id is None and conversation.guest_session_key == session_key
+    return (
+        conversation.user_id is None and conversation.guest_session_key == session_key
+    )
 
 
 def get_or_create_active_conversation(request):
@@ -118,16 +120,19 @@ def _resolve_order_context(conversation, request, message_text):
 
 
 def _recent_conversation_messages(conversation, *, limit=10):
-    rows = (
-        conversation.messages.order_by("-created_at")
-        .values("role", "content")[:limit]
-    )
+    rows = conversation.messages.order_by("-created_at").values("role", "content")[
+        :limit
+    ]
     return list(reversed(rows))
 
 
 def _build_support_context(*, request, conversation, order):
     user = request.user
-    user_role = getattr(user, "role", "guest") if getattr(user, "is_authenticated", False) else "guest"
+    user_role = (
+        getattr(user, "role", "guest")
+        if getattr(user, "is_authenticated", False)
+        else "guest"
+    )
     context = {
         "conversation_id": str(conversation.id),
         "user_role": user_role,
@@ -140,7 +145,11 @@ def _build_support_context(*, request, conversation, order):
             "status": order.status,
             "status_display": order.get_status_display(),
             "store_name": order.store.name,
-            "pickup_time_requested": order.pickup_time_requested.isoformat() if order.pickup_time_requested else "",
+            "pickup_time_requested": (
+                order.pickup_time_requested.isoformat()
+                if order.pickup_time_requested
+                else ""
+            ),
         }
     return context
 
@@ -182,7 +191,11 @@ def _call_anthropic_support_ai(*, request, conversation, message_text, order):
                         "available_links": {
                             "guest_lookup": reverse("orders:guest-lookup"),
                             "stores": reverse("stores:index"),
-                            "orders_history": reverse("orders:history") if getattr(request.user, "is_authenticated", False) else "",
+                            "orders_history": (
+                                reverse("orders:history")
+                                if getattr(request.user, "is_authenticated", False)
+                                else ""
+                            ),
                         },
                     }
                 ),
@@ -235,7 +248,13 @@ def _call_anthropic_support_ai(*, request, conversation, message_text, order):
                 "suggest_escalation": False,
                 "links": links,
             }
-        except (ValueError, json.JSONDecodeError, TimeoutError, url_error.URLError, url_error.HTTPError) as exc:
+        except (
+            ValueError,
+            json.JSONDecodeError,
+            TimeoutError,
+            url_error.URLError,
+            url_error.HTTPError,
+        ) as exc:
             logger.warning(
                 "support_ai_provider_attempt_failed",
                 extra={
@@ -255,13 +274,20 @@ def _call_anthropic_support_ai(*, request, conversation, message_text, order):
 def _fallback_support_reply(*, order, message_text):
     lowered = (message_text or "").lower()
     links = []
-    suggest_escalation = any(word in lowered for word in ["issue", "wrong", "problem", "refund"])
+    suggest_escalation = any(
+        word in lowered for word in ["issue", "wrong", "problem", "refund"]
+    )
     if order:
         reply = (
             f"I found order {order.public_order_code}. It is currently {order.get_status_display().lower()} at {order.store.name}. "
             "If you want, I can also help with pickup timing or cancellation guidance."
         )
-        links.append({"label": "Open order details", "url": reverse("orders:detail", args=[order.public_order_code])})
+        links.append(
+            {
+                "label": "Open order details",
+                "url": reverse("orders:detail", args=[order.public_order_code]),
+            }
+        )
     else:
         reply = (
             "I can help with order status, refunds, pickup timing, and account questions. "
@@ -280,7 +306,9 @@ def process_support_message(*, request, conversation, message_text):
     if not trimmed:
         return {
             "reply_text": "Please send a message so I can help.",
-            "quick_actions": [{"label": text, "prompt": text} for text in DEFAULT_QUICK_PROMPTS],
+            "quick_actions": [
+                {"label": text, "prompt": text} for text in DEFAULT_QUICK_PROMPTS
+            ],
             "links": [],
             "suggest_escalation": False,
             "intent": "chat",

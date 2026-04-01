@@ -22,7 +22,11 @@ class SupportConversationAdmin(admin.ModelAdmin):
         "updated_at",
     )
     list_filter = ("status",)
-    search_fields = ("user__email", "guest_session_key", "linked_order__public_order_code")
+    search_fields = (
+        "user__email",
+        "guest_session_key",
+        "linked_order__public_order_code",
+    )
     inlines = [SupportMessageInline]
 
 

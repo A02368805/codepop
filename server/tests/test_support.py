@@ -9,8 +9,8 @@ from apps.support.models import SupportConversation, SupportEscalation, SupportM
 from apps.support.services import process_support_message
 from django.contrib.sessions.middleware import SessionMiddleware
 from django.test import Client, TestCase
-from django.urls import reverse
 from django.test.client import RequestFactory
+from django.urls import reverse
 
 from .helpers import assign_store, make_region, make_store, make_user
 
@@ -120,7 +120,9 @@ class SupportFlowTests(TestCase):
             actor=self.customer,
         )
         record_payment_pending(order, payment_intent_id="pi_support_order")
-        record_payment_success(order, payment_intent_id="pi_support_order", actor=self.customer)
+        record_payment_success(
+            order, payment_intent_id="pi_support_order", actor=self.customer
+        )
         transition_order_status(order, Order.Status.QUEUED, actor=self.customer)
 
         self.client.force_login(self.customer)

@@ -9,8 +9,8 @@ from pathlib import Path
 from urllib import error as url_error
 from urllib import request as url_request
 
-from django.conf import settings
 from apps.users.models import User
+from django.conf import settings
 
 from .catalog import (
     ADD_IN_OPTIONS,
@@ -172,7 +172,10 @@ def build_menu_ai_assistance(*, user, store, prompt, menu_items=None):
         "recipe": fallback_recipe,
         "drink": fallback_drink,
         "menu_matches": fallback_matches,
-        "can_save": bool(getattr(user, "is_authenticated", False) and getattr(user, "role", None) == User.Role.ACCOUNT_USER),
+        "can_save": bool(
+            getattr(user, "is_authenticated", False)
+            and getattr(user, "role", None) == User.Role.ACCOUNT_USER
+        ),
         "uses_ai": False,
     }
 
@@ -223,7 +226,9 @@ def _ingredient_lookup_maps(ingredient_catalog):
         "sodas": {row["slug"]: row for row in ingredient_catalog.get("sodas", [])},
         "syrups": {row["slug"]: row for row in ingredient_catalog.get("syrups", [])},
         "add_ins": {row["slug"]: row for row in ingredient_catalog.get("add_ins", [])},
-        "ice_cream": {row["slug"]: row for row in ingredient_catalog.get("ice_cream", [])},
+        "ice_cream": {
+            row["slug"]: row for row in ingredient_catalog.get("ice_cream", [])
+        },
     }
 
 
@@ -234,16 +239,54 @@ def _ingredient_label_from_lookup(lookup, category, slug):
 
 def _build_fallback_recipe(prompt, ingredient_catalog, menu_items):
     lookups = _ingredient_lookup_maps(ingredient_catalog)
-    base_soda = _pick_catalog_item(prompt, ingredient_catalog.get("sodas", []), preferred_keywords=("fruity", "refreshing", "citrus", "bold", "creamy", "caffeine-free"))
-    syrup_one = _pick_catalog_item(prompt, ingredient_catalog.get("syrups", []), preferred_keywords=("fruity", "sweet", "berry", "vanilla", "citrus"))
-    syrup_two = _pick_catalog_item(prompt + " extra", ingredient_catalog.get("syrups", []), excluded_slugs={syrup_one.get("slug", "")}, preferred_keywords=("mint", "lime", "cherry", "strawberry", "coconut")) if syrup_one else {}
-    add_in = _pick_catalog_item(prompt, ingredient_catalog.get("add_ins", []), preferred_keywords=("cream", "mint", "vanilla", "coconut", "fruit"))
-    ice_cream = _pick_catalog_item(prompt, ingredient_catalog.get("ice_cream", []), preferred_keywords=("float", "creamy", "dessert", "vanilla"))
+    base_soda = _pick_catalog_item(
+        prompt,
+        ingredient_catalog.get("sodas", []),
+        preferred_keywords=(
+            "fruity",
+            "refreshing",
+            "citrus",
+            "bold",
+            "creamy",
+            "caffeine-free",
+        ),
+    )
+    syrup_one = _pick_catalog_item(
+        prompt,
+        ingredient_catalog.get("syrups", []),
+        preferred_keywords=("fruity", "sweet", "berry", "vanilla", "citrus"),
+    )
+    syrup_two = (
+        _pick_catalog_item(
+            prompt + " extra",
+            ingredient_catalog.get("syrups", []),
+            excluded_slugs={syrup_one.get("slug", "")},
+            preferred_keywords=("mint", "lime", "cherry", "strawberry", "coconut"),
+        )
+        if syrup_one
+        else {}
+    )
+    add_in = _pick_catalog_item(
+        prompt,
+        ingredient_catalog.get("add_ins", []),
+        preferred_keywords=("cream", "mint", "vanilla", "coconut", "fruit"),
+    )
+    ice_cream = _pick_catalog_item(
+        prompt,
+        ingredient_catalog.get("ice_cream", []),
+        preferred_keywords=("float", "creamy", "dessert", "vanilla"),
+    )
     starter_menu_item = _best_menu_match_for_base(base_soda.get("slug", ""), menu_items)
 
-    recipe_name = _build_recipe_name(prompt, base_soda, syrup_one, syrup_two, add_in, ice_cream)
-    recipe_description = _build_recipe_description(prompt, base_soda, syrup_one, syrup_two, add_in, ice_cream)
-    recipe_reason = _build_recipe_reason(prompt, base_soda, syrup_one, syrup_two, add_in, ice_cream)
+    recipe_name = _build_recipe_name(
+        prompt, base_soda, syrup_one, syrup_two, add_in, ice_cream
+    )
+    recipe_description = _build_recipe_description(
+        prompt, base_soda, syrup_one, syrup_two, add_in, ice_cream
+    )
+    recipe_reason = _build_recipe_reason(
+        prompt, base_soda, syrup_one, syrup_two, add_in, ice_cream
+    )
 
     return {
         "name": recipe_name,
@@ -268,7 +311,13 @@ def _pick_catalog_item(prompt, items, *, preferred_keywords=(), excluded_slugs=N
         if slug in excluded_slugs:
             continue
         score = 0
-        haystack = " ".join([item.get("label", ""), item.get("description", ""), " ".join(item.get("tags", []))]).lower()
+        haystack = " ".join(
+            [
+                item.get("label", ""),
+                item.get("description", ""),
+                " ".join(item.get("tags", [])),
+            ]
+        ).lower()
         for keyword in preferred_keywords:
             if keyword in prompt_lower:
                 if keyword in haystack:
@@ -301,7 +350,9 @@ def _build_recipe_name(prompt, base_soda, syrup_one, syrup_two, add_in, ice_crea
     lower_prompt = (prompt or "").lower()
     if any(word in lower_prompt for word in ["fruity", "berry", "fruit"]):
         parts.append("Berry")
-    elif any(word in lower_prompt for word in ["citrus", "lemon", "lime", "refreshing"]):
+    elif any(
+        word in lower_prompt for word in ["citrus", "lemon", "lime", "refreshing"]
+    ):
         parts.append("Citrus")
     elif any(word in lower_prompt for word in ["creamy", "float", "vanilla"]):
         parts.append("Float")
@@ -315,7 +366,9 @@ def _build_recipe_name(prompt, base_soda, syrup_one, syrup_two, add_in, ice_crea
     return " ".join(parts)
 
 
-def _build_recipe_description(prompt, base_soda, syrup_one, syrup_two, add_in, ice_cream):
+def _build_recipe_description(
+    prompt, base_soda, syrup_one, syrup_two, add_in, ice_cream
+):
     ingredients = [base_soda.get("label", "")]
     for item in (syrup_one, syrup_two, add_in):
         if item and item.get("label"):
@@ -323,7 +376,11 @@ def _build_recipe_description(prompt, base_soda, syrup_one, syrup_two, add_in, i
     if ice_cream and ice_cream.get("label"):
         ingredients.append(ice_cream["label"])
     ingredients = [item for item in ingredients if item]
-    return f"Start with {', '.join(ingredients[:-1])} and finish with {ingredients[-1]}." if len(ingredients) > 1 else f"Start with {ingredients[0]} and build from there."
+    return (
+        f"Start with {', '.join(ingredients[:-1])} and finish with {ingredients[-1]}."
+        if len(ingredients) > 1
+        else f"Start with {ingredients[0]} and build from there."
+    )
 
 
 def _build_recipe_reason(prompt, base_soda, syrup_one, syrup_two, add_in, ice_cream):
@@ -335,6 +392,8 @@ def _build_recipe_reason(prompt, base_soda, syrup_one, syrup_two, add_in, ice_cr
     if any(word in prompt_lower for word in ["caffeine-free", "no caffeine"]):
         return "Built from caffeine-free ingredients for a lighter custom drink."
     return "Built from existing ingredients to give you something new to try."
+
+
 def _call_anthropic_menu_ai(*, user, store, prompt, menu_items, ingredient_catalog):
     api_key = str(getattr(settings, "ANTHROPIC_API_KEY", "") or "").strip()
     if not api_key:
@@ -356,12 +415,16 @@ def _call_anthropic_menu_ai(*, user, store, prompt, menu_items, ingredient_catal
         }
         for item in menu_items[:10]
     ]
-    user_role = getattr(user, "role", "guest") if getattr(user, "is_authenticated", False) else "guest"
+    user_role = (
+        getattr(user, "role", "guest")
+        if getattr(user, "is_authenticated", False)
+        else "guest"
+    )
     system_prompt = (
         "You are FloatStack Menu AI, a concise assistant that creates a custom soda suggestion from the provided ingredient catalog. "
         "Only use the ingredient catalog and menu context provided to you. Do not invent ingredients, prices, or menu items. "
         "Respect FloatStack rules: orders stay scoped to one store, and you are only helping choose a drink. "
-        "Return JSON only with this exact shape: {\"answer\": string, \"recipe\": {\"name\": string, \"description\": string, \"reason\": string, \"base_soda_slug\": string, \"syrup_slugs\": [string, ...], \"add_in_slugs\": [string, ...], \"ice_cream_slug\": string, \"starter_menu_slug\": string}, \"quick_prompts\": [string, ...], \"menu_matches\": [{\"slug\": string, \"reason\": string}]}. "
+        'Return JSON only with this exact shape: {"answer": string, "recipe": {"name": string, "description": string, "reason": string, "base_soda_slug": string, "syrup_slugs": [string, ...], "add_in_slugs": [string, ...], "ice_cream_slug": string, "starter_menu_slug": string}, "quick_prompts": [string, ...], "menu_matches": [{"slug": string, "reason": string}]}. '
         "Choose existing ingredients only. Keep the answer friendly and under 120 words."
     )
     body = {
@@ -412,8 +475,12 @@ def _call_anthropic_menu_ai(*, user, store, prompt, menu_items, ingredient_catal
                 raise ValueError("Anthropic response did not contain text content.")
 
             parsed = json.loads(text_block)
-            recipe = _normalize_recipe(parsed.get("recipe") or {}, ingredient_catalog, menu_items)
-            menu_matches = _normalize_menu_matches(parsed.get("menu_matches") or [], menu_items)
+            recipe = _normalize_recipe(
+                parsed.get("recipe") or {}, ingredient_catalog, menu_items
+            )
+            menu_matches = _normalize_menu_matches(
+                parsed.get("menu_matches") or [], menu_items
+            )
             drink = _build_menu_ai_drink_payload(
                 prompt=prompt,
                 store=store,
@@ -424,19 +491,31 @@ def _call_anthropic_menu_ai(*, user, store, prompt, menu_items, ingredient_catal
             return {
                 "title": "FloatStack Menu AI",
                 "prompt": prompt,
-                "answer": str(parsed.get("answer", "")).strip() or _build_fallback_answer(prompt, recipe, menu_matches),
+                "answer": str(parsed.get("answer", "")).strip()
+                or _build_fallback_answer(prompt, recipe, menu_matches),
                 "quick_prompts": [
                     str(item).strip()
-                    for item in (parsed.get("quick_prompts") or MENU_AI_FALLBACK_PROMPTS)
+                    for item in (
+                        parsed.get("quick_prompts") or MENU_AI_FALLBACK_PROMPTS
+                    )
                     if str(item).strip()
                 ][:4],
                 "recipe": recipe,
                 "drink": drink,
                 "menu_matches": menu_matches,
-                "can_save": bool(getattr(user, "is_authenticated", False) and getattr(user, "role", None) == User.Role.ACCOUNT_USER),
+                "can_save": bool(
+                    getattr(user, "is_authenticated", False)
+                    and getattr(user, "role", None) == User.Role.ACCOUNT_USER
+                ),
                 "uses_ai": True,
             }
-        except (ValueError, json.JSONDecodeError, TimeoutError, url_error.URLError, url_error.HTTPError) as exc:
+        except (
+            ValueError,
+            json.JSONDecodeError,
+            TimeoutError,
+            url_error.URLError,
+            url_error.HTTPError,
+        ) as exc:
             logger.warning(
                 "menu_ai_provider_attempt_failed",
                 extra={
@@ -461,8 +540,12 @@ def _build_menu_ai_drink_payload(*, prompt, store, recipe, menu_items, uses_ai):
     drink_name = _make_unique_drink_name(base_name=base_name, prompt=prompt)
     size_snapshot = "medium"
     base_soda_slug = (recipe.get("base_soda") or {}).get("slug", "")
-    syrup_slugs = [item.get("slug", "") for item in recipe.get("syrups", []) if item.get("slug")]
-    add_in_slugs = [item.get("slug", "") for item in recipe.get("add_ins", []) if item.get("slug")]
+    syrup_slugs = [
+        item.get("slug", "") for item in recipe.get("syrups", []) if item.get("slug")
+    ]
+    add_in_slugs = [
+        item.get("slug", "") for item in recipe.get("add_ins", []) if item.get("slug")
+    ]
     ice_cream_slug = (
         (recipe.get("ice_cream") or {}).get("slug", "")
         if isinstance(recipe.get("ice_cream"), dict)
@@ -526,9 +609,21 @@ def _build_menu_ai_drink_payload(*, prompt, store, recipe, menu_items, uses_ai):
         "extras_total": extras_total,
         "ingredient_labels": {
             "base_soda": (recipe.get("base_soda") or {}).get("label", ""),
-            "syrups": [item.get("label", "") for item in recipe.get("syrups", []) if item.get("label")],
-            "add_ins": [item.get("label", "") for item in recipe.get("add_ins", []) if item.get("label")],
-            "ice_cream": (recipe.get("ice_cream") or {}).get("label", "") if isinstance(recipe.get("ice_cream"), dict) else "",
+            "syrups": [
+                item.get("label", "")
+                for item in recipe.get("syrups", [])
+                if item.get("label")
+            ],
+            "add_ins": [
+                item.get("label", "")
+                for item in recipe.get("add_ins", [])
+                if item.get("label")
+            ],
+            "ice_cream": (
+                (recipe.get("ice_cream") or {}).get("label", "")
+                if isinstance(recipe.get("ice_cream"), dict)
+                else ""
+            ),
         },
         "starter_menu": {
             "slug": menu_key,
@@ -541,7 +636,8 @@ def _build_menu_ai_drink_payload(*, prompt, store, recipe, menu_items, uses_ai):
         "recipe_key": menu_key,
         "size_snapshot": size_snapshot,
         "base_price_snapshot": base_price_snapshot,
-        "description": str(recipe.get("description", "")).strip() or "A custom drink built from the current ingredient list.",
+        "description": str(recipe.get("description", "")).strip()
+        or "A custom drink built from the current ingredient list.",
         "extras_total": extras_total,
         "cart_item": cart_item,
         "customizations_json": customizations_json,
@@ -559,21 +655,43 @@ def _make_unique_drink_name(*, base_name, prompt):
 def _normalize_recipe(raw_recipe, ingredient_catalog, menu_items):
     lookups = _ingredient_lookup_maps(ingredient_catalog)
     base_soda_slug = str(raw_recipe.get("base_soda_slug", "")).strip()
-    syrup_slugs = [str(slug).strip() for slug in raw_recipe.get("syrup_slugs") or [] if str(slug).strip()]
-    add_in_slugs = [str(slug).strip() for slug in raw_recipe.get("add_in_slugs") or [] if str(slug).strip()]
+    syrup_slugs = [
+        str(slug).strip()
+        for slug in raw_recipe.get("syrup_slugs") or []
+        if str(slug).strip()
+    ]
+    add_in_slugs = [
+        str(slug).strip()
+        for slug in raw_recipe.get("add_in_slugs") or []
+        if str(slug).strip()
+    ]
     ice_cream_slug = str(raw_recipe.get("ice_cream_slug", "")).strip()
     starter_menu_slug = str(raw_recipe.get("starter_menu_slug", "")).strip()
 
-    base_soda = lookups["sodas"].get(base_soda_slug) or next(iter(lookups["sodas"].values()), {})
-    syrups = [lookups["syrups"].get(slug) for slug in syrup_slugs if lookups["syrups"].get(slug)]
-    add_ins = [lookups["add_ins"].get(slug) for slug in add_in_slugs if lookups["add_ins"].get(slug)]
+    base_soda = lookups["sodas"].get(base_soda_slug) or next(
+        iter(lookups["sodas"].values()), {}
+    )
+    syrups = [
+        lookups["syrups"].get(slug)
+        for slug in syrup_slugs
+        if lookups["syrups"].get(slug)
+    ]
+    add_ins = [
+        lookups["add_ins"].get(slug)
+        for slug in add_in_slugs
+        if lookups["add_ins"].get(slug)
+    ]
     ice_cream = lookups["ice_cream"].get(ice_cream_slug)
-    starter_menu_item = next((item for item in menu_items if item.get("slug") == starter_menu_slug), {})
+    starter_menu_item = next(
+        (item for item in menu_items if item.get("slug") == starter_menu_slug), {}
+    )
 
     return {
         "name": str(raw_recipe.get("name", "Custom Drink")).strip() or "Custom Drink",
-        "description": str(raw_recipe.get("description", "")).strip() or "A custom drink built from the current ingredient list.",
-        "reason": str(raw_recipe.get("reason", "")).strip() or "Built from existing ingredients.",
+        "description": str(raw_recipe.get("description", "")).strip()
+        or "A custom drink built from the current ingredient list.",
+        "reason": str(raw_recipe.get("reason", "")).strip()
+        or "Built from existing ingredients.",
         "base_soda": base_soda,
         "syrups": syrups,
         "add_ins": add_ins,
@@ -589,7 +707,11 @@ def _menu_match_suggestions(prompt, menu_items):
     for item in menu_items:
         score = 0
         haystack = " ".join(
-            [item.get("name", ""), item.get("description", ""), " ".join(item.get("tags", []))]
+            [
+                item.get("name", ""),
+                item.get("description", ""),
+                " ".join(item.get("tags", [])),
+            ]
         ).lower()
         for token in lowered.split():
             if token and token in haystack:
@@ -641,7 +763,8 @@ def _normalize_menu_matches(raw_matches, menu_items):
                     "slug": resolved_slug,
                     "name": item.get("name", ""),
                     "description": item.get("description", ""),
-                    "reason": str(row.get("reason", "")).strip() or _build_match_reason("", item),
+                    "reason": str(row.get("reason", "")).strip()
+                    or _build_match_reason("", item),
                 }
             )
     return normalized
@@ -650,13 +773,17 @@ def _normalize_menu_matches(raw_matches, menu_items):
 def _build_match_reason(prompt, item):
     prompt_lower = (prompt or "").lower()
     tags = set(item.get("tags", []))
-    if any(token in prompt_lower for token in ["fruity", "fruit", "berry", "refreshing"]):
+    if any(
+        token in prompt_lower for token in ["fruity", "fruit", "berry", "refreshing"]
+    ):
         if "fruit" in tags or "citrus" in tags:
             return "Fits a bright, refreshing request."
     if any(token in prompt_lower for token in ["creamy", "float", "dessert"]):
         if "float-friendly" in tags or "dessert" in tags or "creamy" in tags:
             return "Matches the creamy float vibe."
-    if any(token in prompt_lower for token in ["caffeine-free", "no caffeine", "decaf"]):
+    if any(
+        token in prompt_lower for token in ["caffeine-free", "no caffeine", "decaf"]
+    ):
         if "caffeine-free" in tags:
             return "Keeps the drink caffeine-free."
     if any(token in prompt_lower for token in ["zero sugar", "diet", "lighter"]):
@@ -668,9 +795,21 @@ def _build_match_reason(prompt, item):
 def _build_fallback_answer(prompt, recipe, menu_matches):
     if recipe:
         base_label = recipe.get("base_soda", {}).get("label", "a soda base")
-        add_in_labels = [item.get("label", "") for item in recipe.get("add_ins", []) if item.get("label")]
-        syrup_labels = [item.get("label", "") for item in recipe.get("syrups", []) if item.get("label")]
-        ice_cream_label = recipe.get("ice_cream", {}).get("label", "") if isinstance(recipe.get("ice_cream"), dict) else ""
+        add_in_labels = [
+            item.get("label", "")
+            for item in recipe.get("add_ins", [])
+            if item.get("label")
+        ]
+        syrup_labels = [
+            item.get("label", "")
+            for item in recipe.get("syrups", [])
+            if item.get("label")
+        ]
+        ice_cream_label = (
+            recipe.get("ice_cream", {}).get("label", "")
+            if isinstance(recipe.get("ice_cream"), dict)
+            else ""
+        )
         ingredient_bits = [base_label] + syrup_labels + add_in_labels
         if ice_cream_label:
             ingredient_bits.append(ice_cream_label)
@@ -681,9 +820,7 @@ def _build_fallback_answer(prompt, recipe, menu_matches):
                 core = f"{core}, and {ingredient_bits[3]}"
             return f"Try this custom mix: {recipe.get('name', 'Custom Drink')} with {core}. {recipe.get('reason', '')}".strip()
     if not menu_matches:
-        return (
-            "I would start with a crisp citrus or classic cola base, then add one flavor layer and keep the build simple."
-        )
+        return "I would start with a crisp citrus or classic cola base, then add one flavor layer and keep the build simple."
     names = [row["name"] for row in menu_matches[:3] if row.get("name")]
     if len(names) == 1:
         return f"I would start with {names[0]} for that request, then customize from there."
