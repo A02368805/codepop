@@ -1,4 +1,5 @@
 from datetime import date
+from decimal import Decimal
 
 from apps.analytics.recommendations import recommend_drinks_for_user
 from apps.payments.gateway import PaymentMode, get_payment_mode
@@ -28,7 +29,7 @@ from django.utils import timezone
 from django.views import View
 from django.views.generic import FormView, TemplateView
 
-from .assistant import build_drink_builder_assistance
+from .assistant import build_drink_builder_assistance, build_menu_ai_assistance
 from .cart import (
     add_cart_item,
     build_cart_pricing,
@@ -58,6 +59,7 @@ from .forms import (
     CheckoutForm,
     DrinkCustomizationForm,
     GuestLookupForm,
+    MenuAiPromptForm,
 )
 from .models import Order
 from .personalization import recommend_builder_configuration
@@ -231,9 +233,155 @@ class MenuView(CustomerOrderingRequiredMixin, TemplateView):
                     self.request.user if self.request.user.is_authenticated else None,
                     limit=3,
                 ),
+                "menu_ai_form": MenuAiPromptForm(),
+                "menu_ai_result": build_menu_ai_assistance(
+                    user=(
+                        self.request.user
+                        if self.request.user.is_authenticated
+                        else None
+                    ),
+                    store=store,
+                    prompt="",
+                    menu_items=get_menu_items(),
+                ),
             }
         )
         return context
+
+
+class MenuAiAssistantView(CustomerOrderingRequiredMixin, View):
+    def post(self, request, *args, **kwargs):
+        store = get_object_or_404(
+            Store, store_code=kwargs["store_code"], is_active=True
+        )
+        form = MenuAiPromptForm(request.POST)
+        if not form.is_valid():
+            response = build_menu_ai_assistance(
+                user=request.user if request.user.is_authenticated else None,
+                store=store,
+                prompt="",
+                menu_items=get_menu_items(),
+            )
+            response["answer"] = (
+                "Please describe the kind of drink you want so I can help."
+            )
+        else:
+            response = build_menu_ai_assistance(
+                user=request.user if request.user.is_authenticated else None,
+                store=store,
+                prompt=form.cleaned_data["prompt"],
+                menu_items=get_menu_items(),
+            )
+
+        request.session["menu_ai_latest_result"] = response
+        request.session["menu_ai_latest_store_code"] = store.store_code
+
+        html = render_to_string(
+            "orders/partials/menu_ai_result.html",
+            {
+                "menu_ai_result": response,
+                "store": store,
+            },
+            request=request,
+        )
+        return HttpResponse(html)
+
+
+class MenuAiSaveView(RoleRequiredMixin, LoginRequiredMixin, View):
+    allowed_roles = (User.Role.ACCOUNT_USER,)
+
+    def post(self, request, *args, **kwargs):
+        store = get_object_or_404(
+            Store, store_code=kwargs["store_code"], is_active=True
+        )
+        latest_store_code = request.session.get("menu_ai_latest_store_code", "")
+        latest_result = request.session.get("menu_ai_latest_result") or {}
+        if latest_store_code and latest_store_code != store.store_code:
+            latest_result = {}
+
+        drink = latest_result.get("drink") or {}
+        if not drink:
+            messages.error(request, "Generate a drink first so it can be saved.")
+            response = build_menu_ai_assistance(
+                user=request.user,
+                store=store,
+                prompt=latest_result.get("prompt", ""),
+                menu_items=get_menu_items(),
+            )
+            response["saved"] = False
+        else:
+            favorite = save_favorite_drink(
+                user=request.user,
+                name=drink["name"],
+                recipe_key=drink.get("recipe_key", ""),
+                size_snapshot=drink.get("size_snapshot", "medium"),
+                base_price_snapshot=Decimal(
+                    str(drink.get("base_price_snapshot", "0.00"))
+                ),
+                customizations_json=drink.get("customizations_json", {}),
+                description=drink.get("description", ""),
+            )
+            messages.success(request, f"Saved {favorite.name} to your favorites.")
+            latest_result["saved"] = True
+            latest_result["saved_favorite_name"] = favorite.name
+            request.session["menu_ai_latest_result"] = latest_result
+            response = latest_result
+
+        html = render_to_string(
+            "orders/partials/menu_ai_result.html",
+            {
+                "menu_ai_result": response,
+                "store": store,
+            },
+            request=request,
+        )
+        return HttpResponse(html)
+
+
+class MenuAiAddToCartView(CustomerOrderingRequiredMixin, View):
+    def post(self, request, *args, **kwargs):
+        store = get_object_or_404(
+            Store, store_code=kwargs["store_code"], is_active=True
+        )
+        latest_store_code = request.session.get("menu_ai_latest_store_code", "")
+        latest_result = request.session.get("menu_ai_latest_result") or {}
+        if latest_store_code and latest_store_code != store.store_code:
+            latest_result = {}
+
+        drink = latest_result.get("drink") or {}
+        cart_item = drink.get("cart_item") or {}
+        if not cart_item:
+            messages.error(
+                request, "Generate a drink first so it can be added to cart."
+            )
+            response = build_menu_ai_assistance(
+                user=request.user if request.user.is_authenticated else None,
+                store=store,
+                prompt=latest_result.get("prompt", ""),
+                menu_items=get_menu_items(),
+            )
+            response["added_to_cart"] = False
+        else:
+            add_cart_item(request.session, store_code=store.store_code, item=cart_item)
+            latest_result["added_to_cart"] = True
+            latest_result["added_to_cart_name"] = cart_item.get(
+                "display_name", "your drink"
+            )
+            request.session["menu_ai_latest_result"] = latest_result
+            response = latest_result
+            messages.success(
+                request, f"{cart_item.get('display_name', 'Drink')} added to your cart."
+            )
+
+        html = render_to_string(
+            "orders/partials/menu_ai_result.html",
+            {
+                "menu_ai_result": response,
+                "store": store,
+            },
+            request=request,
+        )
+        return HttpResponse(html)
 
 
 class CustomizeDrinkView(CustomerOrderingRequiredMixin, TemplateView):

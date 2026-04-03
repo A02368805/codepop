@@ -17,6 +17,9 @@ from .views import (
     MarkPickedUpView,
     MarkPreparingView,
     MarkReadyView,
+    MenuAiAddToCartView,
+    MenuAiAssistantView,
+    MenuAiSaveView,
     MenuView,
     OrderCancelView,
     OrderConfirmationView,
@@ -30,6 +33,17 @@ app_name = "orders"
 urlpatterns = [
     path("", OrderWorkspaceView.as_view(), name="index"),
     path("menu/<str:store_code>/", MenuView.as_view(), name="menu"),
+    path("menu/<str:store_code>/ai/", MenuAiAssistantView.as_view(), name="menu-ai"),
+    path(
+        "menu/<str:store_code>/ai/save/",
+        MenuAiSaveView.as_view(),
+        name="menu-ai-save",
+    ),
+    path(
+        "menu/<str:store_code>/ai/add-to-cart/",
+        MenuAiAddToCartView.as_view(),
+        name="menu-ai-add-to-cart",
+    ),
     path(
         "menu/<str:store_code>/<slug:drink_slug>/",
         CustomizeDrinkView.as_view(),

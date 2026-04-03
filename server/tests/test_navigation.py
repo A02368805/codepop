@@ -63,9 +63,12 @@ class NavigationSelectorTests(TestCase):
         nav = build_navigation(AnonymousUser())
         brand = build_brandmark(AnonymousUser())
 
-        self.assertEqual(self._labels(nav), ["Stores", "Sign In", "Sign up"])
+        self.assertEqual(self._labels(nav), ["Stores", "Support", "Sign In", "Sign up"])
         self.assertEqual(
             self._item_for_label(nav, "Stores")["url"], reverse("stores:index")
+        )
+        self.assertEqual(
+            self._item_for_label(nav, "Support")["url"], reverse("support:index")
         )
         self.assertEqual(self._item_for_label(nav, "Sign In")["url"], reverse("login"))
         self.assertEqual(
@@ -80,7 +83,7 @@ class NavigationSelectorTests(TestCase):
 
         self.assertEqual(
             self._labels(nav),
-            ["Stores", "Orders", "Cart", "Notifications", "Log out"],
+            ["Stores", "Orders", "Cart", "Support", "Notifications", "Log out"],
         )
         self.assertEqual(
             self._item_for_label(nav, "Stores")["url"], reverse("stores:index")
@@ -90,6 +93,9 @@ class NavigationSelectorTests(TestCase):
         )
         self.assertEqual(
             self._item_for_label(nav, "Cart")["url"], reverse("orders:cart")
+        )
+        self.assertEqual(
+            self._item_for_label(nav, "Support")["url"], reverse("support:index")
         )
         self.assertEqual(
             self._item_for_label(nav, "Notifications")["url"],
