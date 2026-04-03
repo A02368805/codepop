@@ -9,6 +9,7 @@ document.addEventListener("DOMContentLoaded", () => {
     initStoreRecommendation();
     initDrinkBuilder();
     initMenuAiAssistant();
+    initHomeDrinkBrowser();
 });
 
 function getCsrfToken() {
@@ -417,6 +418,47 @@ function initMenuAiAssistant() {
         openPanel();
         promptField.value = target.getAttribute("data-menu-ai-prompt") || "";
     });
+}
+
+function initHomeDrinkBrowser() {
+    const filterButtons = Array.from(
+        document.querySelectorAll("[data-home-base-trigger]")
+    );
+    const baseSections = Array.from(
+        document.querySelectorAll("[data-home-base-section]")
+    );
+    const basePreviews = Array.from(
+        document.querySelectorAll("[data-home-soda-base]")
+    );
+
+    basePreviews.forEach((preview) => {
+        preview.dataset.soda = resolveCupTone(preview.dataset.homeSodaBase || "");
+    });
+
+    if (!filterButtons.length || !baseSections.length) {
+        return;
+    }
+
+    const setActiveBase = (targetKey) => {
+        filterButtons.forEach((button) => {
+            const isActive = button.dataset.homeBaseTarget === targetKey;
+            button.classList.toggle("is-active", isActive);
+            button.setAttribute("aria-pressed", isActive ? "true" : "false");
+        });
+
+        baseSections.forEach((section) => {
+            const isActive = section.dataset.homeBaseSection === targetKey;
+            section.classList.toggle("is-hidden", !isActive);
+        });
+    };
+
+    filterButtons.forEach((button) => {
+        button.addEventListener("click", () => {
+            setActiveBase(button.dataset.homeBaseTarget || "all");
+        });
+    });
+
+    setActiveBase(filterButtons[0].dataset.homeBaseTarget || "all");
 }
 
 function getCheckedLabels(form, fieldName) {

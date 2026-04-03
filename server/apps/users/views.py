@@ -30,12 +30,13 @@ from apps.orders.catalog import (
     SWEETNESS_PREFERENCE_CHOICES,
     SYRUP_GROUPS,
     SYRUP_OPTIONS,
+    get_menu_items,
     grouped_options,
 )
 from apps.orders.models import Order
 from apps.orders.selectors import staff_order_queue
 from apps.payments.models import RevenueLedgerEntry
-from apps.stores.models import Region
+from apps.stores.models import Region, Store
 from apps.stores.selectors import (
     regions_visible_to_user,
     scoped_region_store_options,
@@ -54,6 +55,7 @@ from django.contrib.auth.mixins import LoginRequiredMixin
 from django.contrib.auth.views import LoginView, LogoutView
 from django.db.models import Count, Q, Sum
 from django.shortcuts import get_object_or_404, redirect
+from django.urls import reverse
 from django.utils import timezone
 from django.views.generic import FormView, TemplateView, View
 
@@ -71,6 +73,39 @@ from .permissions import (
 )
 from .selectors import get_dashboard_template, get_role_cards
 from .services import get_post_login_url, save_preference_profile, update_scoped_user
+
+HOME_BASE_FAMILIES = [
+    {
+        "key": "coke",
+        "label": "Coke",
+        "slugs": {"coke", "diet-coke", "coke-zero"},
+    },
+    {
+        "key": "pepsi",
+        "label": "Pepsi",
+        "slugs": {"pepsi", "diet-pepsi"},
+    },
+    {
+        "key": "mtn-dew",
+        "label": "Mtn Dew",
+        "slugs": {"mountain-dew", "diet-mountain-dew"},
+    },
+    {
+        "key": "dr-pepper",
+        "label": "Dr Pepper",
+        "slugs": {"dr-pepper", "diet-dr-pepper"},
+    },
+    {
+        "key": "sprite",
+        "label": "Sprite",
+        "slugs": {"sprite", "sprite-zero", "lemon-lime"},
+    },
+    {
+        "key": "root-beer",
+        "label": "Root Beer",
+        "slugs": {"root-beer"},
+    },
+]
 
 
 def _parse_date(value):
@@ -128,19 +163,111 @@ def _form_scalar_value(form, field_name):
     return form.initial.get(field_name, form.fields[field_name].initial or "")
 
 
+def _home_base_category(base_slug):
+    for family in HOME_BASE_FAMILIES:
+        if base_slug in family["slugs"]:
+            return family["key"], family["label"]
+
+    fallback = SODA_OPTIONS.get(base_slug, {})
+    return base_slug, fallback.get("label", base_slug.replace("-", " ").title())
+
+
 class HomePageView(TemplateView):
     template_name = "home.html"
 
+    def _default_ordering_store(self):
+        user = self.request.user
+        if (
+            getattr(user, "is_authenticated", False)
+            and user.role == User.Role.ACCOUNT_USER
+            and user.preferred_store
+            and user.preferred_store.is_active
+        ):
+            return user.preferred_store
+        return Store.objects.filter(is_active=True).order_by("store_code").first()
+
+    def _build_customer_menu_sections(self, *, store):
+        menu_items = get_menu_items()
+        cards = []
+        categories = {}
+
+        for item in menu_items:
+            base_slug = item.get("default_soda", "")
+            base_option = SODA_OPTIONS.get(base_slug, {})
+            category_key, category_label = _home_base_category(base_slug)
+            card = {
+                "slug": item["slug"],
+                "name": item["name"],
+                "description": item.get("description", ""),
+                "base_slug": base_slug,
+                "base_label": base_option.get(
+                    "label", base_slug.replace("-", " ").title()
+                ),
+                "category_key": category_key,
+                "category_label": category_label,
+                "tags": list(item.get("tags", []))[:3],
+                "badge": item.get("home_badge", ""),
+                "starting_price": item["base_prices"].get("small", ""),
+                "customize_url": (
+                    reverse("orders:customize", args=[store.store_code, item["slug"]])
+                    if store
+                    else reverse("stores:index")
+                ),
+            }
+            cards.append(card)
+            categories.setdefault(
+                category_key,
+                {
+                    "key": category_key,
+                    "label": category_label,
+                    "cards": [],
+                },
+            )["cards"].append(card)
+
+        sections = [
+            {
+                "key": "all",
+                "label": "All Drinks",
+                "cards": cards,
+                "count": len(cards),
+            }
+        ]
+
+        for family in HOME_BASE_FAMILIES:
+            family_section = categories.get(family["key"])
+            if family_section:
+                family_section["count"] = len(family_section["cards"])
+                sections.append(family_section)
+
+        family_keys = {family["key"] for family in HOME_BASE_FAMILIES}
+        extra_sections = [
+            section
+            for key, section in categories.items()
+            if key not in family_keys and section["cards"]
+        ]
+        for section in sorted(extra_sections, key=lambda value: value["label"]):
+            section["count"] = len(section["cards"])
+            sections.append(section)
+
+        return cards, sections
+
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
+        can_start_order = user_can_use_customer_ordering(self.request.user)
+        context["can_start_order"] = can_start_order
         context["role_cards"] = get_role_cards()
-        context["can_start_order"] = user_can_use_customer_ordering(self.request.user)
         context["platform_principles"] = [
             "Customer ordering and internal operations in one server-rendered product",
             "Strict role scoping with permissions enforced on the server",
             "Regional logistics, maintenance, payments, and analytics in one workflow shell",
             "Demo-friendly UX without losing operational realism",
         ]
+        if can_start_order:
+            store = self._default_ordering_store()
+            cards, sections = self._build_customer_menu_sections(store=store)
+            context["default_ordering_store"] = store
+            context["home_menu_cards"] = cards
+            context["home_menu_sections"] = sections
         return context
 
 

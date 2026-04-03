@@ -1,0 +1,26 @@
+<article class="home-drink-card">
+    <div class="home-drink-card__visual">
+        <div class="home-drink-card__cup">
+            <div class="home-drink-card__liquid" data-home-soda-base="{{ item.base_slug }}"></div>
+        </div>
+    </div>
+    <div class="home-drink-card__meta">
+        <p class="eyebrow">{{ item.base_label }}</p>
+        <h3>{{ item.name }}</h3>
+        <p class="muted">{{ item.description }}</p>
+        <div class="badge-row">
+            {% if item.badge %}
+                <span class="pill">{{ item.badge }}</span>
+            {% endif %}
+            {% for tag in item.tags %}
+                <span class="pill pill--soft">{{ tag }}</span>
+            {% endfor %}
+        </div>
+    </div>
+    <div class="home-drink-card__footer">
+        {% if item.starting_price %}
+            <p class="home-drink-card__price">From ${{ item.starting_price }}</p>
+        {% endif %}
+        <a class="button button--primary home-drink-card__button" href="{{ item.customize_url }}">Customize</a>
+    </div>
+</article>

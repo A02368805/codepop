@@ -1096,28 +1096,24 @@ class Command(BaseCommand):
         ]
 
         item_payload = [
-            {
-                "display_name": "Berry Burst",
-                "size": "large",
-                "base_price": Decimal("4.60"),
-                "extras_total": Decimal("0.95"),
-                "quantity": 1,
-                "customizations": {
-                    "soda": "sprite",
-                    "syrups": ["strawberry", "coconut"],
-                    "add_ins": ["cream"],
-                    "ice_cream": "",
-                    "extras_total": "0.95",
-                    "inventory_requirements": [
-                        {"sku": "SYRUP-STRAWBERRY", "quantity": "1.00"},
-                        {"sku": "SYRUP-COCONUT", "quantity": "1.00"},
-                        {"sku": "DAIRY-CREAM", "quantity": "0.20"},
-                        {"sku": "BASE-SPRITE", "quantity": "0.70"},
-                        {"sku": "CUPS-24OZ", "quantity": "1.00"},
-                        {"sku": "LIDS-24OZ", "quantity": "1.00"},
-                    ],
-                },
-            }
+            build_cart_item(
+                drink_slug="berry-burst",
+                size="large",
+                soda="sprite",
+                syrups=["strawberry", "coconut"],
+                add_ins=["cream"],
+                quantity=1,
+                notes="Demo berry build",
+            ),
+            build_cart_item(
+                drink_slug="pepper-cherry-stack",
+                size="medium",
+                soda="dr-pepper",
+                syrups=["cherry", "vanilla"],
+                add_ins=[],
+                quantity=1,
+                notes="Demo cola build",
+            ),
         ]
 
         for row in demo_order_rows:
@@ -1159,7 +1155,7 @@ class Command(BaseCommand):
 
         save_preference_profile(
             user=casey,
-            favorite_sodas=["sprite", "root-beer", "cream-soda"],
+            favorite_sodas=["sprite", "root-beer", "cream-soda", "coke"],
             favorite_syrups=["coconut", "lime", "strawberry", "vanilla"],
             favorite_add_ins=["cream", "coconut-cream", "whip"],
             favorite_ice_creams=["scoop-vanilla"],
@@ -1170,7 +1166,7 @@ class Command(BaseCommand):
         )
         save_preference_profile(
             user=river,
-            favorite_sodas=["sprite-zero", "diet-coke", "club-soda"],
+            favorite_sodas=["sprite-zero", "diet-coke", "club-soda", "diet-dr-pepper"],
             favorite_syrups=["blackberry", "lime", "lavender"],
             favorite_add_ins=["fresh-mint", "lime-wedge"],
             favorite_ice_creams=[],
@@ -1181,7 +1177,7 @@ class Command(BaseCommand):
         )
         save_preference_profile(
             user=jules,
-            favorite_sodas=["mountain-dew", "orange-soda", "sprite"],
+            favorite_sodas=["mountain-dew", "orange-soda", "sprite", "pepsi"],
             favorite_syrups=["mango", "guava", "passion-fruit", "blue-raspberry"],
             favorite_add_ins=["mango-puree", "strawberry-puree", "fresh-mint"],
             favorite_ice_creams=["scoop-strawberry"],
@@ -1210,6 +1206,25 @@ class Command(BaseCommand):
             customizations_json=casey_favorite["customizations"],
             description=casey_favorite["description"],
         )
+        casey_favorite_two = build_cart_item(
+            drink_slug="orange-creamsicle",
+            size="medium",
+            soda="orange-soda",
+            syrups=["vanilla"],
+            add_ins=["cream"],
+            ice_cream="scoop-vanilla",
+            quantity=1,
+            notes="Dessert-leaning favorite",
+        )
+        save_favorite_drink(
+            user=casey,
+            name="Casey's Orange Cream",
+            recipe_key="orange-creamsicle",
+            size_snapshot=casey_favorite_two["size"],
+            base_price_snapshot=Decimal(casey_favorite_two["base_price"]),
+            customizations_json=casey_favorite_two["customizations"],
+            description=casey_favorite_two["description"],
+        )
 
         river_favorite = build_cart_item(
             drink_slug="citrus-mint-drive",
@@ -1229,6 +1244,63 @@ class Command(BaseCommand):
             base_price_snapshot=Decimal(river_favorite["base_price"]),
             customizations_json=river_favorite["customizations"],
             description=river_favorite["description"],
+        )
+        river_favorite_two = build_cart_item(
+            drink_slug="club-citrus-cooler",
+            size="medium",
+            soda="club-soda",
+            syrups=["grapefruit", "lime"],
+            add_ins=["fresh-mint"],
+            ice_cream="",
+            quantity=1,
+            notes="Low-sweetness refresher",
+        )
+        save_favorite_drink(
+            user=river,
+            name="River's Club Cooler",
+            recipe_key="club-citrus-cooler",
+            size_snapshot=river_favorite_two["size"],
+            base_price_snapshot=Decimal(river_favorite_two["base_price"]),
+            customizations_json=river_favorite_two["customizations"],
+            description=river_favorite_two["description"],
+        )
+        jules_favorite = build_cart_item(
+            drink_slug="dew-tropic-rush",
+            size="large",
+            soda="diet-mountain-dew",
+            syrups=["mango", "guava"],
+            add_ins=[],
+            ice_cream="",
+            quantity=1,
+            notes="Tropical and bright",
+        )
+        save_favorite_drink(
+            user=jules,
+            name="Jules' Tropic Dew",
+            recipe_key="dew-tropic-rush",
+            size_snapshot=jules_favorite["size"],
+            base_price_snapshot=Decimal(jules_favorite["base_price"]),
+            customizations_json=jules_favorite["customizations"],
+            description=jules_favorite["description"],
+        )
+        jules_favorite_two = build_cart_item(
+            drink_slug="mountain-berry-stride",
+            size="large",
+            soda="mountain-dew",
+            syrups=["blue-raspberry", "lime"],
+            add_ins=[],
+            ice_cream="",
+            quantity=1,
+            notes="High-energy berry profile",
+        )
+        save_favorite_drink(
+            user=jules,
+            name="Jules' Berry Stride",
+            recipe_key="mountain-berry-stride",
+            size_snapshot=jules_favorite_two["size"],
+            base_price_snapshot=Decimal(jules_favorite_two["base_price"]),
+            customizations_json=jules_favorite_two["customizations"],
+            description=jules_favorite_two["description"],
         )
 
     def _seed_transfers(self, *, stores, hubs, inventory_items, users):
