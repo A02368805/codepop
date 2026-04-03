@@ -423,6 +423,7 @@ function initMenuAiAssistant() {
     });
 }
 
+<<<<<<< HEAD
 function initHomeHeroCarousel() {
     const carousel = document.querySelector("[data-home-carousel]");
     if (!carousel) {
@@ -562,6 +563,14 @@ function initHomeHeroCarousel() {
 function initHomeDrinkBrowser() {
     const navLinks = Array.from(
         document.querySelectorAll("[data-home-nav-link]")
+=======
+function initHomeDrinkBrowser() {
+    const filterButtons = Array.from(
+        document.querySelectorAll("[data-home-base-trigger]")
+    );
+    const baseSections = Array.from(
+        document.querySelectorAll("[data-home-base-section]")
+>>>>>>> 5daa1ee9 (Home page updated)
     );
     const basePreviews = Array.from(
         document.querySelectorAll("[data-home-soda-base]")
@@ -571,6 +580,7 @@ function initHomeDrinkBrowser() {
         preview.dataset.soda = resolveCupTone(preview.dataset.homeSodaBase || "");
     });
 
+<<<<<<< HEAD
     if (!navLinks.length) {
         return;
     }
@@ -882,6 +892,32 @@ function initPreferenceProfile() {
     });
 
     syncSelectionState();
+=======
+    if (!filterButtons.length || !baseSections.length) {
+        return;
+    }
+
+    const setActiveBase = (targetKey) => {
+        filterButtons.forEach((button) => {
+            const isActive = button.dataset.homeBaseTarget === targetKey;
+            button.classList.toggle("is-active", isActive);
+            button.setAttribute("aria-pressed", isActive ? "true" : "false");
+        });
+
+        baseSections.forEach((section) => {
+            const isActive = section.dataset.homeBaseSection === targetKey;
+            section.classList.toggle("is-hidden", !isActive);
+        });
+    };
+
+    filterButtons.forEach((button) => {
+        button.addEventListener("click", () => {
+            setActiveBase(button.dataset.homeBaseTarget || "all");
+        });
+    });
+
+    setActiveBase(filterButtons[0].dataset.homeBaseTarget || "all");
+>>>>>>> 5daa1ee9 (Home page updated)
 }
 
 function getCheckedLabels(form, fieldName) {

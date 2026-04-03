@@ -1,5 +1,6 @@
 <article class="home-drink-card">
     <div class="home-drink-card__visual">
+<<<<<<< HEAD
         <img
             class="home-drink-card__image"
             src="{{ item.image_url }}"
@@ -14,6 +15,14 @@
         </div>
     </div>
     <div class="home-drink-card__meta">
+=======
+        <div class="home-drink-card__cup">
+            <div class="home-drink-card__liquid" data-home-soda-base="{{ item.base_slug }}"></div>
+        </div>
+    </div>
+    <div class="home-drink-card__meta">
+        <p class="eyebrow">{{ item.base_label }}</p>
+>>>>>>> 5daa1ee9 (Home page updated)
         <h3>{{ item.name }}</h3>
         <p class="muted">{{ item.description }}</p>
         <div class="badge-row">

@@ -871,6 +871,7 @@ h3 {
     align-self: center;
 }
 
+<<<<<<< HEAD
 .menu-hero-recommendations {
     grid-column: 1 / -1;
     display: grid;
@@ -955,11 +956,16 @@ h3 {
 .home-hero--carousel {
     grid-template-columns: minmax(0, 1fr) minmax(360px, 1.22fr);
     align-items: stretch;
+=======
+.home-hero {
+    gap: 1.25rem;
+>>>>>>> 5daa1ee9 (Home page updated)
 }
 
 .home-hero__copy {
     display: grid;
     gap: 1rem;
+<<<<<<< HEAD
     align-content: start;
     padding-right: 0.25rem;
 }
@@ -970,6 +976,34 @@ h3 {
 
 .home-hero__primary-cta {
     margin-top: 0.35rem;
+=======
+}
+
+.home-stat-grid {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 0.8rem;
+    margin-top: 0.3rem;
+}
+
+.home-stat {
+    border: 1px solid rgba(var(--ink-rgb), 0.1);
+    border-radius: 18px;
+    padding: 0.85rem 0.9rem;
+    background: rgba(255, 255, 255, 0.68);
+}
+
+.home-stat strong {
+    display: block;
+    font-size: 1.35rem;
+    line-height: 1.1;
+    margin-bottom: 0.2rem;
+}
+
+.home-hero__card {
+    display: grid;
+    gap: 1rem;
+>>>>>>> 5daa1ee9 (Home page updated)
 }
 
 .home-hero__actions {
@@ -977,6 +1011,7 @@ h3 {
     gap: 0.65rem;
 }
 
+<<<<<<< HEAD
 .home-hero__actions .button {
     width: 100%;
 }
@@ -1165,10 +1200,19 @@ h3 {
 }
 
 .home-subnav {
+=======
+.home-browse-panel {
+    display: grid;
+    gap: 1rem;
+}
+
+.home-base-filter {
+>>>>>>> 5daa1ee9 (Home page updated)
     display: flex;
     gap: 0.65rem;
     overflow-x: auto;
     padding-bottom: 0.2rem;
+<<<<<<< HEAD
     scroll-snap-type: x proximity;
 }
 
@@ -1176,12 +1220,21 @@ h3 {
     border: 1px solid rgba(var(--ink-rgb), 0.14);
     border-radius: 999px;
     background: rgba(255, 255, 255, 0.76);
+=======
+}
+
+.home-base-filter__chip {
+    border: 1px solid rgba(var(--ink-rgb), 0.14);
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.75);
+>>>>>>> 5daa1ee9 (Home page updated)
     color: var(--ink);
     display: inline-flex;
     align-items: center;
     gap: 0.5rem;
     padding: 0.55rem 0.85rem;
     font-weight: 600;
+<<<<<<< HEAD
     transition: border-color 0.18s ease, transform 0.18s ease, background 0.18s ease;
     white-space: nowrap;
     scroll-snap-align: start;
@@ -1199,16 +1252,35 @@ h3 {
 }
 
 .home-subnav__link.is-active {
+=======
+    cursor: pointer;
+    transition: border-color 0.18s ease, transform 0.18s ease, background 0.18s ease;
+    white-space: nowrap;
+}
+
+.home-base-filter__chip:hover {
+    transform: translateY(-1px);
+    border-color: rgba(var(--berry-rgb), 0.36);
+}
+
+.home-base-filter__chip.is-active {
+>>>>>>> 5daa1ee9 (Home page updated)
     border-color: rgba(var(--berry-rgb), 0.42);
     background: linear-gradient(
         135deg,
         rgba(var(--accent-rgb), 0.2),
         rgba(var(--berry-rgb), 0.12)
     );
+<<<<<<< HEAD
     box-shadow: 0 12px 24px rgba(var(--ink-rgb), 0.1);
 }
 
 .home-subnav__count {
+=======
+}
+
+.home-base-filter__count {
+>>>>>>> 5daa1ee9 (Home page updated)
     min-width: 1.5rem;
     padding: 0.1rem 0.45rem;
     border-radius: 999px;
@@ -1217,6 +1289,7 @@ h3 {
     text-align: center;
 }
 
+<<<<<<< HEAD
 .home-drink-track {
     display: grid;
     gap: 0.9rem;
@@ -1236,11 +1309,16 @@ h3 {
 .home-drink-track__header h3 {
     margin: 0;
     font-size: 1.35rem;
+=======
+.home-drink-track.is-hidden {
+    display: none;
+>>>>>>> 5daa1ee9 (Home page updated)
 }
 
 .home-drink-row {
     display: grid;
     grid-auto-flow: column;
+<<<<<<< HEAD
     grid-auto-columns: 282px;
     gap: 0.95rem;
     overflow-x: auto;
@@ -1257,11 +1335,21 @@ h3 {
 .home-drink-row::-webkit-scrollbar-thumb {
     background: rgba(var(--ink-rgb), 0.16);
     border-radius: 999px;
+=======
+    grid-auto-columns: minmax(230px, 290px);
+    gap: 0.95rem;
+    overflow-x: auto;
+    padding-bottom: 0.45rem;
+    scroll-snap-type: x proximity;
+>>>>>>> 5daa1ee9 (Home page updated)
 }
 
 .home-drink-card {
     display: grid;
+<<<<<<< HEAD
     grid-template-rows: 206px auto auto;
+=======
+>>>>>>> 5daa1ee9 (Home page updated)
     gap: 0.85rem;
     border: 1px solid var(--line);
     border-radius: 24px;
@@ -1272,6 +1360,7 @@ h3 {
         );
     padding: 0.95rem;
     scroll-snap-align: start;
+<<<<<<< HEAD
     min-height: 410px;
     box-shadow: 0 12px 26px rgba(var(--ink-rgb), 0.08);
     transition: transform 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
@@ -1281,6 +1370,10 @@ h3 {
     transform: translateY(-2px);
     border-color: rgba(var(--berry-rgb), 0.24);
     box-shadow: 0 18px 30px rgba(var(--ink-rgb), 0.12);
+=======
+    min-height: 340px;
+    box-shadow: 0 12px 26px rgba(var(--ink-rgb), 0.08);
+>>>>>>> 5daa1ee9 (Home page updated)
 }
 
 .home-drink-card__visual {
@@ -1291,6 +1384,7 @@ h3 {
         rgba(var(--accent-rgb), 0.12),
         rgba(var(--berry-rgb), 0.08)
     );
+<<<<<<< HEAD
     min-height: 0;
     height: 206px;
     display: grid;
@@ -1357,13 +1451,90 @@ h3 {
 
 .home-drink-card__base-dot[data-soda="berry"] {
     background: #cf8eb3;
+=======
+    min-height: 112px;
+    display: grid;
+    place-items: center;
+    padding: 0.85rem;
+}
+
+.home-drink-card__cup {
+    position: relative;
+    width: 70px;
+    height: 90px;
+    border-radius: 16px 16px 20px 20px;
+    border: 2px solid rgba(var(--mint-rgb), 0.24);
+    background: linear-gradient(
+        180deg,
+        rgba(255, 255, 255, 0.84),
+        rgba(255, 255, 255, 0.52)
+    );
+    overflow: hidden;
+}
+
+.home-drink-card__liquid {
+    position: absolute;
+    left: 7px;
+    right: 7px;
+    bottom: 7px;
+    top: 20px;
+    border-radius: 11px 11px 15px 15px;
+    background: linear-gradient(
+        180deg,
+        rgba(207, 152, 147, 0.72),
+        rgba(188, 124, 156, 0.92)
+    );
+}
+
+.home-drink-card__liquid[data-soda="cola"] {
+    background: linear-gradient(180deg, rgba(122, 89, 128, 0.72), rgba(59, 59, 88, 0.92));
+}
+
+.home-drink-card__liquid[data-soda="citrus"] {
+    background: linear-gradient(
+        180deg,
+        rgba(255, 241, 196, 0.88),
+        rgba(188, 124, 156, 0.82)
+    );
+}
+
+.home-drink-card__liquid[data-soda="root"] {
+    background: linear-gradient(180deg, rgba(145, 106, 78, 0.74), rgba(77, 53, 48, 0.92));
+}
+
+.home-drink-card__liquid[data-soda="cream"] {
+    background: linear-gradient(
+        180deg,
+        rgba(255, 232, 210, 0.9),
+        rgba(207, 152, 147, 0.9)
+    );
+}
+
+.home-drink-card__liquid[data-soda="sun"] {
+    background: linear-gradient(
+        180deg,
+        rgba(255, 214, 126, 0.88),
+        rgba(207, 152, 147, 0.92)
+    );
+}
+
+.home-drink-card__liquid[data-soda="berry"] {
+    background: linear-gradient(
+        180deg,
+        rgba(207, 152, 147, 0.72),
+        rgba(188, 124, 156, 0.92)
+    );
+>>>>>>> 5daa1ee9 (Home page updated)
 }
 
 .home-drink-card__meta {
     display: grid;
     gap: 0.6rem;
     align-content: start;
+<<<<<<< HEAD
     min-height: 0;
+=======
+>>>>>>> 5daa1ee9 (Home page updated)
 }
 
 .home-drink-card__meta h3 {
@@ -1371,6 +1542,7 @@ h3 {
     line-height: 1.2;
 }
 
+<<<<<<< HEAD
 .home-drink-card__meta .muted {
     margin-bottom: 0;
     display: -webkit-box;
@@ -1388,6 +1560,14 @@ h3 {
 }
 
 .home-drink-card__footer {
+=======
+.home-drink-card__meta .badge-row {
+    gap: 0.45rem;
+}
+
+.home-drink-card__footer {
+    margin-top: auto;
+>>>>>>> 5daa1ee9 (Home page updated)
     display: grid;
     gap: 0.65rem;
 }
@@ -1406,6 +1586,7 @@ h3 {
     min-width: min(100%, 290px);
 }
 
+<<<<<<< HEAD
 .order-history-grid {
     display: grid;
     gap: 0.95rem;
@@ -1458,6 +1639,8 @@ h3 {
     }
 }
 
+=======
+>>>>>>> 5daa1ee9 (Home page updated)
 .footer {
     margin-top: 1.5rem;
     padding: 1.2rem 1.4rem 0;
@@ -1971,6 +2154,7 @@ h3 {
         flex-direction: column;
     }
 
+<<<<<<< HEAD
     .home-hero--carousel {
         grid-template-columns: 1fr;
     }
@@ -1992,6 +2176,12 @@ h3 {
         padding: 0.9rem;
     }
 
+=======
+    .home-stat-grid {
+        grid-template-columns: 1fr;
+    }
+
+>>>>>>> 5daa1ee9 (Home page updated)
     .list-card {
         flex-direction: column;
     }
@@ -2093,6 +2283,7 @@ h3 {
         grid-template-columns: 1fr;
     }
 
+<<<<<<< HEAD
     .home-carousel__viewport {
         height: 300px;
         border-radius: 20px;
@@ -2150,6 +2341,10 @@ h3 {
     .order-history-card__footer {
         flex-direction: column;
         align-items: flex-start;
+=======
+    .home-drink-row {
+        grid-auto-columns: minmax(84vw, 1fr);
+>>>>>>> 5daa1ee9 (Home page updated)
     }
 
     .data-table,

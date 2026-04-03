@@ -782,6 +782,7 @@ MENU_ITEMS = {
         "default_ice_cream": "",
         "tags": ["dr-pepper", "creamy", "zero-sugar"],
     },
+<<<<<<< HEAD
     "pepper-berry-lift": {
         "slug": "pepper-berry-lift",
         "name": "Pepper Berry Lift",
@@ -793,6 +794,8 @@ MENU_ITEMS = {
         "default_ice_cream": "",
         "tags": ["dr-pepper", "berry", "refreshing"],
     },
+=======
+>>>>>>> 5daa1ee9 (Home page updated)
     "sprite-garden-fizz": {
         "slug": "sprite-garden-fizz",
         "name": "Sprite Garden Fizz",
@@ -850,6 +853,7 @@ MENU_ITEMS = {
         "default_ice_cream": "",
         "tags": ["club-soda", "citrus", "clean"],
     },
+<<<<<<< HEAD
     "club-berry-spark": {
         "slug": "club-berry-spark",
         "name": "Club Berry Spark",
@@ -894,6 +898,8 @@ MENU_ITEMS = {
         "default_ice_cream": "",
         "tags": ["cream-soda", "citrus", "dessert"],
     },
+=======
+>>>>>>> 5daa1ee9 (Home page updated)
     "sunset-pineapple-splash": {
         "slug": "sunset-pineapple-splash",
         "name": "Sunset Pineapple Splash",
@@ -905,6 +911,7 @@ MENU_ITEMS = {
         "default_ice_cream": "",
         "tags": ["orange", "tropical", "refreshing"],
     },
+<<<<<<< HEAD
     "orange-coconut-cloud": {
         "slug": "orange-coconut-cloud",
         "name": "Orange Coconut Cloud",
@@ -916,6 +923,8 @@ MENU_ITEMS = {
         "default_ice_cream": "",
         "tags": ["orange", "tropical", "creamy"],
     },
+=======
+>>>>>>> 5daa1ee9 (Home page updated)
     "blackberry-pepsi-night": {
         "slug": "blackberry-pepsi-night",
         "name": "Blackberry Pepsi Night",
@@ -927,6 +936,7 @@ MENU_ITEMS = {
         "default_ice_cream": "",
         "tags": ["pepsi", "berry", "smooth"],
     },
+<<<<<<< HEAD
     "root-beer-cocoa-float": {
         "slug": "root-beer-cocoa-float",
         "name": "Root Beer Cocoa Float",
@@ -939,6 +949,8 @@ MENU_ITEMS = {
         "tags": ["root-beer", "float", "dessert"],
         "home_badge": "New",
     },
+=======
+>>>>>>> 5daa1ee9 (Home page updated)
     "mountain-berry-stride": {
         "slug": "mountain-berry-stride",
         "name": "Mountain Berry Stride",

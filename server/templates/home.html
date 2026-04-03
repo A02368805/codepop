@@ -4,6 +4,7 @@
 
 {% block content %}
 {% if can_start_order %}
+<<<<<<< HEAD
     <section class="hero hero--landing home-hero home-hero--carousel">
         <div class="home-hero__copy">
             <p class="eyebrow">Fresh Soda Shop Picks</p>
@@ -115,17 +116,103 @@
         </div>
     </nav>
 
+=======
+    <section class="hero hero--landing home-hero">
+        <div class="home-hero__copy">
+            <p class="eyebrow">Order Drinks Online</p>
+            <h1>Choose a signature soda, then customize every detail.</h1>
+            <p class="lede">Browse by soda base, open a polished drink card, and jump straight into the existing builder flow with pricing and pickup rules still enforced on the server.</p>
+            <div class="home-stat-grid">
+                <article class="home-stat">
+                    <p class="eyebrow">Menu</p>
+                    <strong>{{ home_menu_cards|length }}</strong>
+                    <p class="muted">signature drinks</p>
+                </article>
+                <article class="home-stat">
+                    <p class="eyebrow">Bases</p>
+                    <strong>{{ home_menu_sections|length|add:"-1" }}</strong>
+                    <p class="muted">filter categories</p>
+                </article>
+                <article class="home-stat">
+                    <p class="eyebrow">Pickup Store</p>
+                    <strong>
+                        {% if default_ordering_store %}
+                            {{ default_ordering_store.store_code }}
+                        {% else %}
+                            Not set
+                        {% endif %}
+                    </strong>
+                    <p class="muted">
+                        {% if default_ordering_store %}
+                            {{ default_ordering_store.name }}
+                        {% else %}
+                            Choose a store
+                        {% endif %}
+                    </p>
+                </article>
+            </div>
+            <div class="cta-row">
+                <a class="button button--primary" href="{% url 'stores:index' %}">Choose pickup store</a>
+                {% if request.user.is_authenticated %}
+                    <a class="button button--ghost" href="{% url 'dashboard' %}">Open your dashboard</a>
+                {% else %}
+                    <a class="button button--ghost" href="{% url 'login' %}">Log in</a>
+                    <a class="button button--ghost" href="{% url 'register' %}">Create account</a>
+                {% endif %}
+                <a class="button button--ghost" href="{% url 'orders:guest-lookup' %}">Track guest order</a>
+            </div>
+        </div>
+        <div class="hero-card home-hero__card">
+            <p class="eyebrow">Built for Fast Ordering</p>
+            <ul class="checklist">
+                <li>Filter drinks by base before you browse cards.</li>
+                <li>Customize from any card without changing ordering logic.</li>
+                <li>Account users keep favorites, preferences, and order history.</li>
+                <li>Guests can still place and track pickup orders.</li>
+            </ul>
+            <div class="home-hero__actions">
+                {% if default_ordering_store %}
+                    <a class="button button--primary" href="{% url 'orders:menu' default_ordering_store.store_code %}">Open {{ default_ordering_store.name }} menu</a>
+                {% endif %}
+                <a class="button button--ghost" href="{% url 'support:index' %}">Customer support</a>
+            </div>
+        </div>
+    </section>
+
+>>>>>>> 5daa1ee9 (Home page updated)
     <section class="panel home-browse-panel">
         <div class="section-heading">
             <div>
                 <p class="eyebrow">Browse Drinks</p>
+<<<<<<< HEAD
                 <h2>Jump to a base, then customize your order.</h2>
             </div>
             <p class="lede-small">Tap any base in the sub-nav, scroll to the section, and pick your drink. Every card keeps the same existing customize flow.</p>
+=======
+                <h2>Find your drink by base, then customize.</h2>
+            </div>
+            <p class="lede-small">Select a base category first, then swipe or scroll through signature cards. Every card uses the same base-color language as the builder preview.</p>
+        </div>
+
+        <div class="home-base-filter" role="tablist" aria-label="Drink bases">
+            {% for section in home_menu_sections %}
+                <button
+                    type="button"
+                    class="home-base-filter__chip{% if forloop.first %} is-active{% endif %}"
+                    data-home-base-trigger
+                    data-home-base-target="{{ section.key }}"
+                    aria-pressed="{% if forloop.first %}true{% else %}false{% endif %}"
+                >
+                    <span>{{ section.label }}</span>
+                    <span class="home-base-filter__count">{{ section.count }}</span>
+                </button>
+            {% endfor %}
+>>>>>>> 5daa1ee9 (Home page updated)
         </div>
 
         {% for section in home_menu_sections %}
             <section
+<<<<<<< HEAD
                 class="home-drink-track"
                 id="{{ section.anchor_id }}"
                 aria-label="{{ section.label }} drinks"
@@ -137,6 +224,12 @@
                         <p class="muted">{{ section.description }}</p>
                     {% endif %}
                 </div>
+=======
+                class="home-drink-track{% if not forloop.first %} is-hidden{% endif %}"
+                data-home-base-section="{{ section.key }}"
+                aria-label="{{ section.label }} drinks"
+            >
+>>>>>>> 5daa1ee9 (Home page updated)
                 <div class="home-drink-row">
                     {% for item in section.cards %}
                         {% include "home/partials/drink_card.html" with item=item %}
@@ -154,12 +247,18 @@
     <section class="panel">
         <div class="section-heading">
             <div>
+<<<<<<< HEAD
                 <p class="eyebrow">Why Guests Love It</p>
                 <h2>Easy to order, quick to pick up, always customizable.</h2>
+=======
+                <p class="eyebrow">How Ordering Works</p>
+                <h2>From browse to pickup in a few steps.</h2>
+>>>>>>> 5daa1ee9 (Home page updated)
             </div>
         </div>
         <div class="card-grid">
             <article class="role-card">
+<<<<<<< HEAD
                 <p class="eyebrow">Fast Start</p>
                 <h3>Order in a few taps</h3>
                 <p>Pick a base, customize your drink, and check out quickly without extra steps.</p>
@@ -180,6 +279,28 @@
                 <h3>Track and grab your drink</h3>
                 <p>Track with your order code or quick pickup combo, then swing by when your drink is ready.</p>
                 <a href="{% url 'orders:guest-lookup' %}">Track pickup</a>
+=======
+                <p class="eyebrow">Step 1</p>
+                <h3>Choose pickup store</h3>
+                <p>Store selection keeps your cart and pickup estimates aligned with real inventory and queue conditions.</p>
+                <a href="{% url 'stores:index' %}">Browse stores</a>
+            </article>
+            <article class="role-card">
+                <p class="eyebrow">Step 2</p>
+                <h3>Customize your drink</h3>
+                <p>Use the existing builder for size, base, syrups, add-ins, and float options with live preview updates.</p>
+                {% if default_ordering_store %}
+                    <a href="{% url 'orders:menu' default_ordering_store.store_code %}">Open menu</a>
+                {% else %}
+                    <a href="{% url 'stores:index' %}">Start customizing</a>
+                {% endif %}
+            </article>
+            <article class="role-card">
+                <p class="eyebrow">Step 3</p>
+                <h3>Track order status</h3>
+                <p>Guests use lookup codes and account users get history, favorites, and recommendation refreshes.</p>
+                <a href="{% url 'orders:guest-lookup' %}">Track order</a>
+>>>>>>> 5daa1ee9 (Home page updated)
             </article>
         </div>
     </section>
