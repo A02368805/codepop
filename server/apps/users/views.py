@@ -55,6 +55,7 @@ from django.contrib.auth.mixins import LoginRequiredMixin
 from django.contrib.auth.views import LoginView, LogoutView
 from django.db.models import Count, Q, Sum
 from django.shortcuts import get_object_or_404, redirect
+from django.templatetags.static import static
 from django.urls import reverse
 from django.utils import timezone
 from django.views.generic import FormView, TemplateView, View
@@ -111,6 +112,33 @@ HOME_BASE_FAMILIES = [
         "slugs": {"root-beer"},
         "description": "Rich root-beer recipes built for smooth finishes.",
     },
+]
+
+HOME_BASE_IMAGE_ASSETS = {
+    "coke": "images/drinks/hero-coke.svg",
+    "diet-coke": "images/drinks/hero-coke.svg",
+    "coke-zero": "images/drinks/hero-coke.svg",
+    "pepsi": "images/drinks/hero-pepsi.svg",
+    "diet-pepsi": "images/drinks/hero-pepsi.svg",
+    "mountain-dew": "images/drinks/hero-mtn-dew.svg",
+    "diet-mountain-dew": "images/drinks/hero-mtn-dew.svg",
+    "dr-pepper": "images/drinks/hero-dr-pepper.svg",
+    "diet-dr-pepper": "images/drinks/hero-dr-pepper.svg",
+    "sprite": "images/drinks/hero-sprite.svg",
+    "sprite-zero": "images/drinks/hero-sprite.svg",
+    "lemon-lime": "images/drinks/hero-sprite.svg",
+    "root-beer": "images/drinks/hero-root-beer.svg",
+    "orange-soda": "images/drinks/hero-orange-soda.svg",
+    "club-soda": "images/drinks/hero-club-soda.svg",
+    "cream-soda": "images/drinks/hero-cream-soda.svg",
+}
+
+HOME_FEATURED_SLUGS = [
+    "orange-creamsicle",
+    "vanilla-sunset",
+    "sprite-garden-fizz",
+    "root-beer-cocoa-float",
+    "dew-lime-launch",
 ]
 
 
@@ -212,6 +240,11 @@ class HomePageView(TemplateView):
             has_float_profile = bool(item.get("default_ice_cream")) or any(
                 str(tag).lower() == "float" for tag in tags
             )
+            base_image_asset = HOME_BASE_IMAGE_ASSETS.get(
+                base_slug, "images/drinks/hero-float.svg"
+            )
+            if has_float_profile and item.get("default_ice_cream"):
+                base_image_asset = "images/drinks/hero-float.svg"
             card = {
                 "slug": item["slug"],
                 "name": item["name"],
@@ -225,6 +258,8 @@ class HomePageView(TemplateView):
                 "tags": tags[:3],
                 "badge": item.get("home_badge", ""),
                 "starting_price": item["base_prices"].get("small", ""),
+                "image_url": static(base_image_asset),
+                "image_alt": f"{item['name']} custom soda in an iced cup",
                 "customize_url": (
                     reverse("orders:customize", args=[store.store_code, item["slug"]])
                     if store
@@ -279,7 +314,30 @@ class HomePageView(TemplateView):
                 }
             )
 
-        return cards, sections
+        cards_by_slug = {card["slug"]: card for card in cards}
+        featured_cards = [
+            cards_by_slug[slug] for slug in HOME_FEATURED_SLUGS if slug in cards_by_slug
+        ]
+        for card in cards:
+            if len(featured_cards) >= 5:
+                break
+            if card not in featured_cards:
+                featured_cards.append(card)
+        hero_slides = [
+            {
+                "id": f"hero-slide-{index}",
+                "name": card["name"],
+                "description": card["description"],
+                "badge": card["badge"] or "Featured",
+                "image_url": card["image_url"],
+                "image_alt": card["image_alt"],
+                "customize_url": card["customize_url"],
+                "base_label": card["base_label"],
+            }
+            for index, card in enumerate(featured_cards, start=1)
+        ]
+
+        return cards, sections, hero_slides
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
@@ -294,10 +352,18 @@ class HomePageView(TemplateView):
         ]
         if can_start_order:
             store = self._default_ordering_store()
-            cards, sections = self._build_customer_menu_sections(store=store)
+            cards, sections, hero_slides = self._build_customer_menu_sections(
+                store=store
+            )
             context["default_ordering_store"] = store
             context["home_menu_cards"] = cards
             context["home_menu_sections"] = sections
+            context["home_hero_slides"] = hero_slides
+            context["home_browse_url"] = (
+                reverse("orders:menu", args=[store.store_code])
+                if store
+                else reverse("stores:index")
+            )
             context["home_menu_nav"] = [
                 {
                     "key": section["key"],

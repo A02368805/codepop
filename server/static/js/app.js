@@ -9,6 +9,7 @@ document.addEventListener("DOMContentLoaded", () => {
     initStoreRecommendation();
     initDrinkBuilder();
     initMenuAiAssistant();
+    initHomeHeroCarousel();
     initHomeDrinkBrowser();
 });
 
@@ -420,6 +421,142 @@ function initMenuAiAssistant() {
     });
 }
 
+function initHomeHeroCarousel() {
+    const carousel = document.querySelector("[data-home-carousel]");
+    if (!carousel) {
+        return;
+    }
+
+    const slides = Array.from(carousel.querySelectorAll("[data-home-slide]"));
+    if (!slides.length) {
+        return;
+    }
+
+    const previousButton = carousel.querySelector("[data-home-carousel-prev]");
+    const nextButton = carousel.querySelector("[data-home-carousel-next]");
+    const dots = Array.from(carousel.querySelectorAll("[data-home-carousel-dot]"));
+    const autoAdvanceMs = 5200;
+    carousel.classList.toggle("is-single-slide", slides.length < 2);
+    let activeIndex = Math.max(
+        0,
+        slides.findIndex((slide) => slide.classList.contains("is-active"))
+    );
+    let autoAdvanceId = null;
+
+    const applyState = (targetIndex) => {
+        const safeIndex = ((targetIndex % slides.length) + slides.length) % slides.length;
+        activeIndex = safeIndex;
+
+        slides.forEach((slide, index) => {
+            const isActive = index === safeIndex;
+            slide.classList.toggle("is-active", isActive);
+            slide.setAttribute("aria-hidden", isActive ? "false" : "true");
+            slide.setAttribute("tabindex", isActive ? "0" : "-1");
+        });
+
+        dots.forEach((dot, index) => {
+            const isActive = index === safeIndex;
+            dot.classList.toggle("is-active", isActive);
+            dot.setAttribute("aria-selected", isActive ? "true" : "false");
+            dot.setAttribute("tabindex", isActive ? "0" : "-1");
+        });
+    };
+
+    const goTo = (targetIndex) => {
+        applyState(targetIndex);
+    };
+
+    const advance = (step) => {
+        goTo(activeIndex + step);
+    };
+
+    const stopAutoAdvance = () => {
+        if (autoAdvanceId !== null) {
+            window.clearInterval(autoAdvanceId);
+            autoAdvanceId = null;
+        }
+    };
+
+    const startAutoAdvance = () => {
+        if (slides.length < 2 || autoAdvanceId !== null) {
+            return;
+        }
+        autoAdvanceId = window.setInterval(() => {
+            if (!document.hidden) {
+                advance(1);
+            }
+        }, autoAdvanceMs);
+    };
+
+    const resetAutoAdvance = () => {
+        stopAutoAdvance();
+        startAutoAdvance();
+    };
+
+    previousButton?.addEventListener("click", () => {
+        advance(-1);
+        resetAutoAdvance();
+    });
+
+    nextButton?.addEventListener("click", () => {
+        advance(1);
+        resetAutoAdvance();
+    });
+
+    dots.forEach((dot) => {
+        dot.addEventListener("click", () => {
+            const dotIndex = Number.parseInt(dot.dataset.homeCarouselDot || "0", 10);
+            goTo(Number.isNaN(dotIndex) ? 0 : dotIndex);
+            resetAutoAdvance();
+        });
+    });
+
+    carousel.addEventListener("keydown", (event) => {
+        if (event.key === "ArrowLeft") {
+            event.preventDefault();
+            advance(-1);
+            resetAutoAdvance();
+            return;
+        }
+        if (event.key === "ArrowRight") {
+            event.preventDefault();
+            advance(1);
+            resetAutoAdvance();
+            return;
+        }
+        if (event.key === "Home") {
+            event.preventDefault();
+            goTo(0);
+            resetAutoAdvance();
+            return;
+        }
+        if (event.key === "End") {
+            event.preventDefault();
+            goTo(slides.length - 1);
+            resetAutoAdvance();
+        }
+    });
+
+    carousel.addEventListener("mouseenter", stopAutoAdvance);
+    carousel.addEventListener("mouseleave", startAutoAdvance);
+    carousel.addEventListener("focusin", stopAutoAdvance);
+    carousel.addEventListener("focusout", (event) => {
+        if (!carousel.contains(event.relatedTarget)) {
+            startAutoAdvance();
+        }
+    });
+    document.addEventListener("visibilitychange", () => {
+        if (document.hidden) {
+            stopAutoAdvance();
+            return;
+        }
+        startAutoAdvance();
+    });
+
+    applyState(activeIndex);
+    startAutoAdvance();
+}
+
 function initHomeDrinkBrowser() {
     const navLinks = Array.from(
         document.querySelectorAll("[data-home-nav-link]")
@@ -436,25 +573,138 @@ function initHomeDrinkBrowser() {
         return;
     }
 
+    const navTargets = navLinks
+        .map((link) => {
+            const hash = link.getAttribute("href") || "";
+            if (!hash.startsWith("#")) {
+                return null;
+            }
+            const section = document.getElementById(hash.slice(1));
+            if (!section) {
+                return null;
+            }
+            return { hash, section };
+        })
+        .filter(Boolean);
+
+    if (!navTargets.length) {
+        return;
+    }
+
     const setActiveLink = (targetHash) => {
+        let foundMatch = false;
         navLinks.forEach((link) => {
             const isActive = link.getAttribute("href") === targetHash;
             link.classList.toggle("is-active", isActive);
+            link.setAttribute("aria-current", isActive ? "true" : "false");
+            if (isActive) {
+                foundMatch = true;
+            }
         });
+        if (!foundMatch && navLinks[0]) {
+            navLinks[0].classList.add("is-active");
+            navLinks[0].setAttribute("aria-current", "true");
+            navLinks.slice(1).forEach((link) => {
+                link.classList.remove("is-active");
+                link.setAttribute("aria-current", "false");
+            });
+        }
+    };
+
+    const scrollToHash = (hash) => {
+        const section = document.getElementById(hash.replace("#", ""));
+        if (!section) {
+            return;
+        }
+        const topbar = document.querySelector(".topbar");
+        const subnavPanel = document.querySelector(".home-subnav-panel");
+        const topbarHeight = topbar ? topbar.getBoundingClientRect().height : 0;
+        const subnavStyles = subnavPanel ? window.getComputedStyle(subnavPanel) : null;
+        const subnavIsSticky = subnavPanel && subnavStyles?.position === "sticky";
+        const subnavHeight = subnavIsSticky ? subnavPanel.getBoundingClientRect().height : 0;
+        const offset = topbarHeight + subnavHeight + 18;
+        const top = section.getBoundingClientRect().top + window.scrollY - offset;
+        window.scrollTo({ top: Math.max(0, top), behavior: "smooth" });
     };
 
     navLinks.forEach((link) => {
-        link.addEventListener("click", () => {
-            setActiveLink(link.getAttribute("href") || "");
+        link.addEventListener("click", (event) => {
+            const hash = link.getAttribute("href") || "";
+            if (!hash.startsWith("#")) {
+                return;
+            }
+            const section = document.getElementById(hash.slice(1));
+            if (!section) {
+                return;
+            }
+            event.preventDefault();
+            setActiveLink(hash);
+            if (window.location.hash !== hash) {
+                window.history.replaceState(null, "", hash);
+            }
+            scrollToHash(hash);
         });
     });
 
-    const initialHash = window.location.hash || navLinks[0].getAttribute("href") || "";
+    if ("IntersectionObserver" in window) {
+        const activeEntries = new Map();
+        const observer = new IntersectionObserver(
+            (entries) => {
+                entries.forEach((entry) => {
+                    const hash = `#${entry.target.id}`;
+                    if (entry.isIntersecting) {
+                        activeEntries.set(hash, entry.intersectionRatio);
+                    } else {
+                        activeEntries.delete(hash);
+                    }
+                });
+
+                if (!activeEntries.size) {
+                    return;
+                }
+
+                const [bestHash] = Array.from(activeEntries.entries()).sort(
+                    (a, b) => b[1] - a[1]
+                )[0];
+                if (bestHash) {
+                    setActiveLink(bestHash);
+                }
+            },
+            {
+                threshold: [0.12, 0.35, 0.55, 0.75],
+                rootMargin: "-28% 0px -52% 0px",
+            }
+        );
+
+        navTargets.forEach(({ section }) => {
+            observer.observe(section);
+        });
+    } else {
+        const updateActiveFromScroll = debounce(() => {
+            const currentY = window.scrollY + 190;
+            let activeHash = navTargets[0]?.hash || "";
+            navTargets.forEach(({ hash, section }) => {
+                if (currentY >= section.offsetTop) {
+                    activeHash = hash;
+                }
+            });
+            setActiveLink(activeHash);
+        }, 80);
+        window.addEventListener("scroll", updateActiveFromScroll, { passive: true });
+    }
+
+    const knownHashes = new Set(navTargets.map(({ hash }) => hash));
+    const initialHash = knownHashes.has(window.location.hash)
+        ? window.location.hash
+        : navTargets[0]?.hash || "";
     if (initialHash) {
         setActiveLink(initialHash);
     }
     window.addEventListener("hashchange", () => {
-        setActiveLink(window.location.hash || "");
+        const hash = window.location.hash;
+        if (knownHashes.has(hash)) {
+            setActiveLink(hash);
+        }
     });
 }
 
