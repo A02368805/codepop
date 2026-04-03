@@ -1,11 +1,19 @@
 <article class="home-drink-card">
     <div class="home-drink-card__visual">
-        <div class="home-drink-card__cup">
-            <div class="home-drink-card__liquid" data-home-soda-base="{{ item.base_slug }}"></div>
+        <img
+            class="home-drink-card__image"
+            src="{{ item.image_url }}"
+            alt="{{ item.image_alt }}"
+            loading="lazy"
+            width="1200"
+            height="1500"
+        >
+        <div class="home-drink-card__base-chip">
+            <span class="home-drink-card__base-dot" data-home-soda-base="{{ item.base_slug }}"></span>
+            <span>{{ item.base_label }}</span>
         </div>
     </div>
     <div class="home-drink-card__meta">
-        <p class="eyebrow">{{ item.base_label }}</p>
         <h3>{{ item.name }}</h3>
         <p class="muted">{{ item.description }}</p>
         <div class="badge-row">
