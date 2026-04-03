@@ -421,11 +421,8 @@ function initMenuAiAssistant() {
 }
 
 function initHomeDrinkBrowser() {
-    const filterButtons = Array.from(
-        document.querySelectorAll("[data-home-base-trigger]")
-    );
-    const baseSections = Array.from(
-        document.querySelectorAll("[data-home-base-section]")
+    const navLinks = Array.from(
+        document.querySelectorAll("[data-home-nav-link]")
     );
     const basePreviews = Array.from(
         document.querySelectorAll("[data-home-soda-base]")
@@ -435,30 +432,30 @@ function initHomeDrinkBrowser() {
         preview.dataset.soda = resolveCupTone(preview.dataset.homeSodaBase || "");
     });
 
-    if (!filterButtons.length || !baseSections.length) {
+    if (!navLinks.length) {
         return;
     }
 
-    const setActiveBase = (targetKey) => {
-        filterButtons.forEach((button) => {
-            const isActive = button.dataset.homeBaseTarget === targetKey;
-            button.classList.toggle("is-active", isActive);
-            button.setAttribute("aria-pressed", isActive ? "true" : "false");
-        });
-
-        baseSections.forEach((section) => {
-            const isActive = section.dataset.homeBaseSection === targetKey;
-            section.classList.toggle("is-hidden", !isActive);
+    const setActiveLink = (targetHash) => {
+        navLinks.forEach((link) => {
+            const isActive = link.getAttribute("href") === targetHash;
+            link.classList.toggle("is-active", isActive);
         });
     };
 
-    filterButtons.forEach((button) => {
-        button.addEventListener("click", () => {
-            setActiveBase(button.dataset.homeBaseTarget || "all");
+    navLinks.forEach((link) => {
+        link.addEventListener("click", () => {
+            setActiveLink(link.getAttribute("href") || "");
         });
     });
 
-    setActiveBase(filterButtons[0].dataset.homeBaseTarget || "all");
+    const initialHash = window.location.hash || navLinks[0].getAttribute("href") || "";
+    if (initialHash) {
+        setActiveLink(initialHash);
+    }
+    window.addEventListener("hashchange", () => {
+        setActiveLink(window.location.hash || "");
+    });
 }
 
 function getCheckedLabels(form, fieldName) {

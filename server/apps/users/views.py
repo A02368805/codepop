@@ -79,31 +79,37 @@ HOME_BASE_FAMILIES = [
         "key": "coke",
         "label": "Coke",
         "slugs": {"coke", "diet-coke", "coke-zero"},
+        "description": "Classic cola favorites and zero-sugar picks.",
     },
     {
         "key": "pepsi",
         "label": "Pepsi",
         "slugs": {"pepsi", "diet-pepsi"},
+        "description": "Smooth Pepsi builds with bright and creamy options.",
     },
     {
         "key": "mtn-dew",
         "label": "Mtn Dew",
         "slugs": {"mountain-dew", "diet-mountain-dew"},
+        "description": "Bolder citrus profiles with extra flavor energy.",
     },
     {
         "key": "dr-pepper",
         "label": "Dr Pepper",
         "slugs": {"dr-pepper", "diet-dr-pepper"},
+        "description": "Spiced cola-style combinations with layered sweetness.",
     },
     {
         "key": "sprite",
         "label": "Sprite",
         "slugs": {"sprite", "sprite-zero", "lemon-lime"},
+        "description": "Crisp citrus and clean soda-shop refreshers.",
     },
     {
         "key": "root-beer",
         "label": "Root Beer",
         "slugs": {"root-beer"},
+        "description": "Rich root-beer recipes built for smooth finishes.",
     },
 ]
 
@@ -166,10 +172,14 @@ def _form_scalar_value(form, field_name):
 def _home_base_category(base_slug):
     for family in HOME_BASE_FAMILIES:
         if base_slug in family["slugs"]:
-            return family["key"], family["label"]
+            return family["key"], family["label"], family.get("description", "")
 
     fallback = SODA_OPTIONS.get(base_slug, {})
-    return base_slug, fallback.get("label", base_slug.replace("-", " ").title())
+    return (
+        base_slug,
+        fallback.get("label", base_slug.replace("-", " ").title()),
+        fallback.get("description", ""),
+    )
 
 
 class HomePageView(TemplateView):
@@ -190,11 +200,18 @@ class HomePageView(TemplateView):
         menu_items = get_menu_items()
         cards = []
         categories = {}
+        float_cards = []
 
         for item in menu_items:
             base_slug = item.get("default_soda", "")
             base_option = SODA_OPTIONS.get(base_slug, {})
-            category_key, category_label = _home_base_category(base_slug)
+            category_key, category_label, category_description = _home_base_category(
+                base_slug
+            )
+            tags = list(item.get("tags", []))
+            has_float_profile = bool(item.get("default_ice_cream")) or any(
+                str(tag).lower() == "float" for tag in tags
+            )
             card = {
                 "slug": item["slug"],
                 "name": item["name"],
@@ -205,7 +222,7 @@ class HomePageView(TemplateView):
                 ),
                 "category_key": category_key,
                 "category_label": category_label,
-                "tags": list(item.get("tags", []))[:3],
+                "tags": tags[:3],
                 "badge": item.get("home_badge", ""),
                 "starting_price": item["base_prices"].get("small", ""),
                 "customize_url": (
@@ -220,23 +237,23 @@ class HomePageView(TemplateView):
                 {
                     "key": category_key,
                     "label": category_label,
+                    "description": category_description,
                     "cards": [],
                 },
             )["cards"].append(card)
+            if has_float_profile:
+                float_cards.append(card)
 
-        sections = [
-            {
-                "key": "all",
-                "label": "All Drinks",
-                "cards": cards,
-                "count": len(cards),
-            }
-        ]
+        sections = []
 
         for family in HOME_BASE_FAMILIES:
             family_section = categories.get(family["key"])
             if family_section:
+                family_section["description"] = family.get(
+                    "description", family_section.get("description", "")
+                )
                 family_section["count"] = len(family_section["cards"])
+                family_section["anchor_id"] = f"home-section-{family_section['key']}"
                 sections.append(family_section)
 
         family_keys = {family["key"] for family in HOME_BASE_FAMILIES}
@@ -247,7 +264,20 @@ class HomePageView(TemplateView):
         ]
         for section in sorted(extra_sections, key=lambda value: value["label"]):
             section["count"] = len(section["cards"])
+            section["anchor_id"] = f"home-section-{section['key']}"
             sections.append(section)
+
+        if float_cards:
+            sections.append(
+                {
+                    "key": "floats",
+                    "label": "Floats",
+                    "description": "Creamier float builds with ice-cream-forward profiles.",
+                    "cards": float_cards,
+                    "count": len(float_cards),
+                    "anchor_id": "home-section-floats",
+                }
+            )
 
         return cards, sections
 
@@ -268,6 +298,15 @@ class HomePageView(TemplateView):
             context["default_ordering_store"] = store
             context["home_menu_cards"] = cards
             context["home_menu_sections"] = sections
+            context["home_menu_nav"] = [
+                {
+                    "key": section["key"],
+                    "label": section["label"],
+                    "count": section["count"],
+                    "anchor_id": section["anchor_id"],
+                }
+                for section in sections
+            ]
         return context
 
 

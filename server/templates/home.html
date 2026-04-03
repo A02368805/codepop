@@ -16,9 +16,9 @@
                     <p class="muted">signature drinks</p>
                 </article>
                 <article class="home-stat">
-                    <p class="eyebrow">Bases</p>
-                    <strong>{{ home_menu_sections|length|add:"-1" }}</strong>
-                    <p class="muted">filter categories</p>
+                    <p class="eyebrow">Categories</p>
+                    <strong>{{ home_menu_sections|length }}</strong>
+                    <p class="muted">base + float sections</p>
                 </article>
                 <article class="home-stat">
                     <p class="eyebrow">Pickup Store</p>
@@ -66,36 +66,43 @@
         </div>
     </section>
 
+    <nav class="panel home-subnav-panel" aria-label="Browse by drink base">
+        <div class="home-subnav">
+            {% for item in home_menu_nav %}
+                <a
+                    class="home-subnav__link"
+                    href="#{{ item.anchor_id }}"
+                    data-home-nav-link
+                >
+                    <span>{{ item.label }}</span>
+                    <span class="home-subnav__count">{{ item.count }}</span>
+                </a>
+            {% endfor %}
+        </div>
+    </nav>
+
     <section class="panel home-browse-panel">
         <div class="section-heading">
             <div>
                 <p class="eyebrow">Browse Drinks</p>
-                <h2>Find your drink by base, then customize.</h2>
+                <h2>Jump to a base, then customize your order.</h2>
             </div>
-            <p class="lede-small">Select a base category first, then swipe or scroll through signature cards. Every card uses the same base-color language as the builder preview.</p>
-        </div>
-
-        <div class="home-base-filter" role="tablist" aria-label="Drink bases">
-            {% for section in home_menu_sections %}
-                <button
-                    type="button"
-                    class="home-base-filter__chip{% if forloop.first %} is-active{% endif %}"
-                    data-home-base-trigger
-                    data-home-base-target="{{ section.key }}"
-                    aria-pressed="{% if forloop.first %}true{% else %}false{% endif %}"
-                >
-                    <span>{{ section.label }}</span>
-                    <span class="home-base-filter__count">{{ section.count }}</span>
-                </button>
-            {% endfor %}
+            <p class="lede-small">The base bar above scrolls horizontally and links to each section on this page. Every section shows only drinks available for that base or float category.</p>
         </div>
 
         {% for section in home_menu_sections %}
             <section
-                class="home-drink-track{% if not forloop.first %} is-hidden{% endif %}"
-                data-home-base-section="{{ section.key }}"
+                class="home-drink-track"
+                id="{{ section.anchor_id }}"
                 aria-label="{{ section.label }} drinks"
             >
+                <div class="home-drink-track__header">
+                    <p class="eyebrow">{{ section.label }}</p>
+                    <h3>{{ section.label }} Drinks</h3>
+                    {% if section.description %}
+                        <p class="muted">{{ section.description }}</p>
+                    {% endif %}
+                </div>
                 <div class="home-drink-row">
                     {% for item in section.cards %}
                         {% include "home/partials/drink_card.html" with item=item %}

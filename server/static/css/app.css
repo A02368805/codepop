@@ -842,37 +842,49 @@ h3 {
 
 .home-browse-panel {
     display: grid;
-    gap: 1rem;
+    gap: 1.25rem;
 }
 
-.home-base-filter {
+.home-subnav-panel {
+    position: sticky;
+    top: 5.15rem;
+    z-index: 20;
+    padding: 0.85rem 1rem;
+}
+
+.home-subnav {
     display: flex;
     gap: 0.65rem;
     overflow-x: auto;
     padding-bottom: 0.2rem;
 }
 
-.home-base-filter__chip {
+.home-subnav__link {
     border: 1px solid rgba(var(--ink-rgb), 0.14);
     border-radius: 999px;
-    background: rgba(255, 255, 255, 0.75);
+    background: rgba(255, 255, 255, 0.76);
     color: var(--ink);
     display: inline-flex;
     align-items: center;
     gap: 0.5rem;
     padding: 0.55rem 0.85rem;
     font-weight: 600;
-    cursor: pointer;
     transition: border-color 0.18s ease, transform 0.18s ease, background 0.18s ease;
     white-space: nowrap;
 }
 
-.home-base-filter__chip:hover {
+.home-subnav__link:hover {
+    text-decoration: none;
     transform: translateY(-1px);
     border-color: rgba(var(--berry-rgb), 0.36);
+    background: linear-gradient(
+        135deg,
+        rgba(var(--accent-rgb), 0.2),
+        rgba(var(--berry-rgb), 0.12)
+    );
 }
 
-.home-base-filter__chip.is-active {
+.home-subnav__link.is-active {
     border-color: rgba(var(--berry-rgb), 0.42);
     background: linear-gradient(
         135deg,
@@ -881,7 +893,7 @@ h3 {
     );
 }
 
-.home-base-filter__count {
+.home-subnav__count {
     min-width: 1.5rem;
     padding: 0.1rem 0.45rem;
     border-radius: 999px;
@@ -890,8 +902,25 @@ h3 {
     text-align: center;
 }
 
-.home-drink-track.is-hidden {
-    display: none;
+.home-drink-track {
+    display: grid;
+    gap: 0.9rem;
+    scroll-margin-top: 8rem;
+}
+
+.home-drink-track+.home-drink-track {
+    border-top: 1px solid var(--line);
+    padding-top: 1.2rem;
+}
+
+.home-drink-track__header {
+    display: grid;
+    gap: 0.25rem;
+}
+
+.home-drink-track__header h3 {
+    margin: 0;
+    font-size: 1.35rem;
 }
 
 .home-drink-row {
@@ -1533,6 +1562,11 @@ h3 {
 
     .home-stat-grid {
         grid-template-columns: 1fr;
+    }
+
+    .home-subnav-panel {
+        position: static;
+        padding: 0.9rem;
     }
 
     .list-card {
