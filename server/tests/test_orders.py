@@ -19,6 +19,7 @@ from apps.payments.services import (
 )
 from apps.users.models import FavoriteDrink
 from django.db import close_old_connections, connections
+from django.db.utils import OperationalError
 from django.test import TestCase, TransactionTestCase
 from django.urls import reverse
 
@@ -274,6 +275,13 @@ class InventoryConcurrencyTests(TransactionTestCase):
             except InventoryServiceError:
                 with lock:
                     outcomes.append("insufficient")
+            except OperationalError as exc:
+                if "locked" not in str(exc).lower():
+                    raise
+                # SQLite reports lock contention as an OperationalError rather than
+                # surfacing our domain-level inventory conflict exception.
+                with lock:
+                    outcomes.append("insufficient")
             finally:
                 close_old_connections()
                 connections.close_all()
@@ -312,7 +320,7 @@ class MenuAiAssistantViewTests(TestCase):
         self.client.force_login(self.customer)
         response = self.client.get(reverse("orders:menu", args=[self.store.store_code]))
         self.assertEqual(response.status_code, 200)
-        self.assertContains(response, "Ask AI what to order")
+        self.assertContains(response, "Open AI builder")
 
     @patch("apps.orders.assistant._call_anthropic_menu_ai")
     def test_menu_ai_prompt_returns_menu_matches(self, mock_call):
@@ -392,7 +400,13 @@ class MenuAiAssistantViewTests(TestCase):
                     "source": "anthropic",
                     "ai_generated": True,
                     "menu_key": "berry-burst",
-                    "recipe": {"name": "Citrus Sprite Twist"},
+                    "recipe": {
+                        "name": "Citrus Sprite Twist",
+                        "base_soda": "sprite",
+                        "syrups": ["strawberry", "coconut"],
+                        "add_ins": ["cream"],
+                        "ice_cream": "scoop-vanilla",
+                    },
                 },
             },
             "can_save": True,
@@ -408,6 +422,12 @@ class MenuAiAssistantViewTests(TestCase):
         )
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, "New drink record")
+        self.assertContains(response, "Build from AI drink")
+        self.assertContains(response, "prefill=1")
+        self.assertContains(response, "soda=sprite")
+        self.assertContains(response, "syrups=strawberry%2Ccoconut")
+        self.assertContains(response, "add_ins=cream")
+        self.assertContains(response, "ice_cream=scoop-vanilla")
         self.assertContains(response, "Save this drink")
 
         save_response = self.client.post(

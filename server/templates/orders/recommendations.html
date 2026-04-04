@@ -5,14 +5,21 @@
 {% block content %}
 <section class="hero hero--dashboard">
     <div>
-        <p class="eyebrow">AI Recommendation Surface</p>
-        <h1>Drink suggestions with explainable heuristics</h1>
-        <p class="lede">These recommendations use favorites, likes, dislikes, and order history when available. They stay deterministic and readable so the UI can explain why a drink appeared.</p>
+        <p class="eyebrow">Recommended for you</p>
+        <h1>Drink suggestions based on your taste profile</h1>
+        <p class="lede">These recommendations adapt to your favorites, avoidances, and order history so you can build faster.</p>
     </div>
     <div class="hero-card">
-        <p class="eyebrow">Best Next Step</p>
+        <p class="eyebrow">Build Actions</p>
         {% if request.user.is_authenticated and request.user.role == "account_user" %}
-            <a class="button button--primary" href="{% url 'account-preferences' %}">Refine preferences</a>
+            {% if order_store %}
+                <a class="button button--primary" href="{% url 'orders:menu' order_store.store_code %}?open_ai=1#menu-ai-panel">Open AI builder</a>
+                <a class="button button--ghost" href="{% url 'orders:menu' order_store.store_code %}">Open manual builder</a>
+                <a class="button button--ghost" href="{% url 'stores:index' %}">Change store</a>
+            {% else %}
+                <a class="button button--primary" href="{% url 'stores:index' %}">Choose store to build</a>
+            {% endif %}
+            <a class="button button--ghost" href="{% url 'account-preferences' %}">Refine preferences</a>
         {% else %}
             <a class="button button--primary" href="{% url 'register' %}">Create an account to personalize</a>
         {% endif %}
@@ -32,7 +39,11 @@
                 <h3>{{ recommendation.name }}</h3>
                 <p>{{ recommendation.description }}</p>
                 <p class="muted">{{ recommendation.explanation }}</p>
-                <a class="button button--ghost" href="{% url 'stores:index' %}">Choose a store to order</a>
+                {% if order_store and recommendation.slug %}
+                    <a class="button button--ghost" href="{% url 'orders:customize' order_store.store_code recommendation.slug %}">Create this drink</a>
+                {% else %}
+                    <a class="button button--ghost" href="{% url 'stores:index' %}">Choose a store to order</a>
+                {% endif %}
             </article>
         {% endfor %}
     </div>

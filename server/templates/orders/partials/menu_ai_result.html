@@ -5,11 +5,6 @@
                 <p class="eyebrow">{{ menu_ai_result.title }}</p>
                 <h2>Menu guidance</h2>
             </div>
-            {% if menu_ai_result.uses_ai %}
-                <span class="pill">AI response</span>
-            {% else %}
-                <span class="pill pill--soft">Local fallback</span>
-            {% endif %}
         </div>
 
         <p>{{ menu_ai_result.answer }}</p>
@@ -30,7 +25,12 @@
                     {% if menu_ai_result.drink.base_price_snapshot %}<li><strong>Base price</strong>: ${{ menu_ai_result.drink.base_price_snapshot }}</li>{% endif %}
                 </ul>
                 {% if menu_ai_result.recipe.starter_menu_item %}
-                    <a class="button button--ghost" href="{% url 'orders:customize' store.store_code menu_ai_result.recipe.starter_menu_item.slug %}">Start from {{ menu_ai_result.recipe.starter_menu_item.name }}</a>
+                    <a
+                        class="button button--ghost"
+                        href="{% url 'orders:customize' store.store_code menu_ai_result.recipe.starter_menu_item.slug %}?prefill=1&size={{ menu_ai_result.drink.size_snapshot|default:'medium'|urlencode }}&soda={{ menu_ai_result.drink.customizations_json.recipe.base_soda|default:''|urlencode }}&syrups={{ menu_ai_result.drink.customizations_json.recipe.syrups|join:','|urlencode }}&add_ins={{ menu_ai_result.drink.customizations_json.recipe.add_ins|join:','|urlencode }}&ice_cream={{ menu_ai_result.drink.customizations_json.recipe.ice_cream|default:''|urlencode }}"
+                    >
+                        Build from AI drink
+                    </a>
                 {% endif %}
                 {% if menu_ai_result.can_save and not menu_ai_result.saved %}
                     <form
@@ -89,6 +89,7 @@
     <div class="assistant-card menu-ai-result">
         <p class="eyebrow">FloatStack Menu AI</p>
         <h2>Tell me what you want</h2>
-        <p>Try something like a fruity, creamy, caffeine-free, or bold drink and I will suggest menu options.</p>
+        <p>Try something like fruity, creamy, caffeine-free, or bold and I will suggest menu options.</p>
+        <p class="assistant-scope-note">Menu AI is scoped to drink suggestions only.</p>
     </div>
 {% endif %}

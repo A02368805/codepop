@@ -18,8 +18,32 @@ logger = logging.getLogger(__name__)
 
 ORDER_CODE_PATTERN = re.compile(r"\bFS-[A-Z0-9-]+\b", re.IGNORECASE)
 LOOKUP_CODE_PATTERN = re.compile(r"\bGST-[A-Z0-9-]+\b", re.IGNORECASE)
+GREETING_PATTERN = re.compile(r"^[a-zA-Z\s!?.,'-]+$")
 
 DEFAULT_QUICK_PROMPTS = []
+SUPPORT_SCOPE_KEYWORDS = {
+    "floatstack",
+    "order",
+    "status",
+    "pickup",
+    "guest",
+    "lookup",
+    "refund",
+    "cancel",
+    "account",
+    "login",
+    "password",
+    "store",
+    "cart",
+    "checkout",
+    "payment",
+    "favorite",
+    "favourite",
+    "preference",
+    "profile",
+    "support",
+}
+GREETING_TOKENS = {"hi", "hello", "hey", "help", "support", "thanks", "thankyou"}
 
 
 def ensure_support_session(request):
@@ -96,6 +120,36 @@ def _extract_lookup_code(text):
     return match.group(0).upper() if match else ""
 
 
+def _is_in_scope_message(message_text):
+    text = (message_text or "").strip()
+    lowered = text.lower()
+    if not lowered:
+        return True
+    if _extract_order_code(text) or _extract_lookup_code(text):
+        return True
+    if any(keyword in lowered for keyword in SUPPORT_SCOPE_KEYWORDS):
+        return True
+    if GREETING_PATTERN.match(text):
+        tokens = [token for token in re.findall(r"[a-zA-Z]+", lowered) if token]
+        if 0 < len(tokens) <= 3 and all(token in GREETING_TOKENS for token in tokens):
+            return True
+    return False
+
+
+def _out_of_scope_support_reply(*, request):
+    links = [{"label": "Guest lookup", "url": reverse("orders:guest-lookup")}]
+    if getattr(request.user, "is_authenticated", False):
+        links.append({"label": "Stores", "url": reverse("stores:index")})
+    return {
+        "reply_text": (
+            "I can only help with FloatStack support topics: what FloatStack is, "
+            "ordering flow, pickup, guest lookup, refunds, and account help."
+        ),
+        "links": links,
+        "suggest_escalation": False,
+    }
+
+
 def _resolve_order_context(conversation, request, message_text):
     order_code = _extract_order_code(message_text)
     if not order_code and conversation.linked_order_id:
@@ -168,7 +222,10 @@ def _call_anthropic_support_ai(*, request, conversation, message_text, order):
     max_retries = int(getattr(settings, "AI_PROVIDER_MAX_RETRIES", 2))
 
     system_prompt = (
-        "You are the FloatStack support chat assistant. Respond conversationally and helpfully. "
+        "You are the FloatStack support chat assistant and part of the FloatStack team. "
+        "Only answer FloatStack support topics: what FloatStack is, ordering flow, pickup timing, "
+        "guest lookup, refunds/cancellations, and account help. "
+        "If a user asks anything outside FloatStack support, refuse briefly and redirect to those topics. "
         "If order details are missing, ask for the public order code. "
         "Never invent order status, refunds, or pricing details. "
         "Keep replies under 140 words and provide only plain response text."
@@ -315,6 +372,32 @@ def process_support_message(*, request, conversation, message_text):
         }
 
     intent = "chat"
+    if not _is_in_scope_message(trimmed):
+        response = _out_of_scope_support_reply(request=request)
+        response["quick_actions"] = []
+        response["intent"] = intent
+        SupportMessage.objects.create(
+            conversation=conversation,
+            role=SupportMessage.Role.USER,
+            intent=intent,
+            content=trimmed,
+            metadata_json={},
+        )
+        SupportMessage.objects.create(
+            conversation=conversation,
+            role=SupportMessage.Role.ASSISTANT,
+            intent=intent,
+            content=response["reply_text"],
+            metadata_json={
+                "quick_actions": [],
+                "links": response["links"],
+                "suggest_escalation": False,
+            },
+        )
+        conversation.last_intent = intent
+        conversation.save(update_fields=["last_intent", "updated_at"])
+        return response
+
     order = _resolve_order_context(conversation, request, trimmed)
     anthropic_response = _call_anthropic_support_ai(
         request=request,

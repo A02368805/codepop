@@ -19,23 +19,18 @@ from apps.maintenance.models import Machine, RepairAssignment
 from apps.maintenance.selectors import build_route_groups
 from apps.notifications.models import Notification
 from apps.orders.catalog import (
-    ADD_IN_GROUPS,
     ADD_IN_OPTIONS,
     ADVENTUROUSNESS_PREFERENCE_CHOICES,
     DIETARY_PREFERENCE_OPTIONS,
-    ICE_CREAM_GROUPS,
     ICE_CREAM_OPTIONS,
-    SODA_GROUPS,
     SODA_OPTIONS,
     SWEETNESS_PREFERENCE_CHOICES,
-    SYRUP_GROUPS,
     SYRUP_OPTIONS,
-    grouped_options,
 )
 from apps.orders.models import Order
 from apps.orders.selectors import staff_order_queue
 from apps.payments.models import RevenueLedgerEntry
-from apps.stores.models import Region
+from apps.stores.models import Region, Store
 from apps.stores.selectors import (
     regions_visible_to_user,
     scoped_region_store_options,
@@ -91,28 +86,20 @@ def _resolve_window(window, date_from, date_to):
     return today - timedelta(days=29), today
 
 
-def _build_preference_cards(*, name, groups, selected_values):
+def _build_preference_tokens(*, name, option_map, selected_values):
     selected_values = set(selected_values or [])
-    payload = []
-    for group in groups:
-        payload.append(
-            {
-                "label": group["label"],
-                "description": group.get("description", ""),
-                "items": [
-                    {
-                        "id": f"id_{name}_{item['value']}",
-                        "name": name,
-                        "value": item["value"],
-                        "label": item["label"],
-                        "description": item.get("description", ""),
-                        "checked": item["value"] in selected_values,
-                    }
-                    for item in group["items"]
-                ],
-            }
+    return [
+        {
+            "id": f"id_{name}_{key}",
+            "name": name,
+            "value": key,
+            "label": value["label"],
+            "checked": key in selected_values,
+        }
+        for key, value in sorted(
+            option_map.items(), key=lambda row: row[1].get("label", row[0])
         )
-    return payload
+    ]
 
 
 def _form_list_value(form, field_name):
@@ -128,6 +115,26 @@ def _form_scalar_value(form, field_name):
     return form.initial.get(field_name, form.fields[field_name].initial or "")
 
 
+def _resolve_customer_order_store(user):
+    if not getattr(user, "is_authenticated", False):
+        return None
+    preferred_store = getattr(user, "preferred_store", None)
+    if preferred_store and preferred_store.is_active:
+        return preferred_store
+    if getattr(user, "default_region_id", None):
+        regional_store = (
+            Store.objects.filter(
+                region_id=user.default_region_id,
+                is_active=True,
+            )
+            .order_by("name")
+            .first()
+        )
+        if regional_store:
+            return regional_store
+    return Store.objects.filter(is_active=True).order_by("name").first()
+
+
 class HomePageView(TemplateView):
     template_name = "home.html"
 
@@ -139,7 +146,7 @@ class HomePageView(TemplateView):
             "Customer ordering and internal operations in one server-rendered product",
             "Strict role scoping with permissions enforced on the server",
             "Regional logistics, maintenance, payments, and analytics in one workflow shell",
-            "Demo-friendly UX without losing operational realism",
+            "Clean customer UX with operational workflows kept reliable behind the scenes",
         ]
         return context
 
@@ -199,6 +206,7 @@ class CustomerDashboardView(BaseDashboardView):
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
+        order_store = _resolve_customer_order_store(self.request.user)
         context["recent_orders"] = self.request.user.orders.select_related(
             "store"
         ).order_by("-created_at")[:5]
@@ -211,6 +219,7 @@ class CustomerDashboardView(BaseDashboardView):
         context["recommended_drinks"] = recommend_drinks_for_user(
             self.request.user, limit=3
         )
+        context["order_store"] = order_store
         context["notifications"] = Notification.objects.filter(
             user=self.request.user, is_read=False
         )[:4]
@@ -516,7 +525,14 @@ class PreferenceView(RoleRequiredMixin, LoginRequiredMixin, FormView):
 
     def get_initial(self):
         preferences = self.request.user.taste_preferences
+        sweetness = self.request.user.sweetness_preference
+        adventurousness = self.request.user.adventurousness_preference
+        sweetness_values = {value for value, _ in SWEETNESS_PREFERENCE_CHOICES}
+        adventurousness_values = {
+            value for value, _ in ADVENTUROUSNESS_PREFERENCE_CHOICES
+        }
         return {
+            "preferred_store": self.request.user.preferred_store_id,
             "favorite_sodas": list(
                 preferences.filter(
                     preference_type=self.request.user.taste_preferences.model.PreferenceType.FAVORITE_SODA
@@ -547,68 +563,75 @@ class PreferenceView(RoleRequiredMixin, LoginRequiredMixin, FormView):
                     preference_type=self.request.user.taste_preferences.model.PreferenceType.DIETARY
                 ).values_list("ingredient_name", flat=True)
             ),
-            "sweetness_preference": self.request.user.sweetness_preference,
-            "adventurousness_preference": self.request.user.adventurousness_preference,
+            "sweetness_preference": (
+                sweetness
+                if sweetness in sweetness_values
+                else User.SweetnessPreference.BALANCED
+            ),
+            "adventurousness_preference": (
+                adventurousness
+                if adventurousness in adventurousness_values
+                else User.AdventurousnessPreference.BALANCED
+            ),
         }
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         form = kwargs.get("form") or context.get("form") or self.get_form()
+        disliked_selected = set(_form_list_value(form, "disliked_ingredients"))
+
         context.update(
             {
                 "form": form,
-                "favorite_soda_cards": _build_preference_cards(
+                "favorite_soda_tokens": _build_preference_tokens(
                     name="favorite_sodas",
-                    groups=grouped_options(SODA_OPTIONS, SODA_GROUPS),
+                    option_map=SODA_OPTIONS,
                     selected_values=_form_list_value(form, "favorite_sodas"),
                 ),
-                "favorite_syrup_cards": _build_preference_cards(
+                "favorite_syrup_tokens": _build_preference_tokens(
                     name="favorite_syrups",
-                    groups=grouped_options(SYRUP_OPTIONS, SYRUP_GROUPS),
+                    option_map=SYRUP_OPTIONS,
                     selected_values=_form_list_value(form, "favorite_syrups"),
                 ),
-                "favorite_add_in_cards": _build_preference_cards(
+                "favorite_add_in_tokens": _build_preference_tokens(
                     name="favorite_add_ins",
-                    groups=grouped_options(ADD_IN_OPTIONS, ADD_IN_GROUPS),
+                    option_map=ADD_IN_OPTIONS,
                     selected_values=_form_list_value(form, "favorite_add_ins"),
                 ),
-                "favorite_ice_cream_cards": _build_preference_cards(
+                "favorite_ice_cream_tokens": _build_preference_tokens(
                     name="favorite_ice_creams",
-                    groups=grouped_options(ICE_CREAM_OPTIONS, ICE_CREAM_GROUPS),
+                    option_map=ICE_CREAM_OPTIONS,
                     selected_values=_form_list_value(form, "favorite_ice_creams"),
                 ),
-                "disliked_ingredient_cards": _build_preference_cards(
+                "avoid_soda_tokens": _build_preference_tokens(
                     name="disliked_ingredients",
-                    groups=[
-                        {
-                            "label": "Sodas",
-                            "description": "Bases FloatStack should steer away from.",
-                            "items": [
-                                {"value": key, **value}
-                                for key, value in SODA_OPTIONS.items()
-                            ],
-                        },
-                        {
-                            "label": "Syrups",
-                            "description": "Flavor shots to avoid.",
-                            "items": [
-                                {"value": key, **value}
-                                for key, value in SYRUP_OPTIONS.items()
-                            ],
-                        },
-                        {
-                            "label": "Add-Ins + Ice Cream",
-                            "description": "Finishing touches to keep out of AI suggestions.",
-                            "items": [
-                                {"value": key, **value}
-                                for key, value in {
-                                    **ADD_IN_OPTIONS,
-                                    **ICE_CREAM_OPTIONS,
-                                }.items()
-                            ],
-                        },
+                    option_map=SODA_OPTIONS,
+                    selected_values=[
+                        token for token in disliked_selected if token in SODA_OPTIONS
                     ],
-                    selected_values=_form_list_value(form, "disliked_ingredients"),
+                ),
+                "avoid_syrup_tokens": _build_preference_tokens(
+                    name="disliked_ingredients",
+                    option_map=SYRUP_OPTIONS,
+                    selected_values=[
+                        token for token in disliked_selected if token in SYRUP_OPTIONS
+                    ],
+                ),
+                "avoid_add_in_tokens": _build_preference_tokens(
+                    name="disliked_ingredients",
+                    option_map=ADD_IN_OPTIONS,
+                    selected_values=[
+                        token for token in disliked_selected if token in ADD_IN_OPTIONS
+                    ],
+                ),
+                "avoid_ice_cream_tokens": _build_preference_tokens(
+                    name="disliked_ingredients",
+                    option_map=ICE_CREAM_OPTIONS,
+                    selected_values=[
+                        token
+                        for token in disliked_selected
+                        if token in ICE_CREAM_OPTIONS
+                    ],
                 ),
                 "dietary_cards": [
                     {
@@ -656,8 +679,18 @@ class PreferenceView(RoleRequiredMixin, LoginRequiredMixin, FormView):
             sweetness_preference=form.cleaned_data["sweetness_preference"],
             adventurousness_preference=form.cleaned_data["adventurousness_preference"],
         )
-        messages.success(self.request, "Your taste profile was updated.")
-        return redirect("account-preferences")
+        self.request.user.preferred_store = form.cleaned_data.get("preferred_store")
+        self.request.user.default_region = (
+            self.request.user.preferred_store.region
+            if self.request.user.preferred_store_id
+            else None
+        )
+        self.request.user.save(update_fields=["preferred_store", "default_region"])
+        messages.success(
+            self.request,
+            "Preferences saved. Your taste profile is now applied across FloatStack.",
+        )
+        return redirect("dashboard")
 
 
 def _scoped_users_for_admin(user):

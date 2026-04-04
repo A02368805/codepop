@@ -386,7 +386,7 @@ def recommend_drink_menu_scores(user):
             reasons.append("It overlaps with ingredients you said to avoid.")
 
         if not reasons:
-            reasons.append("Balanced signature build with wide demo appeal.")
+            reasons.append("Balanced signature build with broad customer appeal.")
 
         recommendations.append(
             {

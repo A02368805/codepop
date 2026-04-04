@@ -6,17 +6,19 @@
 <section class="hero hero--dashboard">
     <div>
         <p class="eyebrow">Live Support Chat</p>
-        <h1>Chat with FloatStack support AI</h1>
-        <p class="lede">Ask anything about your order, pickup timing, guest lookup, refunds, or account help. Messages are sent directly to the support AI API with your conversation context.</p>
+        <h1>Chat with FloatStack support</h1>
+        <p class="lede">Ask about ordering, pickup, guest lookup, refunds, or account help.</p>
         <div class="cta-row">
             <form
                 method="post"
                 hx-post="{% url 'support:start' %}"
                 hx-target="#support-workspace"
                 hx-swap="innerHTML"
+                hx-indicator="#support-start-indicator"
             >
                 {% csrf_token %}
                 <button class="button button--ghost" type="submit">Start new conversation</button>
+                <p class="htmx-indicator ai-loading-indicator" id="support-start-indicator">Starting support conversation...</p>
             </form>
             <a class="button button--ghost" href="{% url 'orders:guest-lookup' %}">Guest lookup</a>
         </div>
@@ -25,7 +27,7 @@
         <p class="eyebrow">Tips</p>
         <ul class="mini-list">
             <li>Paste your order code like FS-C-C001-XXXXXX for exact status help</li>
-            <li>Ask follow-up questions naturally in the same thread</li>
+            <li>Keep follow-up questions in the same thread</li>
             <li>Use escalation if your issue still needs human review</li>
         </ul>
     </div>

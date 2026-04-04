@@ -22,11 +22,16 @@
                                 hx-post="{% url 'orders:cart-item-update' item.item_id %}"
                                 hx-target="#cart-panel"
                                 hx-swap="innerHTML"
+                                hx-trigger="change from:input[name='quantity'] delay:200ms"
+                                hx-indicator="#qty-indicator-{{ item.item_id }}"
                             >
                                 {% csrf_token %}
                                 <input type="number" name="quantity" min="0" max="12" value="{{ item.quantity }}">
-                                <button class="button button--ghost" type="submit">Update</button>
+                                <span class="htmx-indicator muted" id="qty-indicator-{{ item.item_id }}">Updating...</span>
                             </form>
+                            {% if store and item.menu_key %}
+                                <a class="button button--ghost" href="{% url 'orders:customize' store.store_code item.menu_key %}">Edit drink</a>
+                            {% endif %}
                             <form
                                 method="post"
                                 hx-post="{% url 'orders:cart-item-remove' item.item_id %}"
@@ -53,6 +58,7 @@
                 <a class="button button--primary" href="{% url 'orders:checkout' %}">Continue to checkout</a>
                 {% if store %}
                     <a class="button button--ghost" href="{% url 'orders:menu' store.store_code %}">Add another drink</a>
+                    <a class="button button--ghost" href="{% url 'stores:index' %}">Change store</a>
                 {% endif %}
             </div>
         </div>

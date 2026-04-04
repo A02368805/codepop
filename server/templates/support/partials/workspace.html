@@ -28,6 +28,8 @@
         hx-post="{% url 'support:send' conversation.id %}"
         hx-target="#support-workspace"
         hx-swap="innerHTML"
+        hx-indicator="#support-send-indicator"
+        data-support-send-form="true"
         class="panel-stack"
     >
         {% csrf_token %}
@@ -35,10 +37,12 @@
             <span>Message</span>
             {{ message_form.message }}
         </label>
+        <p class="assistant-scope-note">FloatStack topics only: ordering flow, pickup, guest lookup, refunds, and account help.</p>
         <div class="action-row">
             <button class="button button--primary" type="submit">Send message</button>
             <a class="button button--ghost" href="{% url 'support:conversation-detail' conversation.id %}">Open conversation page</a>
         </div>
+        <p class="htmx-indicator ai-loading-indicator" id="support-send-indicator" data-support-send-status hidden>Sending your message...</p>
     </form>
 
     {% if related_links %}

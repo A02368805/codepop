@@ -82,6 +82,26 @@ def _parse_date(value):
         return None
 
 
+def _resolve_customer_order_store(user):
+    if not getattr(user, "is_authenticated", False):
+        return None
+    preferred_store = getattr(user, "preferred_store", None)
+    if preferred_store and preferred_store.is_active:
+        return preferred_store
+    if getattr(user, "default_region_id", None):
+        regional_store = (
+            Store.objects.filter(
+                region_id=user.default_region_id,
+                is_active=True,
+            )
+            .order_by("name")
+            .first()
+        )
+        if regional_store:
+            return regional_store
+    return Store.objects.filter(is_active=True).order_by("name").first()
+
+
 def _bound_value(form, field_name, fallback=""):
     if form.is_bound:
         return form.data.get(field_name, fallback)
@@ -93,6 +113,45 @@ def _bound_list(form, field_name, fallback=None):
     if form.is_bound and hasattr(form.data, "getlist"):
         return form.data.getlist(field_name)
     return list(form.initial.get(field_name, fallback) or fallback)
+
+
+def _parse_prefill_tokens(value, allowed_tokens):
+    if not value:
+        return []
+    parsed = []
+    for token in str(value).split(","):
+        cleaned = token.strip().lower()
+        if cleaned and cleaned in allowed_tokens and cleaned not in parsed:
+            parsed.append(cleaned)
+    return parsed
+
+
+def _build_customize_prefill_initial(request):
+    if str(request.GET.get("prefill", "")).strip() != "1":
+        return {}
+
+    size = str(request.GET.get("size", "")).strip().lower()
+    soda = str(request.GET.get("soda", "")).strip().lower()
+    ice_cream = str(request.GET.get("ice_cream", "")).strip().lower()
+    initial = {}
+
+    if size in SIZE_LABELS:
+        initial["size"] = size
+    if soda in SODA_OPTIONS:
+        initial["soda"] = soda
+    if ice_cream in ICE_CREAM_OPTIONS:
+        initial["ice_cream"] = ice_cream
+
+    initial["syrups"] = _parse_prefill_tokens(
+        request.GET.get("syrups", ""),
+        set(SYRUP_OPTIONS.keys()),
+    )
+    initial["add_ins"] = _parse_prefill_tokens(
+        request.GET.get("add_ins", ""),
+        set(ADD_IN_OPTIONS.keys()),
+    )
+
+    return initial
 
 
 def _build_choice_cards(*, name, groups, selected_values, multiple):
@@ -396,9 +455,13 @@ class CustomizeDrinkView(CustomerOrderingRequiredMixin, TemplateView):
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        form = kwargs.get("form") or DrinkCustomizationForm(
-            drink_slug=self.menu_item["slug"]
-        )
+        form = kwargs.get("form")
+        if not form:
+            prefill_initial = _build_customize_prefill_initial(self.request)
+            form = DrinkCustomizationForm(
+                drink_slug=self.menu_item["slug"],
+                initial=prefill_initial or None,
+            )
         builder_context = _build_builder_context(form=form, menu_item=self.menu_item)
         context.update(
             {
@@ -837,9 +900,11 @@ class RecommendationView(CustomerOrderingRequiredMixin, TemplateView):
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
+        order_store = _resolve_customer_order_store(self.request.user)
         context["recommendations"] = recommend_drinks_for_user(
             self.request.user if self.request.user.is_authenticated else None
         )
+        context["order_store"] = order_store
         return context
 
 

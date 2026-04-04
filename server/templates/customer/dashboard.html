@@ -9,7 +9,15 @@
         <h1>{{ dashboard.title }}</h1>
         <p class="lede">{{ dashboard.intro }}</p>
         <div class="cta-row">
-            <a class="button button--primary" href="{% url 'stores:index' %}">Start an order</a>
+            {% if order_store %}
+                <a class="button button--primary" href="{% url 'orders:menu' order_store.store_code %}?open_ai=1#menu-ai-panel">Open AI builder</a>
+                <a class="button button--ghost" href="{% url 'orders:menu' order_store.store_code %}">Open manual builder</a>
+                <a class="button button--ghost" href="{% url 'stores:index' %}">Change store</a>
+            {% else %}
+                <a class="button button--primary" href="{% url 'stores:index' %}">Choose store to build</a>
+            {% endif %}
+        </div>
+        <div class="cta-row">
             <a class="button button--ghost" href="{% url 'orders:history' %}">View order history</a>
             <a class="button button--ghost" href="{% url 'support:index' %}">Get support</a>
         </div>
@@ -70,9 +78,18 @@
     <div class="card-grid">
         {% for recommendation in recommended_drinks %}
             <article class="menu-card">
-                <h3>{{ recommendation.name }}</h3>
+                {% if order_store and recommendation.slug %}
+                    <h3><a href="{% url 'orders:customize' order_store.store_code recommendation.slug %}">{{ recommendation.name }}</a></h3>
+                {% else %}
+                    <h3>{{ recommendation.name }}</h3>
+                {% endif %}
                 <p>{{ recommendation.description }}</p>
                 <p class="muted">{{ recommendation.explanation }}</p>
+                {% if order_store and recommendation.slug %}
+                    <a class="button button--ghost" href="{% url 'orders:customize' order_store.store_code recommendation.slug %}">Create this drink</a>
+                {% else %}
+                    <a class="button button--ghost" href="{% url 'stores:index' %}">Choose a store to order</a>
+                {% endif %}
             </article>
         {% endfor %}
     </div>
