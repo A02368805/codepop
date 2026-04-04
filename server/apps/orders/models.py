@@ -65,7 +65,7 @@ class Order(models.Model):
     ready_at = models.DateTimeField(null=True, blank=True)
     picked_up_at = models.DateTimeField(null=True, blank=True)
     locker_number = models.CharField(max_length=12, blank=True)
-    locker_code = models.CharField(max_length=16, blank=True)
+    locker_code = models.CharField(max_length=16, blank=True, db_index=True)
     expires_at = models.DateTimeField(null=True, blank=True)
     notes = models.TextField(blank=True)
     cancel_reason = models.TextField(blank=True)

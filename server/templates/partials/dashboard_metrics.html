@@ -1,6 +1,10 @@
 <div class="section-heading">
     <div>
-        <p class="eyebrow">Live Summary</p>
+        {% if request.user.is_authenticated and request.user.role == "account_user" %}
+            <p class="eyebrow">Account Snapshot</p>
+        {% else %}
+            <p class="eyebrow">Live Summary</p>
+        {% endif %}
         <h2>{{ dashboard.title }}</h2>
     </div>
     <button
@@ -10,7 +14,7 @@
         hx-target="#dashboard-metrics"
         hx-swap="innerHTML"
     >
-        Refresh metrics
+        Refresh
     </button>
 </div>
 

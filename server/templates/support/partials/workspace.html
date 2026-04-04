@@ -5,7 +5,7 @@
             <h2>Support chat</h2>
         </div>
         {% if conversation.linked_order %}
-            <a href="{% url 'orders:detail' conversation.linked_order.public_order_code %}">Linked order {{ conversation.linked_order.public_order_code }}</a>
+            <a href="{% url 'orders:detail' conversation.linked_order.public_order_code %}">View order {{ conversation.linked_order.public_order_code }}</a>
         {% endif %}
     </div>
 
@@ -18,7 +18,7 @@
             </article>
         {% empty %}
             <div class="empty-state">
-                <p>Send a message to start chatting with support.</p>
+                <p>Send a message to start your support chat.</p>
             </div>
         {% endfor %}
     </div>
@@ -37,13 +37,13 @@
         </label>
         <div class="action-row">
             <button class="button button--primary" type="submit">Send message</button>
-            <a class="button button--ghost" href="{% url 'support:conversation-detail' conversation.id %}">Open conversation page</a>
+            <a class="button button--ghost" href="{% url 'support:conversation-detail' conversation.id %}">Open full chat page</a>
         </div>
     </form>
 
     {% if related_links %}
         <div class="panel" style="margin-top: 0;">
-            <p class="eyebrow">Suggested links</p>
+            <p class="eyebrow">Helpful Links</p>
             <div class="inline-cluster">
                 {% for link in related_links %}
                     <a class="button button--ghost" href="{{ link.url }}">{{ link.label }}</a>
@@ -56,12 +56,12 @@
         <div class="section-heading section-heading--tight">
             <div>
                 <p class="eyebrow">Still need help?</p>
-                <h3>Escalate to support follow-up</h3>
+                <h3>Request team follow-up</h3>
             </div>
         </div>
-        <p class="muted">If the assistant cannot resolve your issue, submit a short summary for team follow-up.</p>
+        <p class="muted">If your issue is not resolved, send a quick summary and the team can follow up.</p>
         {% if show_escalation %}
-            <p class="pill">Escalation recommended for this conversation</p>
+            <p class="pill">Follow-up recommended for this conversation</p>
         {% endif %}
         <form
             method="post"
@@ -80,7 +80,7 @@
                 {{ escalation_form.contact_email }}
             </label>
             <div class="action-row">
-                <button class="button button--ghost" type="submit">Submit escalation</button>
+                <button class="button button--ghost" type="submit">Send follow-up request</button>
             </div>
         </form>
     </div>

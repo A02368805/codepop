@@ -1,5 +1,7 @@
+import re
 from datetime import date
 from decimal import Decimal
+from urllib.parse import urlencode
 
 from apps.analytics.recommendations import recommend_drinks_for_user
 from apps.payments.gateway import PaymentMode, get_payment_mode
@@ -24,6 +26,7 @@ from django.core.exceptions import PermissionDenied
 from django.http import HttpResponse, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.template.loader import render_to_string
+from django.templatetags.static import static
 from django.urls import reverse
 from django.utils import timezone
 from django.views import View
@@ -65,12 +68,413 @@ from .models import Order
 from .personalization import recommend_builder_configuration
 from .selectors import (
     account_order_history,
-    authorize_guest_lookup,
+    authorize_guest_order_access,
     staff_order_queue,
     user_can_transition_order,
     user_can_view_order,
 )
 from .services import create_order, get_refund_eligibility, transition_order_status
+
+PICKUP_COMBO_PATTERN = re.compile(r"^\d{3}$")
+
+MENU_BASE_IMAGE_ASSETS = {
+    "coke": "hero-coke.svg",
+    "diet-coke": "hero-coke.svg",
+    "coke-zero": "hero-coke.svg",
+    "pepsi": "hero-pepsi.svg",
+    "diet-pepsi": "hero-pepsi.svg",
+    "mountain-dew": "hero-mtn-dew.svg",
+    "diet-mountain-dew": "hero-mtn-dew.svg",
+    "dr-pepper": "hero-dr-pepper.svg",
+    "diet-dr-pepper": "hero-dr-pepper.svg",
+    "sprite": "hero-sprite.svg",
+    "sprite-zero": "hero-sprite.svg",
+    "lemon-lime": "hero-sprite.svg",
+    "root-beer": "hero-root-beer.svg",
+    "orange-soda": "hero-orange-soda.svg",
+    "club-soda": "hero-club-soda.svg",
+    "cream-soda": "hero-cream-soda.svg",
+}
+
+MENU_BASE_FAMILIES = [
+    {
+        "key": "coke",
+        "label": "Coke",
+        "slugs": {"coke", "diet-coke", "coke-zero"},
+        "description": "Classic cola favorites and zero-sugar picks.",
+    },
+    {
+        "key": "pepsi",
+        "label": "Pepsi",
+        "slugs": {"pepsi", "diet-pepsi"},
+        "description": "Smooth Pepsi builds with bright and creamy options.",
+    },
+    {
+        "key": "mtn-dew",
+        "label": "Mtn Dew",
+        "slugs": {"mountain-dew", "diet-mountain-dew"},
+        "description": "Bolder citrus profiles with extra flavor energy.",
+    },
+    {
+        "key": "dr-pepper",
+        "label": "Dr Pepper",
+        "slugs": {"dr-pepper", "diet-dr-pepper"},
+        "description": "Spiced cola-style combinations with layered sweetness.",
+    },
+    {
+        "key": "sprite",
+        "label": "Sprite",
+        "slugs": {"sprite", "sprite-zero", "lemon-lime"},
+        "description": "Crisp citrus and clean soda-shop refreshers.",
+    },
+    {
+        "key": "root-beer",
+        "label": "Root Beer",
+        "slugs": {"root-beer"},
+        "description": "Rich root-beer recipes built for smooth finishes.",
+    },
+]
+
+
+def _menu_base_category(base_slug):
+    for family in MENU_BASE_FAMILIES:
+        if base_slug in family["slugs"]:
+            return family["key"], family["label"], family.get("description", "")
+    fallback = SODA_OPTIONS.get(base_slug, {})
+    return (
+        base_slug,
+        fallback.get("label", base_slug.replace("-", " ").title()),
+        fallback.get("description", ""),
+    )
+
+
+def _menu_item_visual_payload(menu_item):
+    base_slug = menu_item.get("default_soda", "")
+    base_label = SODA_OPTIONS.get(base_slug, {}).get(
+        "label", base_slug.replace("-", " ").title() or "Signature"
+    )
+    has_float_profile = bool(menu_item.get("default_ice_cream")) or any(
+        str(tag).lower() == "float" for tag in menu_item.get("tags", [])
+    )
+    asset_name = (
+        "hero-float.svg"
+        if has_float_profile
+        else MENU_BASE_IMAGE_ASSETS.get(base_slug, "hero-float.svg")
+    )
+    return {
+        "image_url": static(f"images/drinks/{asset_name}"),
+        "image_alt": f"{menu_item.get('name', 'Signature drink')} in an iced cup",
+        "base_label": base_label,
+    }
+
+
+def _build_store_menu_sections(*, store):
+    cards = []
+    categories = {}
+    float_cards = []
+    for item in get_menu_items():
+        base_slug = item.get("default_soda", "")
+        category_key, category_label, category_description = _menu_base_category(
+            base_slug
+        )
+        tags = list(item.get("tags", []))
+        has_float_profile = bool(item.get("default_ice_cream")) or any(
+            str(tag).lower() == "float" for tag in tags
+        )
+        card = {
+            "slug": item["slug"],
+            "name": item["name"],
+            "description": item.get("description", ""),
+            "base_slug": base_slug,
+            "category_key": category_key,
+            "category_label": category_label,
+            "tags": tags[:3],
+            "badge": item.get("home_badge", ""),
+            "starting_price": item["base_prices"].get("small", ""),
+            "customize_url": reverse(
+                "orders:customize", args=[store.store_code, item["slug"]]
+            ),
+            **_menu_item_visual_payload(item),
+        }
+        cards.append(card)
+        categories.setdefault(
+            category_key,
+            {
+                "key": category_key,
+                "label": category_label,
+                "description": category_description,
+                "cards": [],
+            },
+        )["cards"].append(card)
+        if has_float_profile:
+            float_cards.append(card)
+
+    sections = []
+    for family in MENU_BASE_FAMILIES:
+        family_section = categories.get(family["key"])
+        if family_section:
+            family_section["description"] = family.get(
+                "description", family_section.get("description", "")
+            )
+            family_section["count"] = len(family_section["cards"])
+            family_section["anchor_id"] = f"menu-section-{family_section['key']}"
+            sections.append(family_section)
+
+    family_keys = {family["key"] for family in MENU_BASE_FAMILIES}
+    extra_sections = [
+        section
+        for key, section in categories.items()
+        if key not in family_keys and section["cards"]
+    ]
+    for section in sorted(extra_sections, key=lambda value: value["label"]):
+        section["count"] = len(section["cards"])
+        section["anchor_id"] = f"menu-section-{section['key']}"
+        sections.append(section)
+
+    if float_cards:
+        sections.append(
+            {
+                "key": "floats",
+                "label": "Floats",
+                "description": "Creamier float builds with ice-cream-forward profiles.",
+                "cards": float_cards,
+                "count": len(float_cards),
+                "anchor_id": "menu-section-floats",
+            }
+        )
+
+    nav = [
+        {
+            "key": section["key"],
+            "label": section["label"],
+            "count": section["count"],
+            "anchor_id": section["anchor_id"],
+        }
+        for section in sections
+    ]
+    return cards, sections, nav
+
+
+def _build_menu_hero_recommendations(*, store, latest_result, limit=4):
+    menu_items = get_menu_items()
+    menu_items_by_slug = {item["slug"]: item for item in menu_items}
+    latest_result = latest_result if isinstance(latest_result, dict) else {}
+    if not latest_result:
+        return []
+
+    prompt = str(latest_result.get("prompt", "")).strip().lower()
+    cards = []
+    seen_slugs = set()
+
+    def _add_card(
+        menu_item,
+        *,
+        name="",
+        description="",
+        tags=None,
+        badge="",
+        selection=None,
+    ):
+        slug = menu_item.get("slug", "")
+        if not slug or slug in seen_slugs:
+            return
+        seen_slugs.add(slug)
+        tags = list(tags or [])
+        visual_source = dict(menu_item)
+        if selection and selection.get("soda"):
+            visual_source["default_soda"] = selection["soda"]
+        if selection and selection.get("ice_cream"):
+            visual_source["default_ice_cream"] = selection["ice_cream"]
+        cards.append(
+            {
+                "slug": slug,
+                "name": name or menu_item.get("name", "Signature Drink"),
+                "description": description or menu_item.get("description", ""),
+                "base_slug": visual_source.get("default_soda", ""),
+                "tags": tags[:2],
+                "badge": badge,
+                "starting_price": menu_item.get("base_prices", {}).get("small", ""),
+                "customize_url": _build_customized_builder_url(
+                    store_code=store.store_code, menu_slug=slug, selection=selection
+                ),
+                **_menu_item_visual_payload(visual_source),
+            }
+        )
+
+    def _score_menu_item(item):
+        if not prompt:
+            return 0
+        score = 0
+        haystack = " ".join(
+            [
+                item.get("name", ""),
+                item.get("description", ""),
+                " ".join(item.get("tags", [])),
+            ]
+        ).lower()
+        for token in prompt.split():
+            if token and token in haystack:
+                score += 2
+        for keyword in ("fruity", "fruit", "berry", "refreshing", "citrus"):
+            if keyword in prompt and keyword in haystack:
+                score += 3
+        for keyword in ("float", "creamy", "vanilla", "dessert"):
+            if keyword in prompt and keyword in haystack:
+                score += 3
+        for keyword in ("caffeine-free", "diet", "zero", "lighter"):
+            if keyword in prompt and keyword in haystack:
+                score += 2
+        return score
+
+    drink = latest_result.get("drink") or {}
+    if isinstance(drink, dict):
+        customizations = drink.get("customizations_json") or {}
+        recipe = (
+            customizations.get("recipe") if isinstance(customizations, dict) else {}
+        )
+        if not isinstance(recipe, dict):
+            recipe = {}
+        starter_slug = drink.get("recipe_key") or recipe.get("starter_menu_slug") or ""
+        starter_item = menu_items_by_slug.get(starter_slug)
+        if starter_item:
+            selection = {
+                "size": drink.get("size_snapshot", "medium"),
+                "soda": recipe.get("base_soda", ""),
+                "syrups": list(recipe.get("syrups", [])),
+                "add_ins": list(recipe.get("add_ins", [])),
+                "ice_cream": recipe.get("ice_cream", ""),
+                "notes": (
+                    f"AI prompt: {latest_result.get('prompt', '').strip()}"
+                    if latest_result.get("prompt")
+                    else ""
+                ),
+            }
+            _add_card(
+                starter_item,
+                name=drink.get("name", ""),
+                description=drink.get("description", "") or recipe.get("reason", ""),
+                tags=["AI custom"],
+                badge="AI Pick",
+                selection=selection,
+            )
+
+    for row in latest_result.get("menu_matches", []) or []:
+        menu_item = menu_items_by_slug.get(row.get("slug", ""))
+        if not menu_item:
+            continue
+        _add_card(
+            menu_item,
+            description=row.get("reason", "") or menu_item.get("description", ""),
+            tags=["AI match"],
+            badge="AI Match",
+        )
+        if len(cards) >= limit:
+            return cards
+
+    if not prompt and not cards:
+        return cards
+
+    scored_items = sorted(
+        menu_items,
+        key=lambda item: (-_score_menu_item(item), item.get("name", "")),
+    )
+    for menu_item in scored_items:
+        if len(cards) >= limit:
+            break
+        if prompt and _score_menu_item(menu_item) <= 0 and cards:
+            continue
+        _add_card(menu_item, tags=["AI suggestion"], badge="AI Suggestion")
+
+    return cards[:limit]
+
+
+def _build_customized_builder_url(*, store_code, menu_slug, selection=None):
+    base_url = reverse("orders:customize", args=[store_code, menu_slug])
+    if not selection:
+        return base_url
+    query = []
+    size = str(selection.get("size", "")).strip()
+    if size in SIZE_LABELS:
+        query.append(("size", size))
+    soda = str(selection.get("soda", "")).strip()
+    if soda in SODA_OPTIONS:
+        query.append(("soda", soda))
+    for syrup in selection.get("syrups", []):
+        if syrup in SYRUP_OPTIONS:
+            query.append(("syrups", syrup))
+    for add_in in selection.get("add_ins", []):
+        if add_in in ADD_IN_OPTIONS:
+            query.append(("add_ins", add_in))
+    ice_cream = str(selection.get("ice_cream", "")).strip()
+    if ice_cream in ICE_CREAM_OPTIONS:
+        query.append(("ice_cream", ice_cream))
+    notes = str(selection.get("notes", "")).strip()
+    if notes:
+        query.append(("notes", notes[:180]))
+    if not query:
+        return base_url
+    return f"{base_url}?{urlencode(query, doseq=True)}"
+
+
+def _attach_menu_ai_builder_url(*, store, response):
+    if not isinstance(response, dict):
+        return response
+    drink = response.get("drink") or {}
+    if not isinstance(drink, dict):
+        return response
+    customizations = drink.get("customizations_json") or {}
+    recipe = customizations.get("recipe") if isinstance(customizations, dict) else {}
+    if not isinstance(recipe, dict):
+        recipe = {}
+    starter_menu_slug = drink.get("recipe_key") or recipe.get("starter_menu_slug") or ""
+    if not starter_menu_slug:
+        return response
+    selection = {
+        "size": drink.get("size_snapshot", "medium"),
+        "soda": recipe.get("base_soda", ""),
+        "syrups": list(recipe.get("syrups", [])),
+        "add_ins": list(recipe.get("add_ins", [])),
+        "ice_cream": recipe.get("ice_cream", ""),
+        "notes": (
+            f"AI prompt: {response.get('prompt', '').strip()}"
+            if response.get("prompt")
+            else ""
+        ),
+    }
+    drink["builder_url"] = _build_customized_builder_url(
+        store_code=store.store_code,
+        menu_slug=starter_menu_slug,
+        selection=selection,
+    )
+    response["drink"] = drink
+    return response
+
+
+def _latest_menu_ai_result_for_store(*, request, store):
+    latest_store_code = request.session.get("menu_ai_latest_store_code", "")
+    if latest_store_code != store.store_code:
+        return {}
+    latest_result = request.session.get("menu_ai_latest_result") or {}
+    return latest_result if isinstance(latest_result, dict) else {}
+
+
+def _render_menu_ai_result_response(*, request, store, response):
+    response = _attach_menu_ai_builder_url(store=store, response=response)
+    html = render_to_string(
+        "orders/partials/menu_ai_result.html",
+        {
+            "menu_ai_result": response,
+            "menu_ai_hero_cards": _build_menu_hero_recommendations(
+                store=store,
+                latest_result=response,
+                limit=4,
+            ),
+            "menu_ai_oob": True,
+            "store": store,
+        },
+        request=request,
+    )
+    return HttpResponse(html)
 
 
 def _parse_date(value):
@@ -93,6 +497,39 @@ def _bound_list(form, field_name, fallback=None):
     if form.is_bound and hasattr(form.data, "getlist"):
         return form.data.getlist(field_name)
     return list(form.initial.get(field_name, fallback) or fallback)
+
+
+def _customize_initial_from_query(request):
+    initial = {}
+    size = request.GET.get("size", "").strip()
+    if size in SIZE_LABELS:
+        initial["size"] = size
+
+    soda = request.GET.get("soda", "").strip()
+    if soda in SODA_OPTIONS:
+        initial["soda"] = soda
+
+    syrups = [
+        token for token in request.GET.getlist("syrups") if token in SYRUP_OPTIONS
+    ]
+    if syrups:
+        initial["syrups"] = syrups
+
+    add_ins = [
+        token for token in request.GET.getlist("add_ins") if token in ADD_IN_OPTIONS
+    ]
+    if add_ins:
+        initial["add_ins"] = add_ins
+
+    ice_cream = request.GET.get("ice_cream", "").strip()
+    if ice_cream in ICE_CREAM_OPTIONS:
+        initial["ice_cream"] = ice_cream
+
+    notes = request.GET.get("notes", "").strip()
+    if notes:
+        initial["notes"] = notes[:500]
+
+    return initial
 
 
 def _build_choice_cards(*, name, groups, selected_values, multiple):
@@ -222,27 +659,28 @@ class MenuView(CustomerOrderingRequiredMixin, TemplateView):
         store = get_object_or_404(
             Store, store_code=self.kwargs["store_code"], is_active=True
         )
+        latest_menu_ai_result = _latest_menu_ai_result_for_store(
+            request=self.request, store=store
+        )
         cart = get_cart(self.request.session)
+        menu_items, menu_sections, menu_nav = _build_store_menu_sections(store=store)
         context.update(
             {
                 "store": store,
-                "menu_items": get_menu_items(),
+                "menu_items": menu_items,
+                "menu_sections": menu_sections,
+                "menu_nav": menu_nav,
                 "cart": cart,
                 "cart_item_count": cart_item_count(cart),
-                "recommendations": recommend_drinks_for_user(
-                    self.request.user if self.request.user.is_authenticated else None,
-                    limit=3,
+                "hero_recommendation_cards": _build_menu_hero_recommendations(
+                    store=store,
+                    latest_result=latest_menu_ai_result,
+                    limit=4,
                 ),
                 "menu_ai_form": MenuAiPromptForm(),
-                "menu_ai_result": build_menu_ai_assistance(
-                    user=(
-                        self.request.user
-                        if self.request.user.is_authenticated
-                        else None
-                    ),
+                "menu_ai_result": _attach_menu_ai_builder_url(
                     store=store,
-                    prompt="",
-                    menu_items=get_menu_items(),
+                    response=latest_menu_ai_result,
                 ),
             }
         )
@@ -272,19 +710,16 @@ class MenuAiAssistantView(CustomerOrderingRequiredMixin, View):
                 prompt=form.cleaned_data["prompt"],
                 menu_items=get_menu_items(),
             )
+        response = _attach_menu_ai_builder_url(store=store, response=response)
 
         request.session["menu_ai_latest_result"] = response
         request.session["menu_ai_latest_store_code"] = store.store_code
 
-        html = render_to_string(
-            "orders/partials/menu_ai_result.html",
-            {
-                "menu_ai_result": response,
-                "store": store,
-            },
+        return _render_menu_ai_result_response(
             request=request,
+            store=store,
+            response=response,
         )
-        return HttpResponse(html)
 
 
 class MenuAiSaveView(RoleRequiredMixin, LoginRequiredMixin, View):
@@ -327,15 +762,11 @@ class MenuAiSaveView(RoleRequiredMixin, LoginRequiredMixin, View):
             request.session["menu_ai_latest_result"] = latest_result
             response = latest_result
 
-        html = render_to_string(
-            "orders/partials/menu_ai_result.html",
-            {
-                "menu_ai_result": response,
-                "store": store,
-            },
+        return _render_menu_ai_result_response(
             request=request,
+            store=store,
+            response=response,
         )
-        return HttpResponse(html)
 
 
 class MenuAiAddToCartView(CustomerOrderingRequiredMixin, View):
@@ -373,15 +804,11 @@ class MenuAiAddToCartView(CustomerOrderingRequiredMixin, View):
                 request, f"{cart_item.get('display_name', 'Drink')} added to your cart."
             )
 
-        html = render_to_string(
-            "orders/partials/menu_ai_result.html",
-            {
-                "menu_ai_result": response,
-                "store": store,
-            },
+        return _render_menu_ai_result_response(
             request=request,
+            store=store,
+            response=response,
         )
-        return HttpResponse(html)
 
 
 class CustomizeDrinkView(CustomerOrderingRequiredMixin, TemplateView):
@@ -396,9 +823,12 @@ class CustomizeDrinkView(CustomerOrderingRequiredMixin, TemplateView):
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        form = kwargs.get("form") or DrinkCustomizationForm(
-            drink_slug=self.menu_item["slug"]
-        )
+        form = kwargs.get("form")
+        if not form:
+            form = DrinkCustomizationForm(
+                initial=_customize_initial_from_query(self.request),
+                drink_slug=self.menu_item["slug"],
+            )
         builder_context = _build_builder_context(form=form, menu_item=self.menu_item)
         context.update(
             {
@@ -632,7 +1062,7 @@ class CheckoutView(CustomerOrderingRequiredMixin, TemplateView):
         if order.order_type == Order.OrderType.GUEST and hasattr(
             order, "guest_contact"
         ):
-            authorize_guest_lookup(request.session, order.guest_contact.lookup_code)
+            authorize_guest_order_access(request.session, order)
         try:
             payment_flow = initialize_order_checkout(
                 order, request=request, actor=actor
@@ -757,11 +1187,52 @@ class GuestLookupView(FormView):
     form_class = GuestLookupForm
 
     def form_valid(self, form):
-        order = get_object_or_404(
-            Order.objects.select_related("guest_contact"),
-            guest_contact__lookup_code=form.cleaned_data["lookup_code"].strip(),
+        entered_code = form.cleaned_data["lookup_code"].strip().upper()
+        guest_orders = Order.objects.select_related("guest_contact").filter(
+            order_type=Order.OrderType.GUEST
         )
-        authorize_guest_lookup(self.request.session, order.guest_contact.lookup_code)
+
+        order = None
+        if PICKUP_COMBO_PATTERN.fullmatch(entered_code):
+            matches = list(
+                guest_orders.filter(locker_code=entered_code).order_by("-created_at")[
+                    :2
+                ]
+            )
+            if len(matches) > 1:
+                form.add_error(
+                    "lookup_code",
+                    "That pickup combo matches multiple orders. Use your order code instead.",
+                )
+                return self.form_invalid(form)
+            if matches:
+                order = matches[0]
+        if order is None:
+            matches = list(
+                guest_orders.filter(locker_code=entered_code).order_by("-created_at")[
+                    :2
+                ]
+            )
+            if len(matches) > 1:
+                form.add_error(
+                    "lookup_code",
+                    "That locker code matches multiple orders. Use your order code instead.",
+                )
+                return self.form_invalid(form)
+            if matches:
+                order = matches[0]
+        if order is None:
+            order = guest_orders.filter(guest_contact__lookup_code=entered_code).first()
+        if order is None:
+            order = guest_orders.filter(public_order_code=entered_code).first()
+        if order is None:
+            form.add_error(
+                "lookup_code",
+                "We could not find an order with that code. Check your confirmation and try again.",
+            )
+            return self.form_invalid(form)
+
+        authorize_guest_order_access(self.request.session, order)
         return redirect("orders:detail", order_code=order.public_order_code)
 
 
@@ -837,9 +1308,17 @@ class RecommendationView(CustomerOrderingRequiredMixin, TemplateView):
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        context["recommendations"] = recommend_drinks_for_user(
+        menu_items_by_slug = {item["slug"]: item for item in get_menu_items()}
+        recommendations = recommend_drinks_for_user(
             self.request.user if self.request.user.is_authenticated else None
         )
+        hydrated_recommendations = []
+        for recommendation in recommendations:
+            row = dict(recommendation)
+            menu_item = menu_items_by_slug.get(row.get("slug", "")) or {}
+            row.update(_menu_item_visual_payload(menu_item or row))
+            hydrated_recommendations.append(row)
+        context["recommendations"] = hydrated_recommendations
         return context
 
 

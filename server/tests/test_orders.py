@@ -82,6 +82,11 @@ class OrderWorkflowTests(TestCase):
             actor=self.customer,
         )
 
+    def test_new_orders_get_short_public_codes_and_pickup_combo(self):
+        order = self._create_order()
+        self.assertRegex(order.public_order_code, r"^FS-[A-Z0-9]{6}$")
+        self.assertRegex(order.locker_code, r"^\d{3}$")
+
     def test_order_lifecycle_reserves_inventory_and_sets_timestamps(self):
         order = self._create_order()
         self.assertEqual(order.status, Order.Status.PRICING_VALIDATED)
@@ -312,7 +317,7 @@ class MenuAiAssistantViewTests(TestCase):
         self.client.force_login(self.customer)
         response = self.client.get(reverse("orders:menu", args=[self.store.store_code]))
         self.assertEqual(response.status_code, 200)
-        self.assertContains(response, "Ask AI what to order")
+        self.assertContains(response, "Generate drink ideas")
 
     @patch("apps.orders.assistant._call_anthropic_menu_ai")
     def test_menu_ai_prompt_returns_menu_matches(self, mock_call):
@@ -407,8 +412,8 @@ class MenuAiAssistantViewTests(TestCase):
             HTTP_HX_REQUEST="true",
         )
         self.assertEqual(response.status_code, 200)
-        self.assertContains(response, "New drink record")
-        self.assertContains(response, "Save this drink")
+        self.assertContains(response, "Suggested Custom Drink")
+        self.assertContains(response, "Save to favorites")
 
         save_response = self.client.post(
             reverse("orders:menu-ai-save", args=[self.store.store_code]),
@@ -488,14 +493,14 @@ class MenuAiAssistantViewTests(TestCase):
             HTTP_HX_REQUEST="true",
         )
         self.assertEqual(response.status_code, 200)
-        self.assertContains(response, "Add Citrus Sprite Twist to cart")
+        self.assertContains(response, "Add Citrus Sprite Twist to order")
 
         add_response = self.client.post(
             reverse("orders:menu-ai-add-to-cart", args=[self.store.store_code]),
             HTTP_HX_REQUEST="true",
         )
         self.assertEqual(add_response.status_code, 200)
-        self.assertContains(add_response, "Added to cart")
+        self.assertContains(add_response, "Added to order")
 
         session = self.client.session
         cart = session.get("codepop_cart", {})

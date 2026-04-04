@@ -16,6 +16,16 @@ def apple_maps_url(address):
     return f"https://maps.apple.com/?q={quote_plus(address)}"
 
 
+def google_maps_embed_url(*, latitude=None, longitude=None, address=""):
+    if latitude is not None and longitude is not None:
+        query = f"{latitude},{longitude}"
+    elif address:
+        query = address
+    else:
+        return ""
+    return f"https://www.google.com/maps?q={quote_plus(str(query))}&z=14&output=embed"
+
+
 def mapbox_static_map_url(*, latitude, longitude, width=960, height=540):
     token = getattr(settings, "MAPBOX_PUBLIC_TOKEN", "")
     if not token:

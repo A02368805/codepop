@@ -6,8 +6,8 @@
 <section class="hero hero--dashboard">
     <div>
         <p class="eyebrow">Taste Profile</p>
-        <h1>Teach FloatStack what you actually like.</h1>
-        <p class="lede">Save multiple favorite sodas, syrups, add-ins, and ingredients to avoid so the builder AI can make smarter choices inside the drink flow.</p>
+        <h1>Tell us what flavors you like.</h1>
+        <p class="lede">Save favorite bases, syrups, and add-ins so recommendations and custom builds feel more personal.</p>
     </div>
     <div class="hero-card">
         <p class="eyebrow">Account Snapshot</p>
@@ -21,12 +21,12 @@
                 <dd>{{ request.user.default_region.name|default:"Not set" }}</dd>
             </div>
             <div>
-                <dt>Saved Signals</dt>
+                <dt>Saved Preferences</dt>
                 <dd>{{ saved_profile_count }}</dd>
             </div>
             <div>
-                <dt>AI Builder</dt>
-                <dd>Connected</dd>
+                <dt>Profile</dt>
+                <dd>Active</dd>
             </div>
         </dl>
     </div>
@@ -35,10 +35,10 @@
 <section class="panel">
     <div class="section-heading">
         <div>
-            <p class="eyebrow">Preference Builder</p>
-            <h2>Choose structured flavor signals</h2>
+            <p class="eyebrow">Taste Builder</p>
+            <h2>Choose your favorite flavor styles</h2>
         </div>
-        <p class="lede-small">These preferences guide recommendations and AI builder fill-ins, but you can still override anything drink by drink.</p>
+        <p class="lede-small">These preferences personalize recommendations, and you can still customize every drink however you want.</p>
     </div>
 
     <form method="post" class="preferences-form">
@@ -52,7 +52,7 @@
                         <p class="eyebrow">Favorites</p>
                         <h3>Favorite sodas</h3>
                     </div>
-                    <p class="muted">Pick every base you want AI to lean toward.</p>
+                    <p class="muted">Pick the soda bases you usually order.</p>
                 </div>
                 {% for group in favorite_soda_cards %}
                     <div class="ingredient-group ingredient-group--compact">
@@ -80,7 +80,7 @@
                         <p class="eyebrow">Favorites</p>
                         <h3>Favorite syrups</h3>
                     </div>
-                    <p class="muted">These shape AI flavor layering directly in the builder.</p>
+                    <p class="muted">Choose syrup flavors you want to see more often.</p>
                 </div>
                 {% for group in favorite_syrup_cards %}
                     <div class="ingredient-group ingredient-group--compact">
@@ -108,7 +108,7 @@
                         <p class="eyebrow">Favorites</p>
                         <h3>Favorite add-ins</h3>
                     </div>
-                    <p class="muted">Creamy finishes, fresh garnishes, and texture add-ons all count.</p>
+                    <p class="muted">Creamy finishes, citrus, and texture add-ons all count.</p>
                 </div>
                 {% for group in favorite_add_in_cards %}
                     <div class="ingredient-group ingredient-group--compact">
@@ -136,7 +136,7 @@
                         <p class="eyebrow">Favorites</p>
                         <h3>Favorite ice cream</h3>
                     </div>
-                    <p class="muted">Optional float toppers for richer AI builds.</p>
+                    <p class="muted">Optional float toppers for richer drink ideas.</p>
                 </div>
                 {% for group in favorite_ice_cream_cards %}
                     <div class="ingredient-group ingredient-group--compact">
@@ -164,7 +164,7 @@
                         <p class="eyebrow">Avoidances</p>
                         <h3>Ingredients to avoid</h3>
                     </div>
-                    <p class="muted">FloatStack will try to steer away from these when recommending and auto-filling a drink.</p>
+                    <p class="muted">We will avoid these ingredients when suggesting drinks.</p>
                 </div>
                 {% for group in disliked_ingredient_cards %}
                     <div class="ingredient-group ingredient-group--compact">
@@ -242,7 +242,7 @@
         </div>
 
         <div class="action-row">
-            <button class="button button--primary" type="submit">Save preferences</button>
+            <button class="button button--primary" type="submit">Save taste profile</button>
             <a class="button button--ghost" href="{% url 'stores:index' %}">Start an order</a>
         </div>
     </form>

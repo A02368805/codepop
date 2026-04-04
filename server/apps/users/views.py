@@ -30,12 +30,13 @@ from apps.orders.catalog import (
     SWEETNESS_PREFERENCE_CHOICES,
     SYRUP_GROUPS,
     SYRUP_OPTIONS,
+    get_menu_items,
     grouped_options,
 )
 from apps.orders.models import Order
 from apps.orders.selectors import staff_order_queue
 from apps.payments.models import RevenueLedgerEntry
-from apps.stores.models import Region
+from apps.stores.models import Region, Store
 from apps.stores.selectors import (
     regions_visible_to_user,
     scoped_region_store_options,
@@ -54,6 +55,8 @@ from django.contrib.auth.mixins import LoginRequiredMixin
 from django.contrib.auth.views import LoginView, LogoutView
 from django.db.models import Count, Q, Sum
 from django.shortcuts import get_object_or_404, redirect
+from django.templatetags.static import static
+from django.urls import reverse
 from django.utils import timezone
 from django.views.generic import FormView, TemplateView, View
 
@@ -71,6 +74,72 @@ from .permissions import (
 )
 from .selectors import get_dashboard_template, get_role_cards
 from .services import get_post_login_url, save_preference_profile, update_scoped_user
+
+HOME_BASE_FAMILIES = [
+    {
+        "key": "coke",
+        "label": "Coke",
+        "slugs": {"coke", "diet-coke", "coke-zero"},
+        "description": "Classic cola favorites and zero-sugar picks.",
+    },
+    {
+        "key": "pepsi",
+        "label": "Pepsi",
+        "slugs": {"pepsi", "diet-pepsi"},
+        "description": "Smooth Pepsi builds with bright and creamy options.",
+    },
+    {
+        "key": "mtn-dew",
+        "label": "Mtn Dew",
+        "slugs": {"mountain-dew", "diet-mountain-dew"},
+        "description": "Bolder citrus profiles with extra flavor energy.",
+    },
+    {
+        "key": "dr-pepper",
+        "label": "Dr Pepper",
+        "slugs": {"dr-pepper", "diet-dr-pepper"},
+        "description": "Spiced cola-style combinations with layered sweetness.",
+    },
+    {
+        "key": "sprite",
+        "label": "Sprite",
+        "slugs": {"sprite", "sprite-zero", "lemon-lime"},
+        "description": "Crisp citrus and clean soda-shop refreshers.",
+    },
+    {
+        "key": "root-beer",
+        "label": "Root Beer",
+        "slugs": {"root-beer"},
+        "description": "Rich root-beer recipes built for smooth finishes.",
+    },
+]
+
+HOME_BASE_IMAGE_ASSETS = {
+    "coke": "images/drinks/hero-coke.svg",
+    "diet-coke": "images/drinks/hero-coke.svg",
+    "coke-zero": "images/drinks/hero-coke.svg",
+    "pepsi": "images/drinks/hero-pepsi.svg",
+    "diet-pepsi": "images/drinks/hero-pepsi.svg",
+    "mountain-dew": "images/drinks/hero-mtn-dew.svg",
+    "diet-mountain-dew": "images/drinks/hero-mtn-dew.svg",
+    "dr-pepper": "images/drinks/hero-dr-pepper.svg",
+    "diet-dr-pepper": "images/drinks/hero-dr-pepper.svg",
+    "sprite": "images/drinks/hero-sprite.svg",
+    "sprite-zero": "images/drinks/hero-sprite.svg",
+    "lemon-lime": "images/drinks/hero-sprite.svg",
+    "root-beer": "images/drinks/hero-root-beer.svg",
+    "orange-soda": "images/drinks/hero-orange-soda.svg",
+    "club-soda": "images/drinks/hero-club-soda.svg",
+    "cream-soda": "images/drinks/hero-cream-soda.svg",
+}
+
+HOME_FEATURED_SLUGS = [
+    "orange-creamsicle",
+    "vanilla-sunset",
+    "sprite-garden-fizz",
+    "root-beer-cocoa-float",
+    "dew-lime-launch",
+]
 
 
 def _parse_date(value):
@@ -128,19 +197,182 @@ def _form_scalar_value(form, field_name):
     return form.initial.get(field_name, form.fields[field_name].initial or "")
 
 
+def _home_base_category(base_slug):
+    for family in HOME_BASE_FAMILIES:
+        if base_slug in family["slugs"]:
+            return family["key"], family["label"], family.get("description", "")
+
+    fallback = SODA_OPTIONS.get(base_slug, {})
+    return (
+        base_slug,
+        fallback.get("label", base_slug.replace("-", " ").title()),
+        fallback.get("description", ""),
+    )
+
+
 class HomePageView(TemplateView):
     template_name = "home.html"
 
+    def _default_ordering_store(self):
+        user = self.request.user
+        if (
+            getattr(user, "is_authenticated", False)
+            and user.role == User.Role.ACCOUNT_USER
+            and user.preferred_store
+            and user.preferred_store.is_active
+        ):
+            return user.preferred_store
+        return Store.objects.filter(is_active=True).order_by("store_code").first()
+
+    def _build_customer_menu_sections(self, *, store):
+        menu_items = get_menu_items()
+        cards = []
+        categories = {}
+        float_cards = []
+
+        for item in menu_items:
+            base_slug = item.get("default_soda", "")
+            base_option = SODA_OPTIONS.get(base_slug, {})
+            category_key, category_label, category_description = _home_base_category(
+                base_slug
+            )
+            tags = list(item.get("tags", []))
+            has_float_profile = bool(item.get("default_ice_cream")) or any(
+                str(tag).lower() == "float" for tag in tags
+            )
+            base_image_asset = HOME_BASE_IMAGE_ASSETS.get(
+                base_slug, "images/drinks/hero-float.svg"
+            )
+            if has_float_profile and item.get("default_ice_cream"):
+                base_image_asset = "images/drinks/hero-float.svg"
+            card = {
+                "slug": item["slug"],
+                "name": item["name"],
+                "description": item.get("description", ""),
+                "base_slug": base_slug,
+                "base_label": base_option.get(
+                    "label", base_slug.replace("-", " ").title()
+                ),
+                "category_key": category_key,
+                "category_label": category_label,
+                "tags": tags[:3],
+                "badge": item.get("home_badge", ""),
+                "starting_price": item["base_prices"].get("small", ""),
+                "image_url": static(base_image_asset),
+                "image_alt": f"{item['name']} custom soda in an iced cup",
+                "customize_url": (
+                    reverse("orders:customize", args=[store.store_code, item["slug"]])
+                    if store
+                    else reverse("stores:index")
+                ),
+            }
+            cards.append(card)
+            categories.setdefault(
+                category_key,
+                {
+                    "key": category_key,
+                    "label": category_label,
+                    "description": category_description,
+                    "cards": [],
+                },
+            )["cards"].append(card)
+            if has_float_profile:
+                float_cards.append(card)
+
+        sections = []
+
+        for family in HOME_BASE_FAMILIES:
+            family_section = categories.get(family["key"])
+            if family_section:
+                family_section["description"] = family.get(
+                    "description", family_section.get("description", "")
+                )
+                family_section["count"] = len(family_section["cards"])
+                family_section["anchor_id"] = f"home-section-{family_section['key']}"
+                sections.append(family_section)
+
+        family_keys = {family["key"] for family in HOME_BASE_FAMILIES}
+        extra_sections = [
+            section
+            for key, section in categories.items()
+            if key not in family_keys and section["cards"]
+        ]
+        for section in sorted(extra_sections, key=lambda value: value["label"]):
+            section["count"] = len(section["cards"])
+            section["anchor_id"] = f"home-section-{section['key']}"
+            sections.append(section)
+
+        if float_cards:
+            sections.append(
+                {
+                    "key": "floats",
+                    "label": "Floats",
+                    "description": "Creamier float builds with ice-cream-forward profiles.",
+                    "cards": float_cards,
+                    "count": len(float_cards),
+                    "anchor_id": "home-section-floats",
+                }
+            )
+
+        cards_by_slug = {card["slug"]: card for card in cards}
+        featured_cards = [
+            cards_by_slug[slug] for slug in HOME_FEATURED_SLUGS if slug in cards_by_slug
+        ]
+        for card in cards:
+            if len(featured_cards) >= 5:
+                break
+            if card not in featured_cards:
+                featured_cards.append(card)
+        hero_slides = [
+            {
+                "id": f"hero-slide-{index}",
+                "name": card["name"],
+                "description": card["description"],
+                "badge": card["badge"] or "Featured",
+                "image_url": card["image_url"],
+                "image_alt": card["image_alt"],
+                "customize_url": card["customize_url"],
+                "base_label": card["base_label"],
+            }
+            for index, card in enumerate(featured_cards, start=1)
+        ]
+
+        return cards, sections, hero_slides
+
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
+        can_start_order = user_can_use_customer_ordering(self.request.user)
+        context["can_start_order"] = can_start_order
         context["role_cards"] = get_role_cards()
-        context["can_start_order"] = user_can_use_customer_ordering(self.request.user)
         context["platform_principles"] = [
             "Customer ordering and internal operations in one server-rendered product",
             "Strict role scoping with permissions enforced on the server",
             "Regional logistics, maintenance, payments, and analytics in one workflow shell",
             "Demo-friendly UX without losing operational realism",
         ]
+        if can_start_order:
+            store = self._default_ordering_store()
+            cards, sections, hero_slides = self._build_customer_menu_sections(
+                store=store
+            )
+            context["default_ordering_store"] = store
+            context["home_menu_cards"] = cards
+            context["home_menu_sections"] = sections
+            context["home_hero_slides"] = hero_slides
+            context["home_browse_url"] = (
+                reverse("orders:menu", args=[store.store_code])
+                if store
+                else reverse("stores:index")
+            )
+            context["home_menu_nav"] = [
+                {
+                    "key": section["key"],
+                    "label": section["label"],
+                    "count": section["count"],
+                    "anchor_id": section["anchor_id"],
+                }
+                for section in sections
+            ]
         return context
 
 

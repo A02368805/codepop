@@ -14,8 +14,8 @@ from django.urls import reverse
 
 ROLE_COPY = {
     User.Role.ACCOUNT_USER: {
-        "title": "Customer Dashboard",
-        "intro": "Your account workspace keeps ordering fast while still giving you favorites, recommendations, and order tracking.",
+        "title": "Your FloatStack Account",
+        "intro": "Keep ordering fast with favorites, personalized suggestions, and easy pickup tracking in one place.",
         "focus_items": [
             "Saved preferences and favorites",
             "Ready-for-pickup order tracking",
@@ -100,7 +100,7 @@ def build_dashboard_payload(user, role):
                 "tone": "neutral",
             },
             {
-                "label": "Orders on record",
+                "label": "Orders placed",
                 "value": Order.objects.filter(customer=user).count(),
                 "tone": "neutral",
             },

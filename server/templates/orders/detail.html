@@ -7,19 +7,25 @@
     <div>
         <p class="eyebrow">Order Status</p>
         <h1>{{ order.public_order_code }}</h1>
-        <p class="lede">Status updates are controlled on the server. Customers can cancel before preparation begins, and staff can move the queue from their scoped workspace.</p>
+        {% if not request.user.is_authenticated or request.user.role == "account_user" %}
+            <p class="lede">Track your drink from order placed to pickup ready. We will update this page as your order moves through the queue.</p>
+        {% else %}
+            <p class="lede">Status updates are controlled on the server. Customers can cancel before preparation begins, and staff can move the queue from their scoped workspace.</p>
+        {% endif %}
     </div>
     <div class="hero-card">
-        <p class="eyebrow">Current State</p>
+        <p class="eyebrow">Current Status</p>
         <h2>{{ order.get_status_display }}</h2>
         <p class="muted">{{ order.store.name }}</p>
         <p class="muted">Placed {{ order.created_at|date:"M j, g:i A" }}</p>
-        {% if order.status == "ready" and order.locker_number %}
-            <div class="callout">
-                <strong>Pickup locker:</strong> {{ order.locker_number }}<br>
-                <strong>Locker code:</strong> {{ order.locker_code }}
-            </div>
-        {% endif %}
+        <div class="callout">
+            <strong>Pickup combo:</strong> {{ order.locker_code }}<br>
+            {% if order.status == "ready" and order.locker_number %}
+                <strong>Pickup locker:</strong> {{ order.locker_number }}
+            {% else %}
+                <span class="muted">Locker number appears once your drink is ready.</span>
+            {% endif %}
+        </div>
     </div>
 </section>
 
@@ -28,7 +34,7 @@
         <div class="section-heading">
             <div>
                 <p class="eyebrow">Items</p>
-                <h2>Immutable order snapshot</h2>
+                <h2>Your drinks</h2>
             </div>
         </div>
         <div class="surface-list">
@@ -36,23 +42,24 @@
                 <article class="list-card">
                     <div class="list-card__main">
                         <h3>{{ item.quantity }} × {{ item.display_name_snapshot }}</h3>
-                        <p class="muted">{{ item.size_snapshot|title }}</p>
-                        <p>{{ item.customizations_json.soda|default:"" }} {{ item.customizations_json.syrups|join:", " }} {{ item.customizations_json.add_ins|join:", " }}</p>
+                        <p class="muted">{{ item.size_snapshot|title }} · Customized recipe</p>
                     </div>
                     <div class="list-card__actions">
-                        <strong>${{ item.line_total }}</strong>
+                        <strong>${{ item.line_total|floatformat:2 }}</strong>
                     </div>
                 </article>
             {% endfor %}
         </div>
     </div>
     <div class="panel">
-        <p class="eyebrow">Order Meta</p>
+        <p class="eyebrow">Order Summary</p>
         <dl class="summary-list">
-            <div><dt>Subtotal</dt><dd>${{ order.subtotal_amount }}</dd></div>
-            <div><dt>Tax</dt><dd>${{ order.tax_amount }}</dd></div>
-            <div><dt>Total</dt><dd>${{ order.total_amount }}</dd></div>
-            <div><dt>Refund Status</dt><dd>{{ order.get_refund_status_display }}</dd></div>
+            <div><dt>Subtotal</dt><dd>${{ order.subtotal_amount|floatformat:2 }}</dd></div>
+            <div><dt>Tax</dt><dd>${{ order.tax_amount|floatformat:2 }}</dd></div>
+            <div><dt>Total</dt><dd>${{ order.total_amount|floatformat:2 }}</dd></div>
+            {% if order.refund_status != "none" or request.user.is_authenticated and request.user.role != "account_user" %}
+                <div><dt>Refund Status</dt><dd>{{ order.get_refund_status_display }}</dd></div>
+            {% endif %}
             {% if order.pickup_time_requested %}
                 <div><dt>Requested Pickup</dt><dd>{{ order.pickup_time_requested|date:"M j, g:i A" }}</dd></div>
             {% endif %}
@@ -63,7 +70,11 @@
                 <button class="button button--primary" type="submit">Cancel order</button>
             </form>
         {% else %}
-            <p class="muted">{{ cancel_reason }}</p>
+            {% if not request.user.is_authenticated or request.user.role == "account_user" %}
+                <p class="muted">This order can no longer be canceled online.</p>
+            {% else %}
+                <p class="muted">{{ cancel_reason }}</p>
+            {% endif %}
         {% endif %}
         {% if can_manage %}
             <div class="action-row">
@@ -92,18 +103,22 @@
         <p class="eyebrow">Payment</p>
         <p class="muted">
             {% if payment_mode_is_mock %}
-                Demo payment mode is active.
+                Demo checkout is active for this environment.
             {% else %}
-                Stripe payment mode is active.
+                Stripe payment is enabled.
             {% endif %}
         </p>
         {% if payment_transaction %}
             <dl class="summary-list">
                 <div><dt>Status</dt><dd>{{ payment_transaction.get_status_display }}</dd></div>
-                <div><dt>Provider</dt><dd>{{ payment_transaction.get_provider_display }}</dd></div>
-                <div><dt>Captured</dt><dd>${{ payment_transaction.amount_captured }}</dd></div>
-                <div><dt>Refunded</dt><dd>${{ payment_transaction.amount_refunded }}</dd></div>
-                <div><dt>Failure</dt><dd>{{ payment_transaction.failure_reason|default:"-" }}</dd></div>
+                {% if request.user.is_authenticated and request.user.role != "account_user" %}
+                    <div><dt>Provider</dt><dd>{{ payment_transaction.get_provider_display }}</dd></div>
+                {% endif %}
+                <div><dt>Captured</dt><dd>${{ payment_transaction.amount_captured|floatformat:2 }}</dd></div>
+                <div><dt>Refunded</dt><dd>${{ payment_transaction.amount_refunded|floatformat:2 }}</dd></div>
+                {% if payment_transaction.failure_reason %}
+                    <div><dt>Payment note</dt><dd>{{ payment_transaction.failure_reason }}</dd></div>
+                {% endif %}
             </dl>
             {% if payment_transaction.status == "pending" and payment_mode == "stripe" and payment_checkout_flow == "elements" and stripe_publishable_key %}
                 <div
@@ -115,13 +130,13 @@
                 >
                     <div id="card-element" class="field"></div>
                     <div class="action-row">
-                        <button class="button button--primary" type="button" id="stripe-pay-btn">Pay now</button>
+                        <button class="button button--primary" type="button" id="stripe-pay-btn">Complete payment</button>
                     </div>
-                    <p class="muted" id="stripe-pay-status">Enter your card details to complete checkout.</p>
+                    <p class="muted" id="stripe-pay-status">Enter your card details to finish checkout.</p>
                 </div>
             {% endif %}
         {% else %}
-            <p class="muted">No payment transaction record exists yet.</p>
+            <p class="muted">Payment details are still being prepared for this order.</p>
             {% if order.status == "pricing_validated" or order.status == "payment_pending" %}
                 {% if payment_mode == "stripe" and payment_checkout_flow == "elements" and stripe_publishable_key %}
                     <div
@@ -133,27 +148,27 @@
                     >
                         <div id="card-element" class="field"></div>
                         <div class="action-row">
-                            <button class="button button--primary" type="button" id="stripe-pay-btn">Pay now</button>
+                            <button class="button button--primary" type="button" id="stripe-pay-btn">Complete payment</button>
                         </div>
-                        <p class="muted" id="stripe-pay-status">Enter your card details to complete checkout.</p>
+                        <p class="muted" id="stripe-pay-status">Enter your card details to finish checkout.</p>
                     </div>
                 {% else %}
                     {% if payment_mode != "stripe" %}
                     <div class="flash flash--warning">
-                        Card entry UI is disabled because <strong>PAYMENT_MODE</strong> is not set to <strong>stripe</strong>.
+                        Card entry is not available in this environment.
                     </div>
                     {% elif payment_checkout_flow != "elements" %}
                     <div class="flash flash--warning">
-                        Card entry UI is disabled because <strong>PAYMENT_CHECKOUT_FLOW</strong> is not set to <strong>elements</strong>.
+                        Card entry is not embedded on this page for the current checkout setup.
                     </div>
                     {% elif not stripe_publishable_key %}
                     <div class="flash flash--warning">
-                        Card entry UI is disabled because <strong>STRIPE_PUBLISHABLE_KEY</strong> is missing.
+                        Card entry is temporarily unavailable.
                     </div>
                     {% endif %}
                 <div id="payment-intent-panel" data-endpoint="{% url 'payments:payment-intent' %}" data-order-code="{{ order.public_order_code }}">
-                    <button class="button button--ghost" type="button" id="payment-intent-btn">Generate payment intent</button>
-                    <p class="muted" id="payment-intent-status">Creates a provider intent so checkout can continue with the payment processor.</p>
+                    <button class="button button--ghost" type="button" id="payment-intent-btn">Continue payment</button>
+                    <p class="muted" id="payment-intent-status">This prepares the next payment step for your order.</p>
                 </div>
                 {% endif %}
             {% endif %}
@@ -172,10 +187,16 @@
             <a class="button button--ghost" href="{{ order.store.apple_maps_url }}" target="_blank" rel="noreferrer">Open in Apple Maps</a>
         </div>
     </div>
-    {% if order.store.mapbox_static_map_url %}
-        <a class="map-card" href="{{ order.store.google_maps_url }}" target="_blank" rel="noreferrer">
-            <img src="{{ order.store.mapbox_static_map_url }}" alt="Map for {{ order.store.name }}">
-        </a>
+    {% if order.store.pickup_map_embed_url %}
+        <div class="map-card">
+            <iframe
+                src="{{ order.store.pickup_map_embed_url }}"
+                title="Map for {{ order.store.name }}"
+                loading="lazy"
+                referrerpolicy="no-referrer-when-downgrade"
+                allowfullscreen
+            ></iframe>
+        </div>
     {% else %}
         <div class="map-card map-card--fallback">
             <p>{{ order.store.full_address }}</p>

@@ -5,14 +5,14 @@
 {% block content %}
 <section class="hero hero--dashboard">
     <div>
-        <p class="eyebrow">AI Recommendation Surface</p>
-        <h1>Drink suggestions with explainable heuristics</h1>
-        <p class="lede">These recommendations use favorites, likes, dislikes, and order history when available. They stay deterministic and readable so the UI can explain why a drink appeared.</p>
+        <p class="eyebrow">Recommended Drinks</p>
+        <h1>Drink ideas picked for your tastes</h1>
+        <p class="lede">Browse curated favorites inspired by your past orders and flavor preferences.</p>
     </div>
     <div class="hero-card">
-        <p class="eyebrow">Best Next Step</p>
+        <p class="eyebrow">Next Step</p>
         {% if request.user.is_authenticated and request.user.role == "account_user" %}
-            <a class="button button--primary" href="{% url 'account-preferences' %}">Refine preferences</a>
+            <a class="button button--primary" href="{% url 'account-preferences' %}">Update taste profile</a>
         {% else %}
             <a class="button button--primary" href="{% url 'register' %}">Create an account to personalize</a>
         {% endif %}
@@ -22,9 +22,20 @@
 <section class="panel">
     <div class="card-grid">
         {% for recommendation in recommendations %}
-            <article class="menu-card">
+            <article class="menu-card recommendation-card">
+                <div class="recommendation-card__visual">
+                    <img
+                        class="recommendation-card__image"
+                        src="{{ recommendation.image_url }}"
+                        alt="{{ recommendation.image_alt }}"
+                        loading="lazy"
+                        width="1200"
+                        height="1500"
+                    >
+                </div>
                 <div class="inline-cluster">
-                    <span class="pill">Score {{ recommendation.score|floatformat:1 }}</span>
+                    <span class="pill">Recommended</span>
+                    <span class="pill pill--soft">{{ recommendation.base_label }}</span>
                     {% for tag in recommendation.tags %}
                         <span class="pill pill--soft">{{ tag }}</span>
                     {% endfor %}
@@ -34,6 +45,11 @@
                 <p class="muted">{{ recommendation.explanation }}</p>
                 <a class="button button--ghost" href="{% url 'stores:index' %}">Choose a store to order</a>
             </article>
+        {% empty %}
+            <div class="empty-state">
+                <h2>No recommendations yet.</h2>
+                <p>Browse drinks and place an order to unlock personalized picks.</p>
+            </div>
         {% endfor %}
     </div>
 </section>

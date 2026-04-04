@@ -277,6 +277,48 @@ def _recommended_ice_cream(profile, current_ice_cream, menu_item):
     return ""
 
 
+def _menu_item_ingredient_tokens(item):
+    tokens = {
+        item["default_soda"],
+        *item["default_syrups"],
+        *item["default_add_ins"],
+    }
+    if item.get("default_ice_cream"):
+        tokens.add(item["default_ice_cream"])
+    return tokens
+
+
+def _menu_item_option_entries(item):
+    options = []
+    base_option = SODA_OPTIONS.get(item["default_soda"])
+    if base_option:
+        options.append((item["default_soda"], base_option))
+    for token in item["default_syrups"]:
+        option = SYRUP_OPTIONS.get(token)
+        if option:
+            options.append((token, option))
+    for token in item["default_add_ins"]:
+        option = ADD_IN_OPTIONS.get(token)
+        if option:
+            options.append((token, option))
+    if item.get("default_ice_cream"):
+        token = item["default_ice_cream"]
+        option = ICE_CREAM_OPTIONS.get(token)
+        if option:
+            options.append((token, option))
+    return options
+
+
+def _menu_item_dietary_conflicts(item, dietary_preferences):
+    if not dietary_preferences:
+        return set()
+    conflicts = set()
+    for token, option in _menu_item_option_entries(item):
+        if not _option_allowed(option, dietary_preferences):
+            conflicts.add(token)
+    return conflicts
+
+
 def recommend_builder_configuration(*, user, menu_item, current_selection=None):
     profile = build_user_taste_profile(user)
     current_selection = current_selection or {}
@@ -343,61 +385,124 @@ def recommend_builder_configuration(*, user, menu_item, current_selection=None):
 
 def recommend_drink_menu_scores(user):
     profile = build_user_taste_profile(user)
+    has_explicit_preferences = bool(
+        profile["favorite_sodas"]
+        or profile["favorite_syrups"]
+        or profile["favorite_add_ins"]
+        or profile["favorite_ice_creams"]
+        or profile["dislikes"]
+        or profile["dietary_preferences"]
+    )
     recommendations = []
+    blocked_recommendations = []
     for slug, item in MENU_ITEMS.items():
         score = 1
         reasons = []
+        item_tokens = _menu_item_ingredient_tokens(item)
+        dietary_conflicts = _menu_item_dietary_conflicts(
+            item, profile["dietary_preferences"]
+        )
 
         if slug in profile["favorite_recipe_keys"]:
-            score += 6
+            score += 3 if has_explicit_preferences else 6
             reasons.append("You have favorited a similar drink before.")
 
         if item["default_soda"] in profile["favorite_sodas"]:
-            score += 4
+            score += 10
             reasons.append("The base soda matches one of your favorites.")
+        elif profile["soda_counter"][item["default_soda"]]:
+            score += min(profile["soda_counter"][item["default_soda"]], 3)
 
         syrup_overlap = set(item["default_syrups"]) & profile["favorite_syrups"]
         if syrup_overlap:
-            score += 3 * len(syrup_overlap)
+            score += 6 * len(syrup_overlap)
             reasons.append(
                 f"It lines up with flavors like {', '.join(sorted(syrup_overlap)[:2]).replace('-', ' ')}."
+            )
+        else:
+            score += sum(
+                min(profile["syrup_counter"][token], 2)
+                for token in item["default_syrups"]
             )
 
         add_in_overlap = set(item["default_add_ins"]) & profile["favorite_add_ins"]
         if add_in_overlap:
-            score += 2 * len(add_in_overlap)
+            score += 4 * len(add_in_overlap)
             reasons.append("Its finish matches your preferred add-ins.")
+        else:
+            score += sum(
+                min(profile["add_in_counter"][token], 1)
+                for token in item["default_add_ins"]
+            )
 
         if (
             item.get("default_ice_cream")
             and item["default_ice_cream"] in profile["favorite_ice_creams"]
         ):
-            score += 2
+            score += 5
             reasons.append("Its float topper matches your saved ice cream picks.")
+        elif item.get("default_ice_cream"):
+            score += min(profile["ice_cream_counter"][item["default_ice_cream"]], 1)
 
-        item_tokens = (
-            set(item["default_syrups"])
-            | set(item["default_add_ins"])
-            | {item["default_soda"], item.get("default_ice_cream", "")}
-        )
         dislike_overlap = item_tokens & profile["dislikes"]
         if dislike_overlap:
-            score -= 5 * len(dislike_overlap)
+            score -= 25 * len(dislike_overlap)
             reasons.append("It overlaps with ingredients you said to avoid.")
+
+        if dietary_conflicts:
+            score -= 18 * len(dietary_conflicts)
+            reasons.append("It conflicts with your dietary preferences.")
+
+        complexity = (
+            len(item["default_syrups"])
+            + len(item["default_add_ins"])
+            + (1 if item.get("default_ice_cream") else 0)
+        )
+        if (
+            profile["adventurousness_preference"]
+            == User.AdventurousnessPreference.CLASSIC
+        ):
+            score += 2 if complexity <= 2 else -2
+        elif (
+            profile["adventurousness_preference"]
+            == User.AdventurousnessPreference.ADVENTUROUS
+        ):
+            score += 2 if complexity >= 2 else -1
+
+        if profile["sweetness_preference"] == User.SweetnessPreference.LIGHT:
+            if any(tag in {"dessert", "float", "creamy"} for tag in item["tags"]):
+                score -= 3
+        elif profile["sweetness_preference"] in {
+            User.SweetnessPreference.SWEET,
+            User.SweetnessPreference.EXTRA_SWEET,
+        }:
+            if any(tag in {"dessert", "float", "creamy"} for tag in item["tags"]):
+                score += 2
 
         if not reasons:
             reasons.append("Balanced signature build with wide demo appeal.")
 
-        recommendations.append(
-            {
-                "slug": slug,
-                "name": item["name"],
-                "description": item["description"],
-                "score": score,
-                "explanation": " ".join(reasons),
-                "tags": item["tags"],
-            }
-        )
+        row = {
+            "slug": slug,
+            "name": item["name"],
+            "description": item["description"],
+            "score": score,
+            "explanation": " ".join(reasons),
+            "tags": item["tags"],
+        }
+
+        if has_explicit_preferences and (dislike_overlap or dietary_conflicts):
+            blocked_recommendations.append(row)
+            continue
+
+        recommendations.append(row)
 
     recommendations.sort(key=lambda row: (-row["score"], row["name"]))
+    blocked_recommendations.sort(key=lambda row: (-row["score"], row["name"]))
+
+    if not recommendations:
+        recommendations = blocked_recommendations
+    else:
+        recommendations.extend(blocked_recommendations)
+
     return recommendations

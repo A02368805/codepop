@@ -3,7 +3,6 @@ from __future__ import annotations
 import json
 import logging
 import time
-import uuid
 from functools import lru_cache
 from pathlib import Path
 from urllib import error as url_error
@@ -646,10 +645,12 @@ def _build_menu_ai_drink_payload(*, prompt, store, recipe, menu_items, uses_ai):
 
 def _make_unique_drink_name(*, base_name, prompt):
     normalized = " ".join(str(base_name or "Custom Drink").split())
-    prompt_seed = "".join(ch for ch in str(prompt or "").lower() if ch.isalnum())
-    short_seed = prompt_seed[:2].upper() if prompt_seed else "CP"
-    unique_suffix = uuid.uuid4().hex[:4].upper()
-    return f"{normalized} {short_seed}-{unique_suffix}"
+    if normalized:
+        return normalized
+    prompt_tokens = [token.capitalize() for token in str(prompt or "").split() if token]
+    if prompt_tokens:
+        return f"{' '.join(prompt_tokens[:2])} Soda"
+    return "Custom Drink"
 
 
 def _normalize_recipe(raw_recipe, ingredient_catalog, menu_items):

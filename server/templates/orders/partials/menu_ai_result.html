@@ -3,12 +3,12 @@
         <div class="section-heading section-heading--tight">
             <div>
                 <p class="eyebrow">{{ menu_ai_result.title }}</p>
-                <h2>Menu guidance</h2>
+                <h2>Drink ideas</h2>
             </div>
             {% if menu_ai_result.uses_ai %}
-                <span class="pill">AI response</span>
+                <span class="pill">AI pick</span>
             {% else %}
-                <span class="pill pill--soft">Local fallback</span>
+                <span class="pill pill--soft">Quick pick</span>
             {% endif %}
         </div>
 
@@ -16,7 +16,7 @@
 
         {% if menu_ai_result.drink %}
             <div class="assistant-card assistant-card--soft">
-                <p class="eyebrow">New drink record</p>
+                <p class="eyebrow">Suggested Custom Drink</p>
                 <h3>{{ menu_ai_result.drink.name }}</h3>
                 <p>{{ menu_ai_result.drink.description }}</p>
                 {% if menu_ai_result.recipe.reason %}
@@ -27,9 +27,11 @@
                     {% if menu_ai_result.recipe.syrups %}<li><strong>Syrups</strong>: {% for item in menu_ai_result.recipe.syrups %}{{ item.label }}{% if not forloop.last %}, {% endif %}{% endfor %}</li>{% endif %}
                     {% if menu_ai_result.recipe.add_ins %}<li><strong>Add-ins</strong>: {% for item in menu_ai_result.recipe.add_ins %}{{ item.label }}{% if not forloop.last %}, {% endif %}{% endfor %}</li>{% endif %}
                     {% if menu_ai_result.recipe.ice_cream %}<li><strong>Ice cream</strong>: {{ menu_ai_result.recipe.ice_cream.label }}</li>{% endif %}
-                    {% if menu_ai_result.drink.base_price_snapshot %}<li><strong>Base price</strong>: ${{ menu_ai_result.drink.base_price_snapshot }}</li>{% endif %}
+                    {% if menu_ai_result.drink.base_price_snapshot %}<li><strong>Starts at</strong>: ${{ menu_ai_result.drink.base_price_snapshot|floatformat:2 }}</li>{% endif %}
                 </ul>
-                {% if menu_ai_result.recipe.starter_menu_item %}
+                {% if menu_ai_result.drink.builder_url %}
+                    <a class="button button--ghost" href="{{ menu_ai_result.drink.builder_url }}">Open In Builder</a>
+                {% elif menu_ai_result.recipe.starter_menu_item %}
                     <a class="button button--ghost" href="{% url 'orders:customize' store.store_code menu_ai_result.recipe.starter_menu_item.slug %}">Start from {{ menu_ai_result.recipe.starter_menu_item.name }}</a>
                 {% endif %}
                 {% if menu_ai_result.can_save and not menu_ai_result.saved %}
@@ -40,7 +42,7 @@
                         hx-swap="innerHTML"
                     >
                         {% csrf_token %}
-                        <button class="button button--primary" type="submit">Save this drink</button>
+                        <button class="button button--primary" type="submit">Save to favorites</button>
                     </form>
                 {% elif menu_ai_result.saved %}
                     <p class="pill">Saved to favorites{% if menu_ai_result.saved_favorite_name %}: {{ menu_ai_result.saved_favorite_name }}{% endif %}</p>
@@ -52,10 +54,10 @@
                     hx-swap="innerHTML"
                 >
                     {% csrf_token %}
-                    <button class="button button--primary" type="submit">Add {{ menu_ai_result.drink.name }} to cart</button>
+                    <button class="button button--primary" type="submit">Add {{ menu_ai_result.drink.name }} to order</button>
                 </form>
                 {% if menu_ai_result.added_to_cart %}
-                    <p class="pill">Added to cart{% if menu_ai_result.added_to_cart_name %}: {{ menu_ai_result.added_to_cart_name }}{% endif %}</p>
+                    <p class="pill">Added to order{% if menu_ai_result.added_to_cart_name %}: {{ menu_ai_result.added_to_cart_name }}{% endif %}</p>
                 {% endif %}
             </div>
         {% endif %}
@@ -87,8 +89,13 @@
     </div>
 {% else %}
     <div class="assistant-card menu-ai-result">
-        <p class="eyebrow">FloatStack Menu AI</p>
-        <h2>Tell me what you want</h2>
-        <p>Try something like a fruity, creamy, caffeine-free, or bold drink and I will suggest menu options.</p>
+        <p class="eyebrow">Drink Helper</p>
+        <h2>Tell us what you are craving</h2>
+        <p>Try prompts like fruity, creamy, caffeine-free, or bold and we will suggest drinks to start from.</p>
+    </div>
+{% endif %}
+{% if menu_ai_oob %}
+    <div id="menu-hero-ai-reco-row" hx-swap-oob="innerHTML">
+        {% include "orders/partials/menu_hero_recommendation_cards.html" with hero_recommendation_cards=menu_ai_hero_cards %}
     </div>
 {% endif %}

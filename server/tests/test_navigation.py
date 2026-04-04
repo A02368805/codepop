@@ -63,16 +63,18 @@ class NavigationSelectorTests(TestCase):
         nav = build_navigation(AnonymousUser())
         brand = build_brandmark(AnonymousUser())
 
-        self.assertEqual(self._labels(nav), ["Stores", "Support", "Sign In", "Sign up"])
         self.assertEqual(
-            self._item_for_label(nav, "Stores")["url"], reverse("stores:index")
+            self._labels(nav), ["Browse Drinks", "Help", "Sign In", "Create Account"]
         )
         self.assertEqual(
-            self._item_for_label(nav, "Support")["url"], reverse("support:index")
+            self._item_for_label(nav, "Browse Drinks")["url"], reverse("stores:index")
+        )
+        self.assertEqual(
+            self._item_for_label(nav, "Help")["url"], reverse("support:index")
         )
         self.assertEqual(self._item_for_label(nav, "Sign In")["url"], reverse("login"))
         self.assertEqual(
-            self._item_for_label(nav, "Sign up")["url"], reverse("register")
+            self._item_for_label(nav, "Create Account")["url"], reverse("register")
         )
         self.assertTrue(brand["is_clickable"])
         self.assertEqual(brand["url"], reverse("home"))
@@ -83,26 +85,34 @@ class NavigationSelectorTests(TestCase):
 
         self.assertEqual(
             self._labels(nav),
-            ["Stores", "Orders", "Cart", "Support", "Notifications", "Log out"],
+            [
+                "Browse Drinks",
+                "My Orders",
+                "Cart",
+                "Favorites",
+                "Help",
+                "Updates",
+                "Log out",
+            ],
         )
         self.assertEqual(
-            self._item_for_label(nav, "Stores")["url"], reverse("stores:index")
+            self._item_for_label(nav, "Browse Drinks")["url"], reverse("stores:index")
         )
         self.assertEqual(
-            self._item_for_label(nav, "Orders")["url"], reverse("orders:history")
+            self._item_for_label(nav, "My Orders")["url"], reverse("orders:history")
         )
         self.assertEqual(
             self._item_for_label(nav, "Cart")["url"], reverse("orders:cart")
         )
         self.assertEqual(
-            self._item_for_label(nav, "Support")["url"], reverse("support:index")
+            self._item_for_label(nav, "Help")["url"], reverse("support:index")
         )
         self.assertEqual(
-            self._item_for_label(nav, "Notifications")["url"],
+            self._item_for_label(nav, "Updates")["url"],
             reverse("notifications:index"),
         )
         self.assertEqual(
-            self._item_for_label(nav, "Notifications")["icon"],
+            self._item_for_label(nav, "Updates")["icon"],
             "notification",
         )
         self.assertTrue(brand["is_clickable"])
@@ -122,7 +132,7 @@ class NavigationSelectorTests(TestCase):
                 "Maintenance",
                 "Order Queue",
                 "Analytics",
-                "Notifications",
+                "Updates",
                 "Log out",
             ],
         )
@@ -143,7 +153,7 @@ class NavigationSelectorTests(TestCase):
                 "Imports",
                 "Sync",
                 "Analytics",
-                "Notifications",
+                "Updates",
                 "Log out",
             ],
         )
@@ -157,7 +167,7 @@ class NavigationSelectorTests(TestCase):
 
         self.assertEqual(
             self._labels(nav),
-            ["Dashboard", "Maintenance", "Imports", "Notifications", "Log out"],
+            ["Dashboard", "Maintenance", "Imports", "Updates", "Log out"],
         )
         self.assertEqual(
             self._item_for_label(nav, "Dashboard")["url"],
@@ -174,7 +184,7 @@ class NavigationSelectorTests(TestCase):
                 "Inventory",
                 "Team",
                 "Analytics",
-                "Notifications",
+                "Updates",
                 "Sync",
                 "Log out",
             ],
@@ -196,7 +206,7 @@ class NavigationSelectorTests(TestCase):
                 "Order Queue",
                 "Supply Hubs",
                 "Imports",
-                "Notifications",
+                "Updates",
                 "Sync",
                 "Log out",
             ],

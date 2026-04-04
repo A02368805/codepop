@@ -215,7 +215,7 @@ class PromptFourIntegrationTests(TestCase):
         )
         order.refresh_from_db()
         self.assertTrue(order.locker_number.startswith("L"))
-        self.assertRegex(order.locker_code, r"^\d{2}-\d{3}$")
+        self.assertRegex(order.locker_code, r"^\d{3}$")
 
     def test_sync_workspace_is_region_scoped_and_notification_mark_read_requires_login(
         self,

@@ -1,7 +1,7 @@
 from datetime import date
 
 from apps.orders.models import Order
-from apps.orders.selectors import authorize_guest_lookup, user_can_view_order
+from apps.orders.selectors import authorize_guest_order_access, user_can_view_order
 from apps.stores.selectors import scoped_region_store_options, stores_visible_to_user
 from apps.users.models import User
 from apps.users.permissions import RoleRequiredMixin
@@ -120,7 +120,7 @@ class CheckoutSuccessView(View):
         if order.order_type == Order.OrderType.GUEST and hasattr(
             order, "guest_contact"
         ):
-            authorize_guest_lookup(request.session, order.guest_contact.lookup_code)
+            authorize_guest_order_access(request.session, order)
         messages.success(request, "Payment completed successfully.")
         return redirect("orders:confirmation", order_code=order.public_order_code)
 
@@ -132,7 +132,7 @@ class CheckoutCancelView(View):
         if order.order_type == Order.OrderType.GUEST and hasattr(
             order, "guest_contact"
         ):
-            authorize_guest_lookup(request.session, order.guest_contact.lookup_code)
+            authorize_guest_order_access(request.session, order)
         if order.status == Order.Status.PAYMENT_PENDING:
             record_payment_failure(
                 order,
