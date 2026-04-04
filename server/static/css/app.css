@@ -1927,6 +1927,14 @@ h3 {
     object-fit: cover;
 }
 
+.map-card iframe {
+    display: block;
+    width: 100%;
+    aspect-ratio: 16 / 9;
+    border: 0;
+    background: #e9edf3;
+}
+
 .map-card--fallback {
     display: grid;
     place-items: center;

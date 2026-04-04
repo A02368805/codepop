@@ -2,7 +2,12 @@ import uuid
 
 from django.db import models
 
-from .location import apple_maps_url, google_maps_url, mapbox_static_map_url
+from .location import (
+    apple_maps_url,
+    google_maps_embed_url,
+    google_maps_url,
+    mapbox_static_map_url,
+)
 
 
 class Region(models.Model):
@@ -77,4 +82,12 @@ class Store(models.Model):
         return mapbox_static_map_url(
             latitude=self.latitude,
             longitude=self.longitude,
+        )
+
+    @property
+    def pickup_map_embed_url(self) -> str:
+        return google_maps_embed_url(
+            latitude=self.latitude,
+            longitude=self.longitude,
+            address=self.full_address,
         )
