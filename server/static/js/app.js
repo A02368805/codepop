@@ -8,6 +8,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
     initStoreRecommendation();
     initDrinkBuilder();
+    initPreferenceProfile();
     initMenuAiAssistant();
     initHomeHeroCarousel();
     initHomeDrinkBrowser();
@@ -706,6 +707,36 @@ function initHomeDrinkBrowser() {
             setActiveLink(hash);
         }
     });
+}
+
+function initPreferenceProfile() {
+    const preferencesForm = document.querySelector(".preferences-form");
+    if (!preferencesForm) {
+        return;
+    }
+
+    const syncSelectionState = () => {
+        preferencesForm.querySelectorAll(".choice-card").forEach((card) => {
+            const input = card.querySelector("input[type='checkbox'], input[type='radio']");
+            if (!input) {
+                return;
+            }
+            card.classList.toggle("is-selected", input.checked);
+        });
+    };
+
+    preferencesForm.addEventListener("change", (event) => {
+        const target = event.target;
+        if (!(target instanceof HTMLInputElement)) {
+            return;
+        }
+        if (target.type !== "checkbox" && target.type !== "radio") {
+            return;
+        }
+        syncSelectionState();
+    });
+
+    syncSelectionState();
 }
 
 function getCheckedLabels(form, fieldName) {
