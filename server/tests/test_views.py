@@ -51,7 +51,13 @@ class CustomerOrderingViewTests(TestCase):
     @classmethod
     def setUpTestData(cls):
         cls.region = make_region(code="C", name="Logan, UT")
+        cls.region_alt = make_region(code="G", name="Boise, ID")
         cls.store = make_store(store_code="C001", region=cls.region, name="Logan Main")
+        cls.store_alt = make_store(
+            store_code="G001",
+            region=cls.region_alt,
+            name="Boise Central",
+        )
         cls.customer = make_user(
             email="customer-flow@test.local",
             preferred_store=cls.store,
@@ -248,6 +254,7 @@ class CustomerOrderingViewTests(TestCase):
         response = self.client.post(
             reverse("account-preferences"),
             {
+                "preferred_store": self.store_alt.id,
                 "favorite_sodas": ["sprite", "root-beer"],
                 "favorite_syrups": ["strawberry", "coconut"],
                 "favorite_add_ins": ["cream", "coconut-cream"],
@@ -257,11 +264,20 @@ class CustomerOrderingViewTests(TestCase):
                 "sweetness_preference": "sweet",
                 "adventurousness_preference": "balanced",
             },
-            follow=True,
+            follow=False,
         )
 
         self.customer.refresh_from_db()
-        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.status_code, 302)
+        self.assertEqual(response.headers["Location"], reverse("dashboard"))
+        follow_response = self.client.get(response.headers["Location"], follow=True)
+        self.assertEqual(follow_response.status_code, 200)
+        self.assertContains(
+            follow_response,
+            "Preferences saved. Your taste profile is now applied across FloatStack.",
+        )
+        self.assertEqual(self.customer.preferred_store_id, self.store_alt.id)
+        self.assertEqual(self.customer.default_region_id, self.region_alt.id)
         self.assertEqual(self.customer.sweetness_preference, "sweet")
         self.assertEqual(
             self.customer.adventurousness_preference,
@@ -321,6 +337,34 @@ class CustomerOrderingViewTests(TestCase):
             set(payload["selection"]["syrups"]).intersection({"strawberry", "coconut"})
         )
         self.assertIn("assistant_html", payload)
+
+    def test_account_preferences_save_defaults_missing_style_fields(self):
+        self.client.force_login(self.customer)
+        response = self.client.post(
+            reverse("account-preferences"),
+            {
+                "preferred_store": self.store.id,
+                "favorite_sodas": ["sprite"],
+                "favorite_syrups": [],
+                "favorite_add_ins": [],
+                "favorite_ice_creams": [],
+                "disliked_ingredients": [],
+                "dietary_preferences": [],
+            },
+            follow=False,
+        )
+
+        self.customer.refresh_from_db()
+        self.assertEqual(response.status_code, 302)
+        self.assertEqual(response.headers["Location"], reverse("dashboard"))
+        self.assertEqual(
+            self.customer.sweetness_preference,
+            self.customer.SweetnessPreference.BALANCED,
+        )
+        self.assertEqual(
+            self.customer.adventurousness_preference,
+            self.customer.AdventurousnessPreference.BALANCED,
+        )
 
 
 class DashboardAndHtmxViewTests(TestCase):

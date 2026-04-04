@@ -6,115 +6,103 @@
 <section class="hero hero--landing">
     <div class="hero-copy">
         <p class="eyebrow">FloatStack</p>
-        <h1>Build a soda you actually want, then pick it up fast.</h1>
-        <p class="lede">FloatStack pairs a polished drink builder with store-aware pickup timing, favorites, and operational workflows that stay tightly scoped behind the scenes.</p>
+        {% if can_start_order %}
+            <h1>Build your drink fast with the Drink AI Builder.</h1>
+            <p class="lede">Start a new drink right now, or jump straight to order tracking if you are in a rush.</p>
+        {% else %}
+            <h1>Operations start here.</h1>
+            <p class="lede">Open your dashboard and move through your operational workflow.</p>
+        {% endif %}
         <div class="cta-row">
             {% if can_start_order %}
-                <a class="button button--primary" href="{% url 'stores:index' %}">Build a drink</a>
-                <a class="button button--ghost" href="{% url 'stores:index' %}">Build with AI</a>
+                <a class="button button--primary" href="{% url 'stores:index' %}">Open Drink Builder</a>
+                <a class="button button--ghost" href="{% url 'stores:index' %}">Open Drink AI Builder</a>
+                <a class="button button--ghost" href="{% url 'orders:guest-lookup' %}">Track your order</a>
                 {% if request.user.is_authenticated %}
-                    <a class="button button--ghost" href="{% url 'dashboard' %}">Open your dashboard</a>
+                    <a class="button button--ghost" href="{% url 'dashboard' %}">My dashboard</a>
                 {% else %}
-                    <a class="button button--ghost" href="{% url 'login' %}">Log in</a>
-                    <a class="button button--ghost" href="{% url 'register' %}">Create account</a>
+                    <a class="button button--ghost" href="{% url 'login' %}">Sign in</a>
                 {% endif %}
+                <a class="button button--ghost" href="{% url 'support:index' %}">Customer support</a>
             {% else %}
-                <a class="button button--primary" href="{% url 'dashboard' %}">Open operations dashboard</a>
+                <a class="button button--primary" href="{% url 'dashboard' %}">Open dashboard</a>
                 <a class="button button--ghost" href="{% url 'analytics:index' %}">Review analytics</a>
             {% endif %}
-            <a class="button button--ghost" href="{% url 'orders:guest-lookup' %}">Track a guest order</a>
-            <a class="button button--ghost" href="{% url 'support:index' %}">Customer support</a>
         </div>
     </div>
-    <div class="hero-card hero-card--showcase">
-        <p class="eyebrow">What FloatStack Delivers</p>
-        <ul class="checklist">
-            {% for principle in platform_principles %}
-                <li>{{ principle }}</li>
-            {% endfor %}
-        </ul>
-        <div class="floating-orb floating-orb--one"></div>
-        <div class="floating-orb floating-orb--two"></div>
-    </div>
-</section>
-
-{% if can_start_order %}
-    <section class="page-grid page-grid--sidebar">
-        <div class="panel">
-            <div class="section-heading">
-                <div>
-                    <p class="eyebrow">Start Fast</p>
-                    <h2>Go from homepage to drink builder in two clicks.</h2>
-                </div>
-            </div>
-            <div class="card-grid">
-                <article class="role-card">
-                    <p class="eyebrow">1. Pick a store</p>
-                    <h3>Find the best pickup location</h3>
-                    <p>Use ZIP or address input, your preferred store, and pickup timing to rank the best spot.</p>
-                    <a href="{% url 'stores:index' %}">Choose a store</a>
-                </article>
-                <article class="role-card">
-                    <p class="eyebrow">2. Build your drink</p>
-                    <h3>Customize a polished signature</h3>
-                    <p>Adjust size, soda, flavors, and add-ins while the builder preview and assistant update with you.</p>
-                    <a href="{% url 'stores:index' %}">Start building</a>
-                </article>
-                <article class="role-card">
-                    <p class="eyebrow">3. Track pickup</p>
-                    <h3>Stay updated after checkout</h3>
-                    <p>Guests get lookup access. Account users get favorites, preferences, recommendations, and history.</p>
-                    <a href="{% url 'orders:guest-lookup' %}">Track an order</a>
-                </article>
-            </div>
-        </div>
-        <div class="panel">
-            <p class="eyebrow">Account Benefits</p>
+    <div class="hero-card">
+        {% if can_start_order %}
+            <p class="eyebrow">Quick Actions</p>
             <div class="surface-list">
                 <article class="list-card">
                     <div class="list-card__main">
-                        <h3>Save favorites</h3>
-                        <p class="muted">Rebuild your go-to drink without re-entering every ingredient.</p>
+                        <h3>Start with AI builder</h3>
+                        <p class="muted">Open stores, pick a location, and build your drink with AI guidance.</p>
+                    </div>
+                    <div class="list-card__actions">
+                        <a class="button button--ghost" href="{% url 'stores:index' %}">Start building</a>
                     </div>
                 </article>
                 <article class="list-card">
                     <div class="list-card__main">
-                        <h3>Guide recommendations</h3>
-                        <p class="muted">Structured preferences help FloatStack assist instead of guessing.</p>
+                        <h3>Track your order</h3>
+                        <p class="muted">Use your order code to check status immediately.</p>
                     </div>
-                </article>
-                <article class="list-card">
-                    <div class="list-card__main">
-                        <h3>Keep order history</h3>
-                        <p class="muted">Track current pickups and reorder from your account workspace.</p>
+                    <div class="list-card__actions">
+                        <a class="button button--ghost" href="{% url 'orders:guest-lookup' %}">Track now</a>
                     </div>
                 </article>
             </div>
-        </div>
-    </section>
-{% endif %}
+        {% else %}
+            <p class="eyebrow">Operations</p>
+            <div class="surface-list">
+                <article class="list-card">
+                    <div class="list-card__main">
+                        <h3>Role dashboard</h3>
+                        <p class="muted">Open the dashboard assigned to your role.</p>
+                    </div>
+                    <div class="list-card__actions">
+                        <a class="button button--ghost" href="{% url 'dashboard' %}">Open dashboard</a>
+                    </div>
+                </article>
+                <article class="list-card">
+                    <div class="list-card__main">
+                        <h3>Live analytics</h3>
+                        <p class="muted">Review operational metrics and trends.</p>
+                    </div>
+                    <div class="list-card__actions">
+                        <a class="button button--ghost" href="{% url 'analytics:index' %}">Open analytics</a>
+                    </div>
+                </article>
+            </div>
+        {% endif %}
+    </div>
+</section>
 
 <section class="panel">
     <div class="section-heading">
         <div>
-            <p class="eyebrow">Role Workspaces</p>
-            <h2>Every dashboard stays scoped to the user who signed in.</h2>
+            <p class="eyebrow">About FloatStack</p>
+            <h2>What we do and what we strive to improve.</h2>
         </div>
-        <p class="lede-small">Managers stay store-scoped, regional teams stay region-scoped, and super admins get the full oversight layer.</p>
+        <p class="lede-small">The top section is for immediate action. This section gives context on the product direction and operating goals.</p>
     </div>
     <div class="card-grid">
-        {% for card in role_cards %}
-            <article class="role-card">
-                <p class="eyebrow">{{ card.title }}</p>
-                <h3>{{ card.title }} Workspace</h3>
-                <p>{{ card.description }}</p>
-                {% if request.user.is_authenticated %}
-                    <a href="{% url card.dashboard_route %}">Open workspace</a>
-                {% else %}
-                    <a href="{% url 'login' %}">Sign in for access</a>
-                {% endif %}
-            </article>
-        {% endfor %}
+        <article class="role-card">
+            <p class="eyebrow">What We Do</p>
+            <h3>Unified drink ordering platform</h3>
+            <p>We combine drink customization, order tracking, and support in one customer workflow while keeping store operations connected behind the scenes.</p>
+        </article>
+        <article class="role-card">
+            <p class="eyebrow">What We Prioritize</p>
+            <h3>Fast, clear customer experience</h3>
+            <p>Customers should be able to place or track an order quickly, with minimal friction, clear status visibility, and direct access to support.</p>
+        </article>
+        <article class="role-card">
+            <p class="eyebrow">What We Strive For</p>
+            <h3>Reliable operations at scale</h3>
+            <p>Our goal is to support managers, admins, logistics, and repair teams with role-scoped tools that keep stores stocked, machines healthy, and orders moving.</p>
+        </article>
     </div>
 </section>
 {% endblock %}

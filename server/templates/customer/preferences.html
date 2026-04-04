@@ -3,243 +3,210 @@
 {% block title %}Preferences | FloatStack{% endblock %}
 
 {% block content %}
-<section class="hero hero--dashboard">
-    <div>
-        <p class="eyebrow">Taste Profile</p>
-        <h1>Teach FloatStack what you actually like.</h1>
-        <p class="lede">Save multiple favorite sodas, syrups, add-ins, and ingredients to avoid so the builder AI can make smarter choices inside the drink flow.</p>
-    </div>
-    <div class="hero-card">
-        <p class="eyebrow">Account Snapshot</p>
-        <dl class="compact-stats">
-            <div>
-                <dt>Preferred Store</dt>
-                <dd>{{ request.user.preferred_store.name|default:"Not set" }}</dd>
-            </div>
-            <div>
-                <dt>Region</dt>
-                <dd>{{ request.user.default_region.name|default:"Not set" }}</dd>
-            </div>
-            <div>
-                <dt>Saved Signals</dt>
-                <dd>{{ saved_profile_count }}</dd>
-            </div>
-            <div>
-                <dt>AI Builder</dt>
-                <dd>Connected</dd>
-            </div>
-        </dl>
-    </div>
-</section>
-
 <section class="panel">
     <div class="section-heading">
         <div>
-            <p class="eyebrow">Preference Builder</p>
-            <h2>Choose structured flavor signals</h2>
+            <p class="eyebrow">Taste Preferences</p>
+            <h2>Set what to prefer and what to avoid</h2>
         </div>
-        <p class="lede-small">These preferences guide recommendations and AI builder fill-ins, but you can still override anything drink by drink.</p>
+        <p class="lede-small">Configure category preferences to personalize recommendations.</p>
     </div>
 
     <form method="post" class="preferences-form">
         {% csrf_token %}
         {{ form.non_field_errors }}
 
-        <div class="preferences-grid">
-            <section class="preference-panel">
-                <div class="section-heading section-heading--tight">
-                    <div>
-                        <p class="eyebrow">Favorites</p>
-                        <h3>Favorite sodas</h3>
-                    </div>
-                    <p class="muted">Pick every base you want AI to lean toward.</p>
-                </div>
-                {% for group in favorite_soda_cards %}
-                    <div class="ingredient-group ingredient-group--compact">
-                        <div class="ingredient-group__header">
-                            <h4>{{ group.label }}</h4>
-                            <p class="muted">{{ group.description }}</p>
-                        </div>
-                        <div class="choice-grid">
-                            {% for item in group.items %}
-                                <label class="choice-card choice-card--check {% if item.checked %}is-selected{% endif %}">
-                                    <input type="checkbox" name="{{ item.name }}" value="{{ item.value }}" {% if item.checked %}checked{% endif %}>
+        <section class="preference-panel preference-panel--wide preference-toolbar">
+            <label class="field">
+                <span>{{ form.preferred_store.label }}</span>
+                {{ form.preferred_store }}
+            </label>
+            <div class="preference-legend">
+                <span class="pill pill--soft">Prefer = FloatStack suggests more often</span>
+                <span class="pill pill--critical">Avoid = FloatStack filters out when possible</span>
+            </div>
+            {{ form.preferred_store.errors }}
+        </section>
+
+        <div class="preferences-section-grid">
+            <details class="preference-panel preference-panel--wide preference-block">
+                <summary class="preference-block__summary">
+                    <h3>Drinks</h3>
+                    <span class="preference-block__toggle" aria-hidden="true"></span>
+                </summary>
+                <div class="preference-block__content">
+                <div class="preference-block__columns">
+                    <div class="preference-lane preference-lane--prefer">
+                        <p class="preference-lane__title">Prefer</p>
+                        <div class="preference-chip-grid">
+                            {% for item in favorite_soda_tokens %}
+                                <label class="choice-card choice-card--check choice-card--compact choice-card--favorite {% if item.checked %}is-selected{% endif %}" title="{{ item.label }}">
+                                    <input type="checkbox" name="{{ item.name }}" value="{{ item.value }}" data-token="{{ item.value }}" data-pref-role="favorite" {% if item.checked %}checked{% endif %}>
                                     <span class="choice-card__label">{{ item.label }}</span>
-                                    <span class="choice-card__meta">{{ item.description }}</span>
+                                </label>
+                            {% endfor %}
+                        </div>
+                        {{ form.favorite_sodas.errors }}
+                    </div>
+                    <div class="preference-lane preference-lane--avoid">
+                        <p class="preference-lane__title">Avoid</p>
+                        <div class="preference-chip-grid">
+                            {% for item in avoid_soda_tokens %}
+                                <label class="choice-card choice-card--check choice-card--compact choice-card--avoid {% if item.checked %}is-selected{% endif %}" title="{{ item.label }}">
+                                    <input type="checkbox" name="{{ item.name }}" value="{{ item.value }}" data-token="{{ item.value }}" data-pref-role="avoid" {% if item.checked %}checked{% endif %}>
+                                    <span class="choice-card__label">{{ item.label }}</span>
                                 </label>
                             {% endfor %}
                         </div>
                     </div>
-                {% endfor %}
-                {{ form.favorite_sodas.errors }}
-            </section>
-
-            <section class="preference-panel">
-                <div class="section-heading section-heading--tight">
-                    <div>
-                        <p class="eyebrow">Favorites</p>
-                        <h3>Favorite syrups</h3>
-                    </div>
-                    <p class="muted">These shape AI flavor layering directly in the builder.</p>
                 </div>
-                {% for group in favorite_syrup_cards %}
-                    <div class="ingredient-group ingredient-group--compact">
-                        <div class="ingredient-group__header">
-                            <h4>{{ group.label }}</h4>
-                            <p class="muted">{{ group.description }}</p>
-                        </div>
-                        <div class="choice-grid">
-                            {% for item in group.items %}
-                                <label class="choice-card choice-card--check {% if item.checked %}is-selected{% endif %}">
-                                    <input type="checkbox" name="{{ item.name }}" value="{{ item.value }}" {% if item.checked %}checked{% endif %}>
+                </div>
+            </details>
+
+            <details class="preference-panel preference-panel--wide preference-block">
+                <summary class="preference-block__summary">
+                    <h3>Syrups</h3>
+                    <span class="preference-block__toggle" aria-hidden="true"></span>
+                </summary>
+                <div class="preference-block__content">
+                <div class="preference-block__columns">
+                    <div class="preference-lane preference-lane--prefer">
+                        <p class="preference-lane__title">Prefer</p>
+                        <div class="preference-chip-grid">
+                            {% for item in favorite_syrup_tokens %}
+                                <label class="choice-card choice-card--check choice-card--compact choice-card--favorite {% if item.checked %}is-selected{% endif %}" title="{{ item.label }}">
+                                    <input type="checkbox" name="{{ item.name }}" value="{{ item.value }}" data-token="{{ item.value }}" data-pref-role="favorite" {% if item.checked %}checked{% endif %}>
                                     <span class="choice-card__label">{{ item.label }}</span>
-                                    <span class="choice-card__meta">{{ item.description }}</span>
+                                </label>
+                            {% endfor %}
+                        </div>
+                        {{ form.favorite_syrups.errors }}
+                    </div>
+                    <div class="preference-lane preference-lane--avoid">
+                        <p class="preference-lane__title">Avoid</p>
+                        <div class="preference-chip-grid">
+                            {% for item in avoid_syrup_tokens %}
+                                <label class="choice-card choice-card--check choice-card--compact choice-card--avoid {% if item.checked %}is-selected{% endif %}" title="{{ item.label }}">
+                                    <input type="checkbox" name="{{ item.name }}" value="{{ item.value }}" data-token="{{ item.value }}" data-pref-role="avoid" {% if item.checked %}checked{% endif %}>
+                                    <span class="choice-card__label">{{ item.label }}</span>
                                 </label>
                             {% endfor %}
                         </div>
                     </div>
-                {% endfor %}
-                {{ form.favorite_syrups.errors }}
-            </section>
-
-            <section class="preference-panel">
-                <div class="section-heading section-heading--tight">
-                    <div>
-                        <p class="eyebrow">Favorites</p>
-                        <h3>Favorite add-ins</h3>
-                    </div>
-                    <p class="muted">Creamy finishes, fresh garnishes, and texture add-ons all count.</p>
                 </div>
-                {% for group in favorite_add_in_cards %}
-                    <div class="ingredient-group ingredient-group--compact">
-                        <div class="ingredient-group__header">
-                            <h4>{{ group.label }}</h4>
-                            <p class="muted">{{ group.description }}</p>
-                        </div>
-                        <div class="choice-grid">
-                            {% for item in group.items %}
-                                <label class="choice-card choice-card--check {% if item.checked %}is-selected{% endif %}">
-                                    <input type="checkbox" name="{{ item.name }}" value="{{ item.value }}" {% if item.checked %}checked{% endif %}>
+                </div>
+            </details>
+
+            <details class="preference-panel preference-panel--wide preference-block">
+                <summary class="preference-block__summary">
+                    <h3>Add-ins</h3>
+                    <span class="preference-block__toggle" aria-hidden="true"></span>
+                </summary>
+                <div class="preference-block__content">
+                <div class="preference-block__columns">
+                    <div class="preference-lane preference-lane--prefer">
+                        <p class="preference-lane__title">Prefer</p>
+                        <div class="preference-chip-grid">
+                            {% for item in favorite_add_in_tokens %}
+                                <label class="choice-card choice-card--check choice-card--compact choice-card--favorite {% if item.checked %}is-selected{% endif %}" title="{{ item.label }}">
+                                    <input type="checkbox" name="{{ item.name }}" value="{{ item.value }}" data-token="{{ item.value }}" data-pref-role="favorite" {% if item.checked %}checked{% endif %}>
                                     <span class="choice-card__label">{{ item.label }}</span>
-                                    <span class="choice-card__meta">{{ item.description }}</span>
+                                </label>
+                            {% endfor %}
+                        </div>
+                        {{ form.favorite_add_ins.errors }}
+                    </div>
+                    <div class="preference-lane preference-lane--avoid">
+                        <p class="preference-lane__title">Avoid</p>
+                        <div class="preference-chip-grid">
+                            {% for item in avoid_add_in_tokens %}
+                                <label class="choice-card choice-card--check choice-card--compact choice-card--avoid {% if item.checked %}is-selected{% endif %}" title="{{ item.label }}">
+                                    <input type="checkbox" name="{{ item.name }}" value="{{ item.value }}" data-token="{{ item.value }}" data-pref-role="avoid" {% if item.checked %}checked{% endif %}>
+                                    <span class="choice-card__label">{{ item.label }}</span>
                                 </label>
                             {% endfor %}
                         </div>
                     </div>
-                {% endfor %}
-                {{ form.favorite_add_ins.errors }}
-            </section>
-
-            <section class="preference-panel">
-                <div class="section-heading section-heading--tight">
-                    <div>
-                        <p class="eyebrow">Favorites</p>
-                        <h3>Favorite ice cream</h3>
-                    </div>
-                    <p class="muted">Optional float toppers for richer AI builds.</p>
                 </div>
-                {% for group in favorite_ice_cream_cards %}
-                    <div class="ingredient-group ingredient-group--compact">
-                        <div class="ingredient-group__header">
-                            <h4>{{ group.label }}</h4>
-                            <p class="muted">{{ group.description }}</p>
-                        </div>
-                        <div class="choice-grid choice-grid--three">
-                            {% for item in group.items %}
-                                <label class="choice-card choice-card--check {% if item.checked %}is-selected{% endif %}">
-                                    <input type="checkbox" name="{{ item.name }}" value="{{ item.value }}" {% if item.checked %}checked{% endif %}>
+                </div>
+            </details>
+
+            <details class="preference-panel preference-panel--wide preference-block">
+                <summary class="preference-block__summary">
+                    <h3>Ice cream</h3>
+                    <span class="preference-block__toggle" aria-hidden="true"></span>
+                </summary>
+                <div class="preference-block__content">
+                <div class="preference-block__columns">
+                    <div class="preference-lane preference-lane--prefer">
+                        <p class="preference-lane__title">Prefer</p>
+                        <div class="preference-chip-grid">
+                            {% for item in favorite_ice_cream_tokens %}
+                                <label class="choice-card choice-card--check choice-card--compact choice-card--favorite {% if item.checked %}is-selected{% endif %}" title="{{ item.label }}">
+                                    <input type="checkbox" name="{{ item.name }}" value="{{ item.value }}" data-token="{{ item.value }}" data-pref-role="favorite" {% if item.checked %}checked{% endif %}>
                                     <span class="choice-card__label">{{ item.label }}</span>
-                                    <span class="choice-card__meta">{{ item.description }}</span>
+                                </label>
+                            {% endfor %}
+                        </div>
+                        {{ form.favorite_ice_creams.errors }}
+                    </div>
+                    <div class="preference-lane preference-lane--avoid">
+                        <p class="preference-lane__title">Avoid</p>
+                        <div class="preference-chip-grid">
+                            {% for item in avoid_ice_cream_tokens %}
+                                <label class="choice-card choice-card--check choice-card--compact choice-card--avoid {% if item.checked %}is-selected{% endif %}" title="{{ item.label }}">
+                                    <input type="checkbox" name="{{ item.name }}" value="{{ item.value }}" data-token="{{ item.value }}" data-pref-role="avoid" {% if item.checked %}checked{% endif %}>
+                                    <span class="choice-card__label">{{ item.label }}</span>
                                 </label>
                             {% endfor %}
                         </div>
                     </div>
-                {% endfor %}
-                {{ form.favorite_ice_creams.errors }}
-            </section>
-
-            <section class="preference-panel preference-panel--wide">
-                <div class="section-heading section-heading--tight">
-                    <div>
-                        <p class="eyebrow">Avoidances</p>
-                        <h3>Ingredients to avoid</h3>
-                    </div>
-                    <p class="muted">FloatStack will try to steer away from these when recommending and auto-filling a drink.</p>
                 </div>
-                {% for group in disliked_ingredient_cards %}
-                    <div class="ingredient-group ingredient-group--compact">
-                        <div class="ingredient-group__header">
-                            <h4>{{ group.label }}</h4>
-                            <p class="muted">{{ group.description }}</p>
-                        </div>
-                        <div class="choice-grid">
-                            {% for item in group.items %}
-                                <label class="choice-card choice-card--check {% if item.checked %}is-selected{% endif %}">
-                                    <input type="checkbox" name="{{ item.name }}" value="{{ item.value }}" {% if item.checked %}checked{% endif %}>
-                                    <span class="choice-card__label">{{ item.label }}</span>
-                                    <span class="choice-card__meta">{{ item.description }}</span>
-                                </label>
-                            {% endfor %}
-                        </div>
-                    </div>
-                {% endfor %}
-                {{ form.disliked_ingredients.errors }}
-            </section>
-
-            <section class="preference-panel">
-                <div class="section-heading section-heading--tight">
-                    <div>
-                        <p class="eyebrow">Guidance</p>
-                        <h3>Dietary and avoidances</h3>
-                    </div>
                 </div>
-                <div class="choice-grid choice-grid--three">
-                    {% for item in dietary_cards %}
-                        <label class="choice-card choice-card--check {% if item.checked %}is-selected{% endif %}">
-                            <input type="checkbox" name="{{ item.name }}" value="{{ item.value }}" {% if item.checked %}checked{% endif %}>
-                            <span class="choice-card__label">{{ item.label }}</span>
-                        </label>
-                    {% endfor %}
-                </div>
-                {{ form.dietary_preferences.errors }}
-            </section>
-
-            <section class="preference-panel">
-                <div class="section-heading section-heading--tight">
-                    <div>
-                        <p class="eyebrow">Style</p>
-                        <h3>Sweetness</h3>
-                    </div>
-                </div>
-                <div class="choice-grid choice-grid--segmented">
-                    {% for option in sweetness_options %}
-                        <label class="choice-card choice-card--segmented {% if option.checked %}is-selected{% endif %}">
-                            <input type="radio" name="sweetness_preference" value="{{ option.value }}" {% if option.checked %}checked{% endif %}>
-                            <span class="choice-card__label">{{ option.label }}</span>
-                        </label>
-                    {% endfor %}
-                </div>
-                {{ form.sweetness_preference.errors }}
-            </section>
-
-            <section class="preference-panel">
-                <div class="section-heading section-heading--tight">
-                    <div>
-                        <p class="eyebrow">Style</p>
-                        <h3>Adventurousness</h3>
-                    </div>
-                </div>
-                <div class="choice-grid choice-grid--segmented">
-                    {% for option in adventurousness_options %}
-                        <label class="choice-card choice-card--segmented {% if option.checked %}is-selected{% endif %}">
-                            <input type="radio" name="adventurousness_preference" value="{{ option.value }}" {% if option.checked %}checked{% endif %}>
-                            <span class="choice-card__label">{{ option.label }}</span>
-                        </label>
-                    {% endfor %}
-                </div>
-                {{ form.adventurousness_preference.errors }}
-            </section>
+            </details>
         </div>
+
+        {{ form.disliked_ingredients.errors }}
+
+        <details class="preference-panel preference-panel--wide preference-advanced">
+            <summary>Advanced filters</summary>
+            <div class="preferences-aux-grid">
+                <div>
+                    <h4>Dietary filters</h4>
+                    <div class="choice-grid choice-grid--three">
+                        {% for item in dietary_cards %}
+                            <label class="choice-card choice-card--check choice-card--compact {% if item.checked %}is-selected{% endif %}">
+                                <input type="checkbox" name="{{ item.name }}" value="{{ item.value }}" {% if item.checked %}checked{% endif %}>
+                                <span class="choice-card__label">{{ item.label }}</span>
+                            </label>
+                        {% endfor %}
+                    </div>
+                    {{ form.dietary_preferences.errors }}
+                </div>
+                <div>
+                    <h4>Sweetness</h4>
+                    <div class="choice-grid choice-grid--segmented">
+                        {% for option in sweetness_options %}
+                            <label class="choice-card choice-card--segmented choice-card--compact {% if option.checked %}is-selected{% endif %}">
+                                <input type="radio" name="sweetness_preference" value="{{ option.value }}" {% if option.checked %}checked{% endif %}>
+                                <span class="choice-card__label">{{ option.label }}</span>
+                            </label>
+                        {% endfor %}
+                    </div>
+                    {{ form.sweetness_preference.errors }}
+                    <h4>Adventurousness</h4>
+                    <div class="choice-grid choice-grid--segmented">
+                        {% for option in adventurousness_options %}
+                            <label class="choice-card choice-card--segmented choice-card--compact {% if option.checked %}is-selected{% endif %}">
+                                <input type="radio" name="adventurousness_preference" value="{{ option.value }}" {% if option.checked %}checked{% endif %}>
+                                <span class="choice-card__label">{{ option.label }}</span>
+                            </label>
+                        {% endfor %}
+                    </div>
+                    {{ form.adventurousness_preference.errors }}
+                </div>
+            </div>
+        </details>
 
         <div class="action-row">
             <button class="button button--primary" type="submit">Save preferences</button>

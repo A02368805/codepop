@@ -79,6 +79,12 @@ class RegistrationForm(forms.ModelForm):
 
 
 class PreferenceProfileForm(forms.Form):
+    preferred_store = forms.ModelChoiceField(
+        queryset=Store.objects.filter(is_active=True).order_by("name"),
+        required=False,
+        empty_label="No preferred store",
+        help_text="Set a default store so recommendations and flows start in the right place.",
+    )
     favorite_sodas = forms.MultipleChoiceField(
         required=False,
         choices=[(key, value["label"]) for key, value in SODA_OPTIONS.items()],
@@ -117,10 +123,14 @@ class PreferenceProfileForm(forms.Form):
     )
     sweetness_preference = forms.ChoiceField(
         choices=SWEETNESS_PREFERENCE_CHOICES,
+        required=False,
+        initial=User.SweetnessPreference.BALANCED,
         help_text="Tell FloatStack whether to keep recommendations lighter or sweeter.",
     )
     adventurousness_preference = forms.ChoiceField(
         choices=ADVENTUROUSNESS_PREFERENCE_CHOICES,
+        required=False,
+        initial=User.AdventurousnessPreference.BALANCED,
         help_text="Classic keeps things safer. Adventurous opens the door to bolder combinations.",
     )
 
@@ -135,9 +145,26 @@ class PreferenceProfileForm(forms.Form):
             favorite_sodas | favorite_syrups | favorite_add_ins | favorite_ice_creams
         ) & disliked_ingredients
         if overlap:
-            raise forms.ValidationError(
-                f"You selected the same option in both lists: {', '.join(sorted(overlap))}."
+            cleaned_data["disliked_ingredients"] = sorted(
+                disliked_ingredients - overlap
             )
+
+        sweetness = cleaned_data.get("sweetness_preference")
+        adventurousness = cleaned_data.get("adventurousness_preference")
+        sweetness_values = {value for value, _ in SWEETNESS_PREFERENCE_CHOICES}
+        adventurousness_values = {
+            value for value, _ in ADVENTUROUSNESS_PREFERENCE_CHOICES
+        }
+        cleaned_data["sweetness_preference"] = (
+            sweetness
+            if sweetness in sweetness_values
+            else User.SweetnessPreference.BALANCED
+        )
+        cleaned_data["adventurousness_preference"] = (
+            adventurousness
+            if adventurousness in adventurousness_values
+            else User.AdventurousnessPreference.BALANCED
+        )
         return cleaned_data
 
 

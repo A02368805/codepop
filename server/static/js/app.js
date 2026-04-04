@@ -10,6 +10,7 @@ document.addEventListener("DOMContentLoaded", () => {
     initDrinkBuilder();
     initMenuAiAssistant();
     initSupportChat();
+    initPreferenceSelection();
 });
 
 function getCsrfToken() {
@@ -467,6 +468,55 @@ function initSupportChat() {
         }
         preservedScrollY = null;
         scrollThreadToBottom();
+    });
+}
+
+function initPreferenceSelection() {
+    const form = document.querySelector(".preferences-form");
+    if (!form) {
+        return;
+    }
+
+    const syncInputGroup = (name) => {
+        if (!name) {
+            return;
+        }
+        form.querySelectorAll(`.choice-card input[name="${name}"]`).forEach((input) => {
+            const card = input.closest(".choice-card");
+            if (card) {
+                card.classList.toggle("is-selected", input.checked);
+            }
+        });
+    };
+
+    form.querySelectorAll(".choice-card input").forEach((input) => {
+        syncInputGroup(input.name);
+    });
+
+    form.addEventListener("change", (event) => {
+        const input = event.target.closest(".choice-card input");
+        if (!input) {
+            return;
+        }
+
+        const token = input.dataset.token || "";
+        const role = input.dataset.prefRole || "";
+        if (input.checked && token && role) {
+            form.querySelectorAll(".choice-card input[data-token]").forEach((peer) => {
+                if (peer === input) {
+                    return;
+                }
+                if (
+                    (peer.dataset.token || "") === token &&
+                    (peer.dataset.prefRole || "") &&
+                    peer.dataset.prefRole !== role
+                ) {
+                    peer.checked = false;
+                    syncInputGroup(peer.name);
+                }
+            });
+        }
+        syncInputGroup(input.name);
     });
 }
 

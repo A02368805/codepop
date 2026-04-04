@@ -392,7 +392,13 @@ class MenuAiAssistantViewTests(TestCase):
                     "source": "anthropic",
                     "ai_generated": True,
                     "menu_key": "berry-burst",
-                    "recipe": {"name": "Citrus Sprite Twist"},
+                    "recipe": {
+                        "name": "Citrus Sprite Twist",
+                        "base_soda": "sprite",
+                        "syrups": ["strawberry", "coconut"],
+                        "add_ins": ["cream"],
+                        "ice_cream": "scoop-vanilla",
+                    },
                 },
             },
             "can_save": True,
@@ -408,6 +414,12 @@ class MenuAiAssistantViewTests(TestCase):
         )
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, "New drink record")
+        self.assertContains(response, "Build from AI drink")
+        self.assertContains(response, "prefill=1")
+        self.assertContains(response, "soda=sprite")
+        self.assertContains(response, "syrups=strawberry%2Ccoconut")
+        self.assertContains(response, "add_ins=cream")
+        self.assertContains(response, "ice_cream=scoop-vanilla")
         self.assertContains(response, "Save this drink")
 
         save_response = self.client.post(

@@ -95,6 +95,45 @@ def _bound_list(form, field_name, fallback=None):
     return list(form.initial.get(field_name, fallback) or fallback)
 
 
+def _parse_prefill_tokens(value, allowed_tokens):
+    if not value:
+        return []
+    parsed = []
+    for token in str(value).split(","):
+        cleaned = token.strip().lower()
+        if cleaned and cleaned in allowed_tokens and cleaned not in parsed:
+            parsed.append(cleaned)
+    return parsed
+
+
+def _build_customize_prefill_initial(request):
+    if str(request.GET.get("prefill", "")).strip() != "1":
+        return {}
+
+    size = str(request.GET.get("size", "")).strip().lower()
+    soda = str(request.GET.get("soda", "")).strip().lower()
+    ice_cream = str(request.GET.get("ice_cream", "")).strip().lower()
+    initial = {}
+
+    if size in SIZE_LABELS:
+        initial["size"] = size
+    if soda in SODA_OPTIONS:
+        initial["soda"] = soda
+    if ice_cream in ICE_CREAM_OPTIONS:
+        initial["ice_cream"] = ice_cream
+
+    initial["syrups"] = _parse_prefill_tokens(
+        request.GET.get("syrups", ""),
+        set(SYRUP_OPTIONS.keys()),
+    )
+    initial["add_ins"] = _parse_prefill_tokens(
+        request.GET.get("add_ins", ""),
+        set(ADD_IN_OPTIONS.keys()),
+    )
+
+    return initial
+
+
 def _build_choice_cards(*, name, groups, selected_values, multiple):
     selected_set = set(selected_values)
     payload = []
@@ -396,9 +435,13 @@ class CustomizeDrinkView(CustomerOrderingRequiredMixin, TemplateView):
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        form = kwargs.get("form") or DrinkCustomizationForm(
-            drink_slug=self.menu_item["slug"]
-        )
+        form = kwargs.get("form")
+        if not form:
+            prefill_initial = _build_customize_prefill_initial(self.request)
+            form = DrinkCustomizationForm(
+                drink_slug=self.menu_item["slug"],
+                initial=prefill_initial or None,
+            )
         builder_context = _build_builder_context(form=form, menu_item=self.menu_item)
         context.update(
             {
