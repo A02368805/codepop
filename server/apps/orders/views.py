@@ -1,3 +1,4 @@
+import re
 from datetime import date
 from decimal import Decimal
 from urllib.parse import urlencode
@@ -67,12 +68,14 @@ from .models import Order
 from .personalization import recommend_builder_configuration
 from .selectors import (
     account_order_history,
-    authorize_guest_lookup,
+    authorize_guest_order_access,
     staff_order_queue,
     user_can_transition_order,
     user_can_view_order,
 )
 from .services import create_order, get_refund_eligibility, transition_order_status
+
+PICKUP_COMBO_PATTERN = re.compile(r"^\d{3}$")
 
 MENU_BASE_IMAGE_ASSETS = {
     "coke": "hero-coke.svg",
@@ -1059,7 +1062,7 @@ class CheckoutView(CustomerOrderingRequiredMixin, TemplateView):
         if order.order_type == Order.OrderType.GUEST and hasattr(
             order, "guest_contact"
         ):
-            authorize_guest_lookup(request.session, order.guest_contact.lookup_code)
+            authorize_guest_order_access(request.session, order)
         try:
             payment_flow = initialize_order_checkout(
                 order, request=request, actor=actor
@@ -1184,11 +1187,52 @@ class GuestLookupView(FormView):
     form_class = GuestLookupForm
 
     def form_valid(self, form):
-        order = get_object_or_404(
-            Order.objects.select_related("guest_contact"),
-            guest_contact__lookup_code=form.cleaned_data["lookup_code"].strip(),
+        entered_code = form.cleaned_data["lookup_code"].strip().upper()
+        guest_orders = Order.objects.select_related("guest_contact").filter(
+            order_type=Order.OrderType.GUEST
         )
-        authorize_guest_lookup(self.request.session, order.guest_contact.lookup_code)
+
+        order = None
+        if PICKUP_COMBO_PATTERN.fullmatch(entered_code):
+            matches = list(
+                guest_orders.filter(locker_code=entered_code).order_by("-created_at")[
+                    :2
+                ]
+            )
+            if len(matches) > 1:
+                form.add_error(
+                    "lookup_code",
+                    "That pickup combo matches multiple orders. Use your order code instead.",
+                )
+                return self.form_invalid(form)
+            if matches:
+                order = matches[0]
+        if order is None:
+            matches = list(
+                guest_orders.filter(locker_code=entered_code).order_by("-created_at")[
+                    :2
+                ]
+            )
+            if len(matches) > 1:
+                form.add_error(
+                    "lookup_code",
+                    "That locker code matches multiple orders. Use your order code instead.",
+                )
+                return self.form_invalid(form)
+            if matches:
+                order = matches[0]
+        if order is None:
+            order = guest_orders.filter(guest_contact__lookup_code=entered_code).first()
+        if order is None:
+            order = guest_orders.filter(public_order_code=entered_code).first()
+        if order is None:
+            form.add_error(
+                "lookup_code",
+                "We could not find an order with that code. Check your confirmation and try again.",
+            )
+            return self.form_invalid(form)
+
+        authorize_guest_order_access(self.request.session, order)
         return redirect("orders:detail", order_code=order.public_order_code)
 
 

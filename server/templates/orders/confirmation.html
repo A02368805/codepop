@@ -20,16 +20,17 @@
             <div><dt>Status</dt><dd>{{ order.get_status_display }}</dd></div>
             <div><dt>Store</dt><dd>{{ order.store.name }}</dd></div>
             <div><dt>Total</dt><dd>${{ order.total_amount|floatformat:2 }}</dd></div>
+            <div><dt>Pickup Combo</dt><dd>{{ order.locker_code }}</dd></div>
             {% if order.pickup_time_requested %}
                 <div><dt>Requested Pickup</dt><dd>{{ order.pickup_time_requested|date:"M j, g:i A" }}</dd></div>
             {% endif %}
             {% if order.status == "ready" and order.locker_number %}
                 <div><dt>Locker</dt><dd>{{ order.locker_number }}</dd></div>
-                <div><dt>Locker Code</dt><dd>{{ order.locker_code }}</dd></div>
             {% endif %}
         </dl>
+        <p class="muted">Use this 3-digit pickup combo for locker access and quick order lookup.</p>
         {% if order.order_type == "guest" and order.guest_contact %}
-            <p class="muted">Save this lookup code for easy tracking: <strong>{{ order.guest_contact.lookup_code }}</strong></p>
+            <p class="muted">Backup guest lookup code: <strong>{{ order.guest_contact.lookup_code }}</strong></p>
         {% endif %}
     </div>
 </section>
@@ -39,6 +40,22 @@
         <div>
             <p class="eyebrow">Pickup Map</p>
             <h2>{{ order.store.name }}</h2>
+            <p
+                class="muted"
+                data-pickup-distance
+                data-store-latitude="{{ order.store.latitude }}"
+                data-store-longitude="{{ order.store.longitude }}"
+            >
+                Turn on location to see how far away this store is.
+            </p>
+            <button
+                class="button button--ghost"
+                type="button"
+                data-pickup-distance-enable
+                hidden
+            >
+                Use my location
+            </button>
         </div>
         <div class="action-row">
             <a class="button button--ghost" href="{{ order.store.google_maps_url }}" target="_blank" rel="noreferrer">Open in Google Maps</a>

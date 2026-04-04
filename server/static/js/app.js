@@ -12,6 +12,7 @@ document.addEventListener("DOMContentLoaded", () => {
     initMenuAiAssistant();
     initHomeHeroCarousel();
     initHomeDrinkBrowser();
+    initPickupDistance();
 });
 
 function getCsrfToken() {
@@ -707,6 +708,150 @@ function initHomeDrinkBrowser() {
             setActiveLink(hash);
         }
     });
+}
+
+function initPickupDistance() {
+    const distanceNode = document.querySelector("[data-pickup-distance]");
+    const enableButton = document.querySelector("[data-pickup-distance-enable]");
+    if (!distanceNode) {
+        return;
+    }
+
+    const setDistanceMessage = (message) => {
+        distanceNode.textContent = message;
+    };
+
+    const setEnableButtonVisible = (visible) => {
+        if (!enableButton) {
+            return;
+        }
+        enableButton.hidden = !visible;
+    };
+
+    const setEnableButtonLoading = (loading) => {
+        if (!enableButton) {
+            return;
+        }
+        enableButton.disabled = loading;
+        enableButton.textContent = loading ? "Locating..." : "Use my location";
+    };
+
+    const storeLatitude = Number(distanceNode.dataset.storeLatitude || "");
+    const storeLongitude = Number(distanceNode.dataset.storeLongitude || "");
+    if (!Number.isFinite(storeLatitude) || !Number.isFinite(storeLongitude)) {
+        setDistanceMessage("Distance is unavailable for this store.");
+        setEnableButtonVisible(false);
+        return;
+    }
+
+    if (!navigator.geolocation) {
+        setDistanceMessage("Location is unavailable in this browser.");
+        setEnableButtonVisible(false);
+        return;
+    }
+
+    const haversineMiles = (fromLat, fromLng, toLat, toLng) => {
+        const toRadians = (value) => (value * Math.PI) / 180;
+        const earthRadiusMiles = 3958.8;
+        const latDelta = toRadians(toLat - fromLat);
+        const lngDelta = toRadians(toLng - fromLng);
+        const a =
+            Math.sin(latDelta / 2) * Math.sin(latDelta / 2) +
+            Math.cos(toRadians(fromLat)) *
+                Math.cos(toRadians(toLat)) *
+                Math.sin(lngDelta / 2) *
+                Math.sin(lngDelta / 2);
+        return earthRadiusMiles * 2 * Math.asin(Math.sqrt(a));
+    };
+
+    const estimateDriveMinutes = (distanceMiles) => {
+        if (distanceMiles <= 1.5) {
+            return Math.max(4, Math.round(distanceMiles * 5));
+        }
+        if (distanceMiles <= 8) {
+            return Math.max(8, Math.round((distanceMiles / 24) * 60));
+        }
+        return Math.max(14, Math.round((distanceMiles / 34) * 60));
+    };
+
+    const readPermissionState = async () => {
+        try {
+            if (!navigator.permissions?.query) {
+                return "";
+            }
+            const result = await navigator.permissions.query({ name: "geolocation" });
+            return String(result.state || "");
+        } catch (error) {
+            return "";
+        }
+    };
+
+    const requestDistance = async () => {
+        setEnableButtonLoading(true);
+        setDistanceMessage("Requesting location permission…");
+
+        const permissionState = await readPermissionState();
+        if (permissionState === "denied") {
+            setDistanceMessage(
+                "Location is blocked in browser settings. Enable Location for this site, then tap Use my location again."
+            );
+            setEnableButtonVisible(true);
+            setEnableButtonLoading(false);
+            return;
+        }
+
+        try {
+            setDistanceMessage("Calculating your distance…");
+            navigator.geolocation.getCurrentPosition(
+                (position) => {
+                    const miles = haversineMiles(
+                        position.coords.latitude,
+                        position.coords.longitude,
+                        storeLatitude,
+                        storeLongitude
+                    );
+                    const roundedMiles =
+                        miles >= 10
+                            ? miles.toFixed(0)
+                            : miles >= 1
+                            ? miles.toFixed(1)
+                            : miles.toFixed(2);
+                    const driveMinutes = estimateDriveMinutes(miles);
+                    setDistanceMessage(
+                        `You are ${roundedMiles} miles away (~${driveMinutes} min drive).`
+                    );
+                    setEnableButtonVisible(false);
+                    setEnableButtonLoading(false);
+                },
+                (error) => {
+                    const denied = Number(error?.code) === 1;
+                    if (denied) {
+                        setDistanceMessage(
+                            "Location is off or blocked. Allow location for this site, then tap Use my location."
+                        );
+                    } else {
+                        setDistanceMessage(
+                            "We couldn't get your location. Tap Use my location to try again."
+                        );
+                    }
+                    setEnableButtonVisible(true);
+                    setEnableButtonLoading(false);
+                },
+                { enableHighAccuracy: false, timeout: 8000, maximumAge: 300000 }
+            );
+        } catch (error) {
+            setDistanceMessage(
+                "Location access is unavailable right now. Check browser settings and try again."
+            );
+            setEnableButtonVisible(true);
+            setEnableButtonLoading(false);
+        }
+    };
+
+    enableButton?.addEventListener("click", () => {
+        void requestDistance();
+    });
+    void requestDistance();
 }
 
 function initPreferenceProfile() {
