@@ -1,0 +1,8 @@
+{% for item in hero_recommendation_cards %}
+    {% include "orders/partials/menu_hero_recommendation_card.html" with item=item %}
+{% empty %}
+    <article class="empty-state menu-hero-empty">
+        <h3>Use AI to get your picks</h3>
+        <p>Enter a prompt above and we will generate four AI-driven drinks here.</p>
+    </article>
+{% endfor %}
