@@ -18,14 +18,12 @@
         <h2>{{ order.get_status_display }}</h2>
         <p class="muted">{{ order.store.name }}</p>
         <p class="muted">Placed {{ order.created_at|date:"M j, g:i A" }}</p>
-        <div class="callout">
-            <strong>Pickup combo:</strong> {{ order.locker_code }}<br>
-            {% if order.status == "ready" and order.locker_number %}
-                <strong>Pickup locker:</strong> {{ order.locker_number }}
-            {% else %}
-                <span class="muted">Locker number appears once your drink is ready.</span>
-            {% endif %}
-        </div>
+        {% if order.status == "ready" and order.locker_number %}
+            <div class="callout">
+                <strong>Pickup locker:</strong> {{ order.locker_number }}<br>
+                <strong>Locker code:</strong> {{ order.locker_code }}
+            </div>
+        {% endif %}
     </div>
 </section>
 
@@ -187,16 +185,10 @@
             <a class="button button--ghost" href="{{ order.store.apple_maps_url }}" target="_blank" rel="noreferrer">Open in Apple Maps</a>
         </div>
     </div>
-    {% if order.store.pickup_map_embed_url %}
-        <div class="map-card">
-            <iframe
-                src="{{ order.store.pickup_map_embed_url }}"
-                title="Map for {{ order.store.name }}"
-                loading="lazy"
-                referrerpolicy="no-referrer-when-downgrade"
-                allowfullscreen
-            ></iframe>
-        </div>
+    {% if order.store.mapbox_static_map_url %}
+        <a class="map-card" href="{{ order.store.google_maps_url }}" target="_blank" rel="noreferrer">
+            <img src="{{ order.store.mapbox_static_map_url }}" alt="Map for {{ order.store.name }}">
+        </a>
     {% else %}
         <div class="map-card map-card--fallback">
             <p>{{ order.store.full_address }}</p>
