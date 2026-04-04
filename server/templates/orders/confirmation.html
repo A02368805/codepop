@@ -45,10 +45,16 @@
             <a class="button button--ghost" href="{{ order.store.apple_maps_url }}" target="_blank" rel="noreferrer">Open in Apple Maps</a>
         </div>
     </div>
-    {% if order.store.mapbox_static_map_url %}
-        <a class="map-card" href="{{ order.store.google_maps_url }}" target="_blank" rel="noreferrer">
-            <img src="{{ order.store.mapbox_static_map_url }}" alt="Map for {{ order.store.name }}">
-        </a>
+    {% if order.store.pickup_map_embed_url %}
+        <div class="map-card">
+            <iframe
+                src="{{ order.store.pickup_map_embed_url }}"
+                title="Map for {{ order.store.name }}"
+                loading="lazy"
+                referrerpolicy="no-referrer-when-downgrade"
+                allowfullscreen
+            ></iframe>
+        </div>
     {% else %}
         <div class="map-card map-card--fallback">
             <p>{{ order.store.full_address }}</p>
