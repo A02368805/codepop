@@ -202,7 +202,8 @@ Useful demo logins:
 
 Seeded guest lookup example:
 
-- Order code: `FS-DEMO-GUEST-001`
+- Order code: `FS-M5K9TD`
+- Pickup combo: `624`
 - Guest lookup code: `GST-DEMO-001`
 
 ## Sample Demo Walkthroughs

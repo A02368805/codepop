@@ -27,7 +27,7 @@
 
 ## Demo Workflows Backed By Seed Data
 
-- Guest order and lookup using `FS-DEMO-GUEST-001` and `GST-DEMO-001`
+- Guest order and lookup using `FS-M5K9TD`, pickup combo `624`, and backup code `GST-DEMO-001`
 - Account ordering and recommendations through `account.casey@floatstack.local`
 - Manager inventory and revenue through `manager.c001@floatstack.local`
 - Logistics transfers/imports/sync through `logistics.c@floatstack.local`

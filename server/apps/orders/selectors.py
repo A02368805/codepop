@@ -35,17 +35,30 @@ def staff_order_queue(user):
 
 
 def authorize_guest_lookup(session, lookup_code):
+    code = (lookup_code or "").strip().upper()
+    if not code:
+        return
     lookup_codes = set(session.get(GUEST_LOOKUP_SESSION_KEY, []))
-    lookup_codes.add(lookup_code)
+    lookup_codes.add(code)
     session[GUEST_LOOKUP_SESSION_KEY] = sorted(lookup_codes)
     session.modified = True
+
+
+def authorize_guest_order_access(session, order):
+    if not hasattr(order, "guest_contact"):
+        return
+    authorize_guest_lookup(session, order.guest_contact.lookup_code)
+    authorize_guest_lookup(session, order.locker_code)
 
 
 def session_can_view_guest_order(session, order):
     if not hasattr(order, "guest_contact"):
         return False
     lookup_codes = set(session.get(GUEST_LOOKUP_SESSION_KEY, []))
-    return order.guest_contact.lookup_code in lookup_codes
+    return (
+        order.guest_contact.lookup_code in lookup_codes
+        or order.locker_code in lookup_codes
+    )
 
 
 def user_can_view_order(user, order, *, session=None):

@@ -133,6 +133,33 @@ class CustomerOrderingViewTests(TestCase):
 
         order = Order.objects.get(order_type=Order.OrderType.GUEST)
         self.assertContains(response, order.guest_contact.lookup_code)
+        self.assertContains(response, order.locker_code)
+
+        lookup_client = Client()
+        response = lookup_client.post(
+            reverse("orders:guest-lookup"),
+            {"lookup_code": order.locker_code},
+            follow=True,
+        )
+        self.assertContains(response, order.public_order_code)
+        self.assertEqual(
+            Order.objects.filter(order_type=Order.OrderType.GUEST).count(), 1
+        )
+
+    def test_guest_lookup_still_accepts_legacy_guest_lookup_code(self):
+        guest_client = Client()
+        self._add_drink_to_cart(guest_client)
+        guest_client.post(
+            reverse("orders:checkout"),
+            {
+                "pickup_time_choice": self._future_pickup_value(),
+                "guest_name": "Legacy Guest",
+                "guest_email": "legacy-guest@test.local",
+                "guest_phone_number": "8015550155",
+            },
+            follow=True,
+        )
+        order = Order.objects.get(order_type=Order.OrderType.GUEST)
 
         lookup_client = Client()
         response = lookup_client.post(
@@ -141,9 +168,6 @@ class CustomerOrderingViewTests(TestCase):
             follow=True,
         )
         self.assertContains(response, order.public_order_code)
-        self.assertEqual(
-            Order.objects.filter(order_type=Order.OrderType.GUEST).count(), 1
-        )
 
     def test_customer_status_page_hides_cancel_after_preparing(self):
         order = create_order(
@@ -182,7 +206,7 @@ class CustomerOrderingViewTests(TestCase):
         )
         self.assertEqual(response.status_code, 200)
         self.assertNotContains(response, "Cancel order")
-        self.assertContains(response, "Refunds are disallowed after preparation begins")
+        self.assertContains(response, "This order can no longer be canceled online.")
 
     def test_checkout_with_stale_inventory_snapshot_fails_gracefully(self):
         self.client.force_login(self.customer)

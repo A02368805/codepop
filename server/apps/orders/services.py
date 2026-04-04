@@ -14,6 +14,7 @@ from django.utils import timezone
 from .models import GuestOrderContact, Order, OrderItem
 
 DEFAULT_TAX_RATE = Decimal("0.0725")
+ORDER_CODE_ALPHABET = "23456789ABCDEFGHJKMNPQRSTUVWXYZ"
 
 
 class OrderServiceError(ServiceError):
@@ -67,7 +68,17 @@ def ensure_items_match_store(*, store, items):
 
 
 def generate_public_order_code(store) -> str:
-    return f"FS-{store.region.code}-{store.store_code}-{uuid.uuid4().hex[:6].upper()}"
+    _ = store
+    for _ in range(12):
+        suffix = "".join(secrets.choice(ORDER_CODE_ALPHABET) for _ in range(6))
+        candidate = f"FS-{suffix}"
+        if not Order.objects.filter(public_order_code=candidate).exists():
+            return candidate
+    raise OrderServiceError("Unable to generate a unique order code.")
+
+
+def generate_pickup_combo() -> str:
+    return f"{secrets.randbelow(1000):03d}"
 
 
 def generate_guest_lookup_code() -> str:
@@ -93,7 +104,8 @@ def assign_pickup_locker(order):
             break
     if not order.locker_number:
         order.locker_number = f"L{(order.store.orders.count() % 24) + 1:02d}"
-    order.locker_code = f"{secrets.randbelow(90) + 10}-{secrets.randbelow(900) + 100}"
+    if not order.locker_code:
+        order.locker_code = generate_pickup_combo()
     return order
 
 
@@ -175,6 +187,9 @@ def create_order(
         total_amount=pricing["total_amount"],
         currency=pricing["currency"],
         notes=notes,
+        locker_code=(
+            (guest_contact or {}).get("locker_code", "") or generate_pickup_combo()
+        ),
     )
 
     for item in pricing["normalized_items"]:

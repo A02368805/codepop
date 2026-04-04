@@ -1061,7 +1061,8 @@ class Command(BaseCommand):
     def _seed_orders(self, *, stores, users):
         demo_order_rows = [
             {
-                "public_order_code": "FS-DEMO-ACC-001",
+                "public_order_code": "FS-Q7N4RX",
+                "locker_code": "183",
                 "store_code": "C001",
                 "customer_email": "account.casey@floatstack.local",
                 "guest_contact": None,
@@ -1073,7 +1074,8 @@ class Command(BaseCommand):
                 ],
             },
             {
-                "public_order_code": "FS-DEMO-GUEST-001",
+                "public_order_code": "FS-M5K9TD",
+                "locker_code": "624",
                 "store_code": "C002",
                 "customer_email": None,
                 "guest_contact": {
@@ -1086,7 +1088,8 @@ class Command(BaseCommand):
                 "post_payment_transitions": [Order.Status.QUEUED],
             },
             {
-                "public_order_code": "FS-DEMO-REFUND-001",
+                "public_order_code": "FS-R8W3PL",
+                "locker_code": "907",
                 "store_code": "C003",
                 "customer_email": "account.river@floatstack.local",
                 "guest_contact": None,
@@ -1133,7 +1136,8 @@ class Command(BaseCommand):
                 actor=customer,
             )
             order.public_order_code = row["public_order_code"]
-            order.save(update_fields=["public_order_code"])
+            order.locker_code = row.get("locker_code", order.locker_code)
+            order.save(update_fields=["public_order_code", "locker_code"])
             record_payment_pending(order, payment_intent_id=row["payment_intent"])
             record_payment_success(
                 order, payment_intent_id=row["payment_intent"], actor=customer

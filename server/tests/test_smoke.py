@@ -33,7 +33,7 @@ class ScaffoldSmokeTests(TestCase):
         response = self.client.get(reverse("home"))
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, "FloatStack")
-        self.assertContains(response, "Build a drink")
+        self.assertContains(response, "Start your order")
 
     def test_dashboard_redirects_to_role_specific_page(self):
         self.client.force_login(self.manager)

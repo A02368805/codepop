@@ -18,12 +18,14 @@
         <h2>{{ order.get_status_display }}</h2>
         <p class="muted">{{ order.store.name }}</p>
         <p class="muted">Placed {{ order.created_at|date:"M j, g:i A" }}</p>
-        {% if order.status == "ready" and order.locker_number %}
-            <div class="callout">
-                <strong>Pickup locker:</strong> {{ order.locker_number }}<br>
-                <strong>Locker code:</strong> {{ order.locker_code }}
-            </div>
-        {% endif %}
+        <div class="callout">
+            <strong>Pickup combo:</strong> {{ order.locker_code }}<br>
+            {% if order.status == "ready" and order.locker_number %}
+                <strong>Pickup locker:</strong> {{ order.locker_number }}
+            {% else %}
+                <span class="muted">Locker number appears once your drink is ready.</span>
+            {% endif %}
+        </div>
     </div>
 </section>
 

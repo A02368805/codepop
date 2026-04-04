@@ -82,7 +82,10 @@ class CheckoutForm(forms.Form):
 
 
 class GuestLookupForm(forms.Form):
-    lookup_code = forms.CharField(max_length=24)
+    lookup_code = forms.CharField(
+        max_length=32,
+        label="Order code, guest lookup code, or 3-digit pickup combo",
+    )
 
 
 class MenuAiPromptForm(forms.Form):
