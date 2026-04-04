@@ -3,10 +3,12 @@ from __future__ import annotations
 import json
 import logging
 import re
+import ssl
 import time
 from urllib import error as url_error
 from urllib import request as url_request
 
+import certifi
 from apps.orders.models import Order
 from apps.orders.selectors import user_can_view_order
 from django.conf import settings
@@ -15,11 +17,50 @@ from django.urls import reverse
 from .models import SupportConversation, SupportEscalation, SupportMessage
 
 logger = logging.getLogger(__name__)
+SSL_CONTEXT = ssl.create_default_context(cafile=certifi.where())
 
 ORDER_CODE_PATTERN = re.compile(r"\bFS-[A-Z0-9-]+\b", re.IGNORECASE)
 LOOKUP_CODE_PATTERN = re.compile(r"\bGST-[A-Z0-9-]+\b", re.IGNORECASE)
 
 DEFAULT_QUICK_PROMPTS = []
+SUPPORT_SCOPE_KEYWORDS = (
+    "floatstack",
+    "order",
+    "pickup",
+    "guest",
+    "lookup",
+    "refund",
+    "cancel",
+    "account",
+    "login",
+    "password",
+    "store",
+    "menu",
+    "cart",
+    "checkout",
+    "status",
+    "code",
+    "payment",
+)
+SUPPORT_KNOWLEDGE_BASE = {
+    "what_is_floatstack": (
+        "Here at FloatStack, we help customers choose a store, customize soda/float "
+        "drinks, place an order, and pick it up when it is marked ready."
+    ),
+    "order_flow": [
+        "Choose a store.",
+        "Build drinks from menu signatures or custom options.",
+        "Add items to cart and checkout.",
+        "Track order status by public order code.",
+        "Pick up at the selected store once status is ready.",
+    ],
+    "pickup_flow": [
+        "Use the order code from confirmation or guest lookup.",
+        "Wait for status to move to ready.",
+        "Go to the same store selected at checkout.",
+        "Show order code at pickup.",
+    ],
+}
 
 
 def ensure_support_session(request):
@@ -79,7 +120,7 @@ def start_new_conversation(request):
         role=SupportMessage.Role.ASSISTANT,
         intent="welcome",
         content=(
-            "Hi, I am the FloatStack support assistant. I can help with order status, "
+            "Hi, I am part of the FloatStack support team. I can help with order status, "
             "guest lookup, cancellation/refund rules, pickup timing, and account navigation."
         ),
     )
@@ -151,7 +192,13 @@ def _build_support_context(*, request, conversation, order):
                 else ""
             ),
         }
+    context["knowledge_base"] = SUPPORT_KNOWLEDGE_BASE
     return context
+
+
+def _is_support_scope_message(message_text):
+    lowered = (message_text or "").lower()
+    return any(keyword in lowered for keyword in SUPPORT_SCOPE_KEYWORDS)
 
 
 def _call_anthropic_support_ai(*, request, conversation, message_text, order):
@@ -168,7 +215,11 @@ def _call_anthropic_support_ai(*, request, conversation, message_text, order):
     max_retries = int(getattr(settings, "AI_PROVIDER_MAX_RETRIES", 2))
 
     system_prompt = (
-        "You are the FloatStack support chat assistant. Respond conversationally and helpfully. "
+        "You are the FloatStack support assistant and part of the FloatStack team. "
+        "Use first-person team voice (we/us/our at FloatStack) instead of detached third-person phrasing. "
+        "Respond conversationally and helpfully. "
+        "You are strictly scoped to FloatStack support topics: what FloatStack is, order flow, pickup, guest lookup, refunds/cancellations, and account navigation. "
+        "If a question is outside FloatStack support scope, politely refuse and redirect to support topics. "
         "If order details are missing, ask for the public order code. "
         "Never invent order status, refunds, or pricing details. "
         "Keep replies under 140 words and provide only plain response text."
@@ -217,7 +268,11 @@ def _call_anthropic_support_ai(*, request, conversation, message_text, order):
                 },
                 method="POST",
             )
-            with url_request.urlopen(req, timeout=timeout_seconds) as resp:
+            with url_request.urlopen(
+                req,
+                timeout=timeout_seconds,
+                context=SSL_CONTEXT,
+            ) as resp:
                 payload = json.loads(resp.read().decode("utf-8"))
 
             text_block = ""
@@ -256,7 +311,9 @@ def _call_anthropic_support_ai(*, request, conversation, message_text, order):
             url_error.HTTPError,
         ) as exc:
             logger.warning(
-                "support_ai_provider_attempt_failed",
+                "support_ai_provider_attempt_failed type=%s detail=%s",
+                exc.__class__.__name__,
+                str(exc),
                 extra={
                     "attempt": attempt,
                     "latency_ms": int((time.perf_counter() - started_at) * 1000),
@@ -269,6 +326,26 @@ def _call_anthropic_support_ai(*, request, conversation, message_text, order):
             time.sleep(min(0.5 * (2**attempt), 2))
 
     return None
+
+
+def _fallback_general_support_info(message_text):
+    lowered = (message_text or "").lower()
+    if "what is floatstack" in lowered or "about floatstack" in lowered:
+        return (
+            "Here at FloatStack, we run a soda and float ordering experience: you choose a store, "
+            "build drinks, checkout, and track your order by public order code until pickup."
+        )
+    if "order flow" in lowered or "how do i order" in lowered:
+        return (
+            "Our order flow is: choose a store, build drinks, add to cart, checkout, then "
+            "track status by public order code until pickup."
+        )
+    if "pickup" in lowered:
+        return (
+            "For pickup with us, use the same store selected at checkout, wait for ready status, "
+            "and show your public order code at pickup."
+        )
+    return ""
 
 
 def _fallback_support_reply(*, order, message_text):
@@ -289,11 +366,21 @@ def _fallback_support_reply(*, order, message_text):
             }
         )
     else:
-        reply = (
-            "I can help with order status, refunds, pickup timing, and account questions. "
-            "If this is about a specific order, share your public order code so I can ground the response."
-        )
+        scope_reply = _fallback_general_support_info(message_text)
+        if scope_reply:
+            reply = scope_reply
+        elif not _is_support_scope_message(message_text):
+            reply = (
+                "I can only help with FloatStack support topics like order flow, pickup, "
+                "guest lookup, refunds, and account questions."
+            )
+        else:
+            reply = (
+                "I can help with order status, refunds, pickup timing, and account questions. "
+                "If this is about a specific order, share your public order code so I can ground the response."
+            )
         links.append({"label": "Guest lookup", "url": reverse("orders:guest-lookup")})
+        links.append({"label": "Browse stores", "url": reverse("stores:index")})
     return {
         "reply_text": reply,
         "links": links,
@@ -316,12 +403,14 @@ def process_support_message(*, request, conversation, message_text):
 
     intent = "chat"
     order = _resolve_order_context(conversation, request, trimmed)
-    anthropic_response = _call_anthropic_support_ai(
-        request=request,
-        conversation=conversation,
-        message_text=trimmed,
-        order=order,
-    )
+    anthropic_response = None
+    if _is_support_scope_message(trimmed):
+        anthropic_response = _call_anthropic_support_ai(
+            request=request,
+            conversation=conversation,
+            message_text=trimmed,
+            order=order,
+        )
     response = anthropic_response or _fallback_support_reply(
         order=order,
         message_text=trimmed,
