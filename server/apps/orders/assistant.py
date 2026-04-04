@@ -71,7 +71,7 @@ def build_drink_builder_assistance(
     )
 
     if ai_applied and ai_reasons:
-        summary = "FloatStack AI filled the builder with a recommendation you can still edit freely."
+        summary = "AI generated this build from your current selections and preferences. You can edit every choice."
         tips = list(ai_reasons)
     elif selected_ice_cream:
         summary = f"This build leans into float territory with {selected_soda_label} and {selected_ice_cream.lower()} ice cream."
@@ -82,7 +82,10 @@ def build_drink_builder_assistance(
         summary = f"Your current cup starts with {selected_soda_label} and already has a clear flavor direction."
         tips = []
     else:
-        summary = f"You have a clean {selected_soda_label.lower()} base. Let FloatStack AI fill the rest if you want a stronger starting point."
+        summary = (
+            f"You have a clean {selected_soda_label.lower()} base. "
+            "AI can choose syrups, add-ins, and a float option based on this setup."
+        )
         tips = []
 
     if not ai_applied:
@@ -120,7 +123,9 @@ def build_drink_builder_assistance(
         "tips": tips[:3],
         "size_label": size.title(),
         "selected_snapshot": selected_snapshot,
-        "ai_button_label": "Refine with AI" if ai_applied else "AI Help Me Build It",
+        "ai_button_label": (
+            "Re-run AI suggestion" if ai_applied else "Auto-build with AI"
+        ),
         "ai_applied": ai_applied,
         "uses_preferences": bool(_authenticated_preferences(user)),
     }

@@ -30,7 +30,7 @@ from apps.orders.catalog import (
 from apps.orders.models import Order
 from apps.orders.selectors import staff_order_queue
 from apps.payments.models import RevenueLedgerEntry
-from apps.stores.models import Region
+from apps.stores.models import Region, Store
 from apps.stores.selectors import (
     regions_visible_to_user,
     scoped_region_store_options,
@@ -115,6 +115,26 @@ def _form_scalar_value(form, field_name):
     return form.initial.get(field_name, form.fields[field_name].initial or "")
 
 
+def _resolve_customer_order_store(user):
+    if not getattr(user, "is_authenticated", False):
+        return None
+    preferred_store = getattr(user, "preferred_store", None)
+    if preferred_store and preferred_store.is_active:
+        return preferred_store
+    if getattr(user, "default_region_id", None):
+        regional_store = (
+            Store.objects.filter(
+                region_id=user.default_region_id,
+                is_active=True,
+            )
+            .order_by("name")
+            .first()
+        )
+        if regional_store:
+            return regional_store
+    return Store.objects.filter(is_active=True).order_by("name").first()
+
+
 class HomePageView(TemplateView):
     template_name = "home.html"
 
@@ -126,7 +146,7 @@ class HomePageView(TemplateView):
             "Customer ordering and internal operations in one server-rendered product",
             "Strict role scoping with permissions enforced on the server",
             "Regional logistics, maintenance, payments, and analytics in one workflow shell",
-            "Demo-friendly UX without losing operational realism",
+            "Clean customer UX with operational workflows kept reliable behind the scenes",
         ]
         return context
 
@@ -186,6 +206,7 @@ class CustomerDashboardView(BaseDashboardView):
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
+        order_store = _resolve_customer_order_store(self.request.user)
         context["recent_orders"] = self.request.user.orders.select_related(
             "store"
         ).order_by("-created_at")[:5]
@@ -198,6 +219,7 @@ class CustomerDashboardView(BaseDashboardView):
         context["recommended_drinks"] = recommend_drinks_for_user(
             self.request.user, limit=3
         )
+        context["order_store"] = order_store
         context["notifications"] = Notification.objects.filter(
             user=self.request.user, is_read=False
         )[:4]

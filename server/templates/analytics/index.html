@@ -7,7 +7,7 @@
     <div class="section-heading">
         <div>
             <p class="eyebrow">Analytics</p>
-            <h1>Regional and store-level health summary</h1>
+            <h1>Analytics summary</h1>
         </div>
     </div>
     <form method="get" class="filter-bar">
@@ -51,8 +51,8 @@
     <div class="panel">
         <p class="eyebrow">Revenue</p>
         <dl class="summary-list">
-            <div><dt>Gross</dt><dd>${{ gross_revenue }}</dd></div>
-            <div><dt>Net</dt><dd>${{ net_revenue }}</dd></div>
+            <div><dt>Gross</dt><dd>${{ gross_revenue|floatformat:2 }}</dd></div>
+            <div><dt>Net</dt><dd>${{ net_revenue|floatformat:2 }}</dd></div>
         </dl>
         <p class="muted">Window: {{ date_from }} to {{ date_to }}</p>
     </div>
@@ -71,7 +71,6 @@
         <div class="section-heading">
             <div>
                 <p class="eyebrow">Daily Revenue</p>
-                <h2>Day-by-day financial rollup</h2>
             </div>
         </div>
         <table class="data-table">
@@ -88,8 +87,8 @@
                     <tr>
                         <td>{{ row.posted_at__date }}</td>
                         <td>{{ row.row_count }}</td>
-                        <td>${{ row.gross }}</td>
-                        <td>${{ row.net }}</td>
+                        <td>${{ row.gross|floatformat:2 }}</td>
+                        <td>${{ row.net|floatformat:2 }}</td>
                     </tr>
                 {% empty %}
                     <tr><td colspan="4">No daily revenue rows in this window.</td></tr>
@@ -101,7 +100,6 @@
         <div class="section-heading">
             <div>
                 <p class="eyebrow">Order-Backed Financial Rows</p>
-                <h2>Recent ledger entries with order links</h2>
             </div>
         </div>
         <table class="data-table">
@@ -121,7 +119,7 @@
                         <td>{{ entry.store.name }}</td>
                         <td>{{ entry.get_entry_type_display }}</td>
                         <td>{% if entry.order %}<a href="{% url 'orders:detail' entry.order.public_order_code %}">{{ entry.order.public_order_code }}</a>{% else %}-{% endif %}</td>
-                        <td>${{ entry.net_amount }}</td>
+                        <td>${{ entry.net_amount|floatformat:2 }}</td>
                     </tr>
                 {% empty %}
                     <tr><td colspan="5">No ledger entries are available.</td></tr>
@@ -136,7 +134,6 @@
         <div class="section-heading">
             <div>
                 <p class="eyebrow">Revenue By Store</p>
-                <h2>Top stores in scope</h2>
             </div>
         </div>
         <table class="data-table">
@@ -151,8 +148,8 @@
                 {% for row in revenue_by_store %}
                     <tr>
                     <td>{{ row.store__name }}</td>
-                        <td>${{ row.gross }}</td>
-                        <td>${{ row.net }}</td>
+                        <td>${{ row.gross|floatformat:2 }}</td>
+                        <td>${{ row.net|floatformat:2 }}</td>
                     </tr>
                 {% empty %}
                     <tr><td colspan="3">No revenue data yet.</td></tr>
@@ -164,7 +161,6 @@
         <div class="section-heading">
             <div>
                 <p class="eyebrow">Supply Usage Trends</p>
-                <h2>Last 30 days</h2>
             </div>
         </div>
         <table class="data-table">
@@ -195,7 +191,6 @@
         <div class="section-heading">
             <div>
                 <p class="eyebrow">Maintenance Summary</p>
-                <h2>Current machine + assignment status mix</h2>
             </div>
         </div>
         <table class="data-table">
@@ -239,7 +234,6 @@
         <div class="section-heading">
             <div>
                 <p class="eyebrow">AI Supply Drafts</p>
-                <h2>Draft schedules awaiting human action</h2>
             </div>
         </div>
         <div class="surface-list">

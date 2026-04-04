@@ -27,8 +27,8 @@
             {% endfor %}
         </ul>
         <div class="menu-ai-launcher">
-            <button class="button button--ghost" type="button" id="menu-ai-open">Ask AI what to order</button>
-            <div class="menu-ai-panel" id="menu-ai-panel" hidden>
+            <button class="button button--ghost" type="button" id="menu-ai-open">Open AI builder</button>
+            <div class="menu-ai-panel" id="menu-ai-panel" {% if request.GET.open_ai != "1" %}hidden{% endif %}>
                 <form
                     method="post"
                     hx-post="{% url 'orders:menu-ai' store.store_code %}"
@@ -42,7 +42,7 @@
                         <span>What kind of drink do you want?</span>
                         {{ menu_ai_form.prompt }}
                     </label>
-                    <p class="assistant-scope-note">Scope: drink ideas and menu matching only. For order status, pickup, or refunds use Support Chat.</p>
+                    <p class="assistant-scope-note">Describe flavor, base soda, sweetness, or ingredients and AI will generate a drink you can edit.</p>
                     <div class="action-row">
                         <button class="button button--primary" type="submit">Get suggestions</button>
                         <button class="button button--ghost" type="button" id="menu-ai-close">Close</button>
@@ -63,7 +63,7 @@
             <p class="eyebrow">Signature Drinks</p>
             <h2>Start with a signature, then customize the details.</h2>
         </div>
-        <p class="lede-small">Menu prices stay customer-friendly, and the final order snapshot stays immutable after checkout.</p>
+        <p class="lede-small">Start with a signature recipe, then tailor every ingredient to your taste.</p>
     </div>
     <div class="card-grid">
         {% for item in menu_items %}

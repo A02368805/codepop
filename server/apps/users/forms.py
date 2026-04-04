@@ -1,3 +1,5 @@
+import re
+
 from apps.orders.catalog import (
     ADD_IN_OPTIONS,
     ADVENTUROUSNESS_PREFERENCE_CHOICES,
@@ -12,6 +14,7 @@ from apps.stores.models import Store
 from django import forms
 from django.contrib.auth import password_validation
 from django.contrib.auth.forms import AuthenticationForm
+from django.utils.safestring import mark_safe
 
 from .models import User
 
@@ -30,10 +33,22 @@ class EmailAuthenticationForm(AuthenticationForm):
 
 class RegistrationForm(forms.ModelForm):
     password1 = forms.CharField(
-        widget=forms.PasswordInput(attrs={"autocomplete": "new-password"})
+        label="Enter password",
+        widget=forms.PasswordInput(
+            attrs={
+                "autocomplete": "new-password",
+                "placeholder": "Create a password",
+            }
+        ),
     )
     password2 = forms.CharField(
-        widget=forms.PasswordInput(attrs={"autocomplete": "new-password"})
+        label="Re-enter password",
+        widget=forms.PasswordInput(
+            attrs={
+                "autocomplete": "new-password",
+                "placeholder": "Re-enter password",
+            }
+        ),
     )
     preferred_store = forms.ModelChoiceField(
         queryset=Store.objects.filter(is_active=True).order_by("name"),
@@ -44,6 +59,10 @@ class RegistrationForm(forms.ModelForm):
     class Meta:
         model = User
         fields = ("email", "first_name", "last_name", "preferred_store")
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields["password1"].help_text = ""
 
     def clean_email(self):
         email = self.cleaned_data["email"].strip().lower()
@@ -58,10 +77,30 @@ class RegistrationForm(forms.ModelForm):
         if password1 and password2 and password1 != password2:
             self.add_error("password2", "Passwords must match.")
         if password1:
+            if not (re.search(r"[A-Za-z]", password1) and re.search(r"\d", password1)):
+                self.add_error(
+                    "password1",
+                    "Password must include at least one letter and one number.",
+                )
             try:
                 password_validation.validate_password(password1)
             except forms.ValidationError as exc:
-                self.add_error("password1", exc)
+                clarified_errors = []
+                for message in exc.messages:
+                    lower_message = message.lower()
+                    if "too common" in lower_message:
+                        clarified_errors.append(
+                            "This password is too common and easy to guess. "
+                            "Choose a less common phrase with a mix of letters and numbers."
+                        )
+                    elif "entirely numeric" in lower_message:
+                        clarified_errors.append(
+                            "Password cannot be only numbers. Include letters too."
+                        )
+                    else:
+                        clarified_errors.append(message)
+                for clarified_message in clarified_errors:
+                    self.add_error("password1", clarified_message)
         return cleaned_data
 
     def save(self, commit=True):

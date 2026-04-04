@@ -676,6 +676,34 @@ h3 {
     resize: vertical;
 }
 
+.maintenance-assignment-card {
+    display: grid;
+    grid-template-columns: 1fr;
+    align-items: start;
+    gap: 0.9rem;
+}
+
+.maintenance-assignment-actions {
+    min-width: 0;
+    width: 100%;
+    align-items: flex-start;
+    justify-content: flex-start;
+}
+
+.maintenance-assignment-form {
+    display: grid;
+    gap: 0.75rem;
+    width: 100%;
+}
+
+.maintenance-assignment-form .action-row {
+    margin-top: 0.35rem;
+}
+
+.maintenance-assignment-form .button {
+    width: auto;
+}
+
 .section-heading--tight {
     margin-bottom: 0.4rem;
 }
@@ -1455,7 +1483,18 @@ details.ingredient-group[open] .ingredient-group__header::after {
 
 .metric-grid--compact {
     margin-top: 1rem;
-    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+    grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+}
+
+.metric-grid--compact .metric {
+    min-width: 0;
+}
+
+.metric-grid--compact .metric strong {
+    font-size: 1.45rem;
+    line-height: 1.15;
+    overflow-wrap: anywhere;
+    word-break: break-word;
 }
 
 .map-card {
@@ -1521,6 +1560,11 @@ details.ingredient-group[open] .ingredient-group__header::after {
 
     .list-card__actions {
         align-items: stretch;
+    }
+
+    .maintenance-assignment-actions {
+        min-width: 0;
+        width: 100%;
     }
 
     .builder-sidebar {

@@ -20,6 +20,7 @@
         <p class="muted">{{ store.full_address }}</p>
         <div class="cta-row">
             <a class="button button--ghost" href="{% url 'orders:menu' store.store_code %}">Back to menu</a>
+            <a class="button button--ghost" href="{% url 'stores:index' %}">Change store</a>
             <a class="button button--ghost" href="{% url 'orders:cart' %}">View cart</a>
         </div>
     </div>
@@ -61,9 +62,9 @@
         <div class="builder-overview-card">
             <p class="eyebrow">What makes this one work</p>
             <ul class="mini-list">
-                <li>Grouped ingredients keep the build fast to scan.</li>
-                <li>AI fill uses preferences, past orders, and your current selections.</li>
-                <li>Pricing updates live, but the server still validates everything at checkout.</li>
+                <li>Grouped ingredients keep the builder fast and easy to scan.</li>
+                <li>AI can suggest a full starting build from your current choices and preferences.</li>
+                <li>Keep adjusting anything until the drink feels right.</li>
             </ul>
         </div>
 
@@ -267,7 +268,7 @@
         <div class="builder-price-card">
             <p class="eyebrow">Live Total</p>
             <h2 data-builder-total>$0.00</h2>
-            <p class="muted">This preview updates instantly, and checkout still recalculates totals on the server.</p>
+            <p class="muted">Review your total and adjust your build before checkout.</p>
             <dl class="summary-list">
                 <div>
                     <dt>Pickup Store</dt>

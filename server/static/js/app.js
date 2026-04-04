@@ -11,6 +11,7 @@ document.addEventListener("DOMContentLoaded", () => {
     initMenuAiAssistant();
     initSupportChat();
     initPreferenceSelection();
+    initRegistrationPasswordGates();
 });
 
 function getCsrfToken() {
@@ -518,6 +519,57 @@ function initPreferenceSelection() {
         }
         syncInputGroup(input.name);
     });
+}
+
+function initRegistrationPasswordGates() {
+    const form = document.querySelector(".auth-form");
+    if (!form) {
+        return;
+    }
+
+    const passwordField = form.querySelector("input[name=password1]");
+    const confirmField = form.querySelector("input[name=password2]");
+    const gates = document.querySelector("#password-gates");
+    if (!passwordField || !confirmField || !gates) {
+        return;
+    }
+
+    const gateNodes = {
+        length: gates.querySelector("[data-password-gate=length]"),
+        alnum: gates.querySelector("[data-password-gate=alnum]"),
+        match: gates.querySelector("[data-password-gate=match]"),
+    };
+
+    const setGateState = (node, isComplete, label) => {
+        if (!node) {
+            return;
+        }
+        node.textContent = `${isComplete ? "[x]" : "[ ]"} ${label}`;
+    };
+
+    const renderGates = () => {
+        const passwordValue = passwordField.value || "";
+        const confirmValue = confirmField.value || "";
+        const hasLength = passwordValue.length >= 8;
+        const hasLetterAndNumber = /[A-Za-z]/.test(passwordValue) && /\d/.test(passwordValue);
+        const isMatch = Boolean(passwordValue) && passwordValue === confirmValue;
+
+        setGateState(gateNodes.length, hasLength, "At least 8 characters");
+        setGateState(
+            gateNodes.alnum,
+            hasLetterAndNumber,
+            "Includes at least one letter and one number"
+        );
+        setGateState(
+            gateNodes.match,
+            isMatch,
+            "Password and re-entered password match"
+        );
+    };
+
+    passwordField.addEventListener("input", renderGates);
+    confirmField.addEventListener("input", renderGates);
+    renderGates();
 }
 
 function getCheckedLabels(form, fieldName) {

@@ -312,7 +312,7 @@ class MenuAiAssistantViewTests(TestCase):
         self.client.force_login(self.customer)
         response = self.client.get(reverse("orders:menu", args=[self.store.store_code]))
         self.assertEqual(response.status_code, 200)
-        self.assertContains(response, "Ask AI what to order")
+        self.assertContains(response, "Open AI builder")
 
     @patch("apps.orders.assistant._call_anthropic_menu_ai")
     def test_menu_ai_prompt_returns_menu_matches(self, mock_call):

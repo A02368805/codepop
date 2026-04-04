@@ -338,6 +338,41 @@ class CustomerOrderingViewTests(TestCase):
         )
         self.assertIn("assistant_html", payload)
 
+    def test_customer_dashboard_shows_builder_entry_points_and_direct_recommendation_links(
+        self,
+    ):
+        self.client.force_login(self.customer)
+        response = self.client.get(reverse("customer-dashboard"))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Open AI builder")
+        self.assertContains(response, "Open manual builder")
+        self.assertContains(
+            response,
+            reverse("orders:menu", args=[self.store.store_code]),
+        )
+        self.assertContains(
+            response,
+            f"{reverse('orders:menu', args=[self.store.store_code])}?open_ai=1",
+        )
+        self.assertContains(
+            response,
+            reverse("orders:menu", args=[self.store.store_code]),
+        )
+
+    def test_recommendations_page_shows_builder_actions_and_change_store(self):
+        self.client.force_login(self.customer)
+        response = self.client.get(reverse("orders:recommendations"))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Open AI builder")
+        self.assertContains(response, "Open manual builder")
+        self.assertContains(response, "Change store")
+        self.assertContains(
+            response,
+            reverse("orders:menu", args=[self.store.store_code]),
+        )
+
     def test_account_preferences_save_defaults_missing_style_fields(self):
         self.client.force_login(self.customer)
         response = self.client.post(

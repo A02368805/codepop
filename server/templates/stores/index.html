@@ -8,7 +8,7 @@
         <p class="eyebrow">Stores</p>
         {% if can_start_order %}
             <h1>Pick your FloatStack pickup store.</h1>
-            <p class="lede">Search by ZIP code or address, or use your location to get the best pickup option quickly.</p>
+            <p class="lede">Find the best pickup store in seconds.</p>
         {% else %}
             <h1>Browse the FloatStack store network in your current scope.</h1>
             <p class="lede">Operational roles can review locations here, but drink ordering stays limited to guests and customer accounts.</p>
@@ -50,7 +50,7 @@
                 <p class="eyebrow">Find a Store</p>
                 <h2>Best pickup options</h2>
             </div>
-            <p class="lede-small">Keep it simple: enter an address or ZIP code, or let your browser share location for faster matching.</p>
+            <p class="lede-small">Enter a ZIP code/address or use location once, then we rank the best options.</p>
         </div>
         <form
             id="store-recommendation-form"
@@ -75,7 +75,7 @@
                 {{ recommendation_form.pickup_time_choice.errors }}
             </label>
             {{ recommendation_form.non_field_errors }}
-            <p id="geo-status" class="muted">Use your location for a faster recommendation boost, or search by ZIP code and address.</p>
+            <p id="geo-status" class="muted">We will rank stores from your current search input.</p>
             <div class="action-row">
                 <button class="button button--primary" type="submit">Show stores</button>
                 <button class="button button--ghost" type="button" id="geo-locate-btn">Use my location</button>

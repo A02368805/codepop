@@ -7,7 +7,7 @@
     <div>
         <p class="eyebrow">Order Confirmed</p>
         <h1>{{ order.public_order_code }}</h1>
-        <p class="lede">Your order is in FloatStack and ready for queue handling. The drink snapshot and final pricing are locked in on the server.</p>
+        <p class="lede">Your order is confirmed and is now in the pickup queue.</p>
         <div class="cta-row">
             <a class="button button--primary" href="{% url 'orders:detail' order.public_order_code %}">Track this order</a>
             <a class="button button--ghost" href="{% url 'stores:index' %}">Start another order</a>

@@ -8,8 +8,7 @@ class SupportMessageForm(forms.Form):
             attrs={
                 "rows": 3,
                 "placeholder": (
-                    "Ask about order status, pickup timing, guest lookup, refunds, "
-                    "account help, or what FloatStack is."
+                    "Ask about orders, pickup, guest lookup, refunds, or account help."
                 ),
             }
         ),

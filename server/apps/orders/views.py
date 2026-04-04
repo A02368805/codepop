@@ -82,6 +82,26 @@ def _parse_date(value):
         return None
 
 
+def _resolve_customer_order_store(user):
+    if not getattr(user, "is_authenticated", False):
+        return None
+    preferred_store = getattr(user, "preferred_store", None)
+    if preferred_store and preferred_store.is_active:
+        return preferred_store
+    if getattr(user, "default_region_id", None):
+        regional_store = (
+            Store.objects.filter(
+                region_id=user.default_region_id,
+                is_active=True,
+            )
+            .order_by("name")
+            .first()
+        )
+        if regional_store:
+            return regional_store
+    return Store.objects.filter(is_active=True).order_by("name").first()
+
+
 def _bound_value(form, field_name, fallback=""):
     if form.is_bound:
         return form.data.get(field_name, fallback)
@@ -880,9 +900,11 @@ class RecommendationView(CustomerOrderingRequiredMixin, TemplateView):
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
+        order_store = _resolve_customer_order_store(self.request.user)
         context["recommendations"] = recommend_drinks_for_user(
             self.request.user if self.request.user.is_authenticated else None
         )
+        context["order_store"] = order_store
         return context
 
 
