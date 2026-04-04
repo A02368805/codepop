@@ -16,19 +16,9 @@
                 <a class="button button--ghost" href="{% url 'account-preferences' %}">Taste profile</a>
             {% endif %}
         </div>
-    </div>
-    <div class="hero-card">
-        <p class="eyebrow">Suggested For You</p>
-        <ul class="mini-list">
-            {% for recommendation in recommendations %}
-                <li><strong>{{ recommendation.name }}</strong>: {{ recommendation.explanation }}</li>
-            {% empty %}
-                <li>Open any drink to start seeing more personalized picks.</li>
-            {% endfor %}
-        </ul>
-        <div class="menu-ai-launcher">
-            <button class="button button--ghost" type="button" id="menu-ai-open">Help me pick a drink</button>
-            <div class="menu-ai-panel" id="menu-ai-panel" hidden>
+        <div class="menu-ai-launcher menu-ai-launcher--compact">
+            <p class="eyebrow">AI Drink Prompt</p>
+            <div class="menu-ai-panel menu-ai-panel--inline" id="menu-ai-panel">
                 <form
                     method="post"
                     hx-post="{% url 'orders:menu-ai' store.store_code %}"
@@ -38,18 +28,29 @@
                 >
                     {% csrf_token %}
                     <label class="field">
-                        <span>What sounds good right now?</span>
+                        <span>Tell us what you are craving</span>
                         {{ menu_ai_form.prompt }}
                     </label>
                     <div class="action-row">
-                        <button class="button button--primary" type="submit">Get ideas</button>
-                        <button class="button button--ghost" type="button" id="menu-ai-close">Done</button>
+                        <button class="button button--primary" type="submit">Generate drink ideas</button>
                     </div>
                 </form>
-                <div id="menu-ai-result">
-                    {% include "orders/partials/menu_ai_result.html" %}
+                <div id="menu-ai-result" class="menu-ai-result menu-ai-result--compact" aria-live="polite">
+                    {% if menu_ai_result %}
+                        {% include "orders/partials/menu_ai_result.html" with menu_ai_oob=False menu_ai_hero_cards=hero_recommendation_cards %}
+                    {% endif %}
                 </div>
             </div>
+        </div>
+    </div>
+    <div class="hero-card">
+        <p class="eyebrow">Recommended Picks</p>
+        <h2>Not sure what to order?</h2>
+        <p class="muted">Start with one of these four drink ideas, then customize everything your way.</p>
+    </div>
+    <div class="menu-hero-recommendations" aria-label="Recommended drinks at {{ store.name }}">
+        <div id="menu-hero-ai-reco-row" class="menu-reco-row">
+            {% include "orders/partials/menu_hero_recommendation_cards.html" with hero_recommendation_cards=hero_recommendation_cards %}
         </div>
     </div>
 </section>

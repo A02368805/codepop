@@ -29,7 +29,9 @@
                     {% if menu_ai_result.recipe.ice_cream %}<li><strong>Ice cream</strong>: {{ menu_ai_result.recipe.ice_cream.label }}</li>{% endif %}
                     {% if menu_ai_result.drink.base_price_snapshot %}<li><strong>Starts at</strong>: ${{ menu_ai_result.drink.base_price_snapshot|floatformat:2 }}</li>{% endif %}
                 </ul>
-                {% if menu_ai_result.recipe.starter_menu_item %}
+                {% if menu_ai_result.drink.builder_url %}
+                    <a class="button button--ghost" href="{{ menu_ai_result.drink.builder_url }}">Open In Builder</a>
+                {% elif menu_ai_result.recipe.starter_menu_item %}
                     <a class="button button--ghost" href="{% url 'orders:customize' store.store_code menu_ai_result.recipe.starter_menu_item.slug %}">Start from {{ menu_ai_result.recipe.starter_menu_item.name }}</a>
                 {% endif %}
                 {% if menu_ai_result.can_save and not menu_ai_result.saved %}
@@ -90,5 +92,10 @@
         <p class="eyebrow">Drink Helper</p>
         <h2>Tell us what you are craving</h2>
         <p>Try prompts like fruity, creamy, caffeine-free, or bold and we will suggest drinks to start from.</p>
+    </div>
+{% endif %}
+{% if menu_ai_oob %}
+    <div id="menu-hero-ai-reco-row" hx-swap-oob="innerHTML">
+        {% include "orders/partials/menu_hero_recommendation_cards.html" with hero_recommendation_cards=menu_ai_hero_cards %}
     </div>
 {% endif %}
