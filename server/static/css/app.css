@@ -740,6 +740,39 @@ h3 {
     display: none;
 }
 
+.htmx-request .htmx-indicator,
+.htmx-request.htmx-indicator {
+    display: inline-flex;
+}
+
+.ai-loading-indicator {
+    align-items: center;
+    gap: 0.45rem;
+    margin: 0;
+    color: var(--muted);
+    font-size: 0.92rem;
+}
+
+.ai-loading-indicator[hidden] {
+    display: none !important;
+}
+
+.ai-loading-indicator::before {
+    content: "";
+    width: 0.7rem;
+    height: 0.7rem;
+    border-radius: 999px;
+    border: 2px solid rgba(var(--accent-rgb), 0.25);
+    border-top-color: rgba(var(--accent-rgb), 0.9);
+    animation: spinPulse 0.8s linear infinite;
+}
+
+.assistant-scope-note {
+    margin: 0;
+    color: var(--muted);
+    font-size: 0.9rem;
+}
+
 .support-thread {
     display: grid;
     gap: 0.75rem;
@@ -1275,6 +1308,12 @@ h3 {
 
     50% {
         transform: translateY(-10px);
+    }
+}
+
+@keyframes spinPulse {
+    to {
+        transform: rotate(360deg);
     }
 }
 
