@@ -91,7 +91,10 @@ class MenuAiPromptForm(forms.Form):
         widget=forms.Textarea(
             attrs={
                 "rows": 4,
-                "placeholder": "Tell FloatStack what kind of drink you want, like fruity, creamy, caffeine-free, or bold.",
+                "placeholder": (
+                    "Describe your drink vibe (fruity, creamy, caffeine-free, bold) "
+                    "plus ingredients you want, like diet coke and pineapple."
+                ),
                 "id": "menu-ai-prompt",
             }
         ),

@@ -9,6 +9,7 @@ document.addEventListener("DOMContentLoaded", () => {
     initStoreRecommendation();
     initDrinkBuilder();
     initMenuAiAssistant();
+    initSupportChat();
 });
 
 function getCsrfToken() {
@@ -416,6 +417,56 @@ function initMenuAiAssistant() {
         }
         openPanel();
         promptField.value = target.getAttribute("data-menu-ai-prompt") || "";
+    });
+}
+
+function initSupportChat() {
+    const workspace = document.querySelector("#support-workspace");
+    if (!workspace) {
+        return;
+    }
+
+    let preservedScrollY = null;
+
+    const scrollThreadToBottom = () => {
+        const thread = document.querySelector("#support-thread-log");
+        if (thread) {
+            thread.scrollTop = thread.scrollHeight;
+        }
+    };
+
+    scrollThreadToBottom();
+
+    document.body.addEventListener("htmx:beforeRequest", (event) => {
+        const form = event.target.closest("form[data-support-send-form]");
+        if (!form) {
+            return;
+        }
+        preservedScrollY = window.scrollY;
+        const status = form.querySelector("[data-support-send-status]");
+        if (status) {
+            status.hidden = false;
+        }
+        const submitButton = form.querySelector("button[type='submit']");
+        if (submitButton) {
+            submitButton.disabled = true;
+            if (!submitButton.dataset.originalLabel) {
+                submitButton.dataset.originalLabel = submitButton.textContent;
+            }
+            submitButton.textContent = "Creating message...";
+        }
+    });
+
+    document.body.addEventListener("htmx:afterSwap", (event) => {
+        const target = event.detail?.target;
+        if (!target || target.id !== "support-workspace") {
+            return;
+        }
+        if (typeof preservedScrollY === "number") {
+            window.scrollTo({ top: preservedScrollY, behavior: "auto" });
+        }
+        preservedScrollY = null;
+        scrollThreadToBottom();
     });
 }
 

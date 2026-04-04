@@ -34,6 +34,7 @@
                     hx-post="{% url 'orders:menu-ai' store.store_code %}"
                     hx-target="#menu-ai-result"
                     hx-swap="innerHTML"
+                    hx-indicator="#menu-ai-indicator"
                     class="menu-ai-form"
                 >
                     {% csrf_token %}
@@ -41,10 +42,12 @@
                         <span>What kind of drink do you want?</span>
                         {{ menu_ai_form.prompt }}
                     </label>
+                    <p class="assistant-scope-note">Scope: drink ideas and menu matching only. For order status, pickup, or refunds use Support Chat.</p>
                     <div class="action-row">
                         <button class="button button--primary" type="submit">Get suggestions</button>
                         <button class="button button--ghost" type="button" id="menu-ai-close">Close</button>
                     </div>
+                    <p class="htmx-indicator ai-loading-indicator" id="menu-ai-indicator">Creating your custom drink suggestion...</p>
                 </form>
                 <div id="menu-ai-result">
                     {% include "orders/partials/menu_ai_result.html" %}
