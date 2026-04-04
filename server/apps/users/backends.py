@@ -36,7 +36,11 @@ class FederatedAuthBackend:
         import requests
 
         # Only run if distributed mode is enabled
-        if not settings.PEER_STORES or not settings.SYNC_API_SECRET or not settings.STORE_ID:
+        if (
+            not settings.PEER_STORES
+            or not settings.SYNC_API_SECRET
+            or not settings.STORE_ID
+        ):
             return None
 
         # Only try if user doesn't exist locally

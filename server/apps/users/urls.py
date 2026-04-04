@@ -23,7 +23,11 @@ urlpatterns = [
     path("login/", CodePopLoginView.as_view(), name="login"),
     path("logout/", CodePopLogoutView.as_view(), name="logout"),
     path("register/", RegisterView.as_view(), name="register"),
-    path("federated-validate/", FederatedValidateView.as_view(), name="federated-validate"),
+    path(
+        "federated-validate/",
+        FederatedValidateView.as_view(),
+        name="federated-validate",
+    ),
     path("dashboard/", RoleAwareDashboardRedirectView.as_view(), name="dashboard"),
     path("account/preferences/", PreferenceView.as_view(), name="account-preferences"),
     path("admin/users/", AdminUserManagementView.as_view(), name="admin-users"),

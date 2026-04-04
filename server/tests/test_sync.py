@@ -295,8 +295,9 @@ class SyncPeerTransportTests(TestCase):
 
     def test_ingest_endpoint_accepts_valid_event(self):
         """Ingest endpoint accepts valid event with correct auth and creates SyncOutboxEvent."""
-        from django.test import override_settings
         import uuid
+
+        from django.test import override_settings
 
         remote_event_id = uuid.uuid4()
         payload = {
@@ -329,8 +330,9 @@ class SyncPeerTransportTests(TestCase):
 
     def test_ingest_deduplicates_repeated_events(self):
         """Repeated ingest of same event (same origin + remote_event_id) is idempotent."""
-        from django.test import override_settings
         import uuid
+
+        from django.test import override_settings
 
         remote_event_id = uuid.uuid4()
         payload = {
@@ -377,7 +379,8 @@ class SyncPeerTransportTests(TestCase):
     )
     def test_process_outbox_creates_peer_deliveries(self):
         """Processing local outbox event creates SyncPeerDelivery records."""
-        from unittest.mock import patch, MagicMock
+        from unittest.mock import MagicMock, patch
+
         from apps.sync.models import SyncPeerDelivery
 
         # Create a simple outbox event directly
@@ -400,13 +403,18 @@ class SyncPeerTransportTests(TestCase):
             process_outbox_event(event)
 
             # Check that peer deliveries were created
-            deliveries = SyncPeerDelivery.objects.filter(event=event, peer_node_id="store-b")
-            self.assertEqual(deliveries.count(), 1, "Peer delivery record was not created")
+            deliveries = SyncPeerDelivery.objects.filter(
+                event=event, peer_node_id="store-b"
+            )
+            self.assertEqual(
+                deliveries.count(), 1, "Peer delivery record was not created"
+            )
 
     def test_ingested_event_does_not_re_push(self):
         """Events received from peers (origin_node_id != '') are not re-pushed."""
-        from django.test import override_settings
         import uuid
+
+        from django.test import override_settings
 
         # Create an event with a peer origin
         remote_event_id = uuid.uuid4()

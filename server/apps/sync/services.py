@@ -840,8 +840,8 @@ def retry_failed_outbox_events(*, limit=25):
 
 def _enqueue_peer_push(event: SyncOutboxEvent) -> None:
     """Schedule peer push task if sync is enabled."""
-    from django.conf import settings
     from apps.sync.tasks import push_pending_peer_deliveries_async
+    from django.conf import settings
 
     if not settings.SYNC_PUSH_ENABLED or event.origin_node_id != "":
         return
@@ -850,7 +850,9 @@ def _enqueue_peer_push(event: SyncOutboxEvent) -> None:
     push_event_to_all_peers(event)
 
     # Queue async task to send them
-    transaction.on_commit(lambda: push_pending_peer_deliveries_async.delay(str(event.pk)))
+    transaction.on_commit(
+        lambda: push_pending_peer_deliveries_async.delay(str(event.pk))
+    )
 
 
 def push_event_to_peer(event: SyncOutboxEvent, delivery) -> None:
@@ -858,9 +860,10 @@ def push_event_to_peer(event: SyncOutboxEvent, delivery) -> None:
     POST an outbox event to a peer node's ingest endpoint.
     Updates delivery status and retry metadata.
     """
+    from datetime import timedelta
+
     import requests
     from django.conf import settings
-    from datetime import timedelta
 
     try:
         payload = {
@@ -897,11 +900,19 @@ def push_event_to_peer(event: SyncOutboxEvent, delivery) -> None:
 
         # Exponential backoff: 1min, 5min, 15min, then daily
         backoff_seconds = [60, 300, 900, 86400]
-        seconds = backoff_seconds[min(delivery.attempt_count - 1, len(backoff_seconds) - 1)]
+        seconds = backoff_seconds[
+            min(delivery.attempt_count - 1, len(backoff_seconds) - 1)
+        ]
         delivery.next_attempt_at = timezone.now() + timedelta(seconds=seconds)
 
         delivery.save(
-            update_fields=["attempt_count", "status", "last_error", "next_attempt_at", "updated_at"]
+            update_fields=[
+                "attempt_count",
+                "status",
+                "last_error",
+                "next_attempt_at",
+                "updated_at",
+            ]
         )
 
 
@@ -910,8 +921,8 @@ def push_event_to_all_peers(event: SyncOutboxEvent) -> None:
     Create peer delivery records and queue async push for all configured peers.
     Only runs if SYNC_PUSH_ENABLED and event was created locally (origin_node_id == "").
     """
-    from django.conf import settings
     from apps.sync.models import SyncPeerDelivery
+    from django.conf import settings
 
     if not settings.SYNC_PUSH_ENABLED or event.origin_node_id != "":
         return

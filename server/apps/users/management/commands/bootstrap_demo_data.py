@@ -578,11 +578,16 @@ class Command(BaseCommand):
         # Only seed full demo data in non-distributed mode
         if not region_code:
             self._seed_suppliers(
-                stores=stores, regions=regions, inventory_items=inventory_items, users=users
+                stores=stores,
+                regions=regions,
+                inventory_items=inventory_items,
+                users=users,
             )
             machine_types = self._seed_machine_types()
             machines = self._seed_machines(stores=stores, machine_types=machine_types)
-            self._seed_maintenance_policies(regions=regions, machine_types=machine_types)
+            self._seed_maintenance_policies(
+                regions=regions, machine_types=machine_types
+            )
             self._seed_orders(stores=stores, users=users)
             self._seed_customer_preferences(users=users)
             self._seed_transfers(
@@ -985,8 +990,12 @@ class Command(BaseCommand):
             recorded_by_email,
         ) in replenishment_rows:
             # Skip if supplier, store, user, or sku don't exist in this seeding
-            if (region_code not in suppliers or store_code not in stores or
-                recorded_by_email not in users or sku not in inventory_items):
+            if (
+                region_code not in suppliers
+                or store_code not in stores
+                or recorded_by_email not in users
+                or sku not in inventory_items
+            ):
                 continue
 
             SupplierReplenishment.objects.update_or_create(
@@ -1019,8 +1028,12 @@ class Command(BaseCommand):
             requested_by_email,
         ) in pending_order_rows:
             # Skip if supplier, store, user, or sku don't exist in this seeding
-            if (region_code not in suppliers or store_code not in stores or
-                requested_by_email not in users or sku not in inventory_items):
+            if (
+                region_code not in suppliers
+                or store_code not in stores
+                or requested_by_email not in users
+                or sku not in inventory_items
+            ):
                 continue
 
             SupplierReplenishment.objects.update_or_create(

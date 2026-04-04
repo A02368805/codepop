@@ -959,9 +959,10 @@ class FederatedValidateView(View):
     """
 
     def post(self, request, *args, **kwargs):
+        import json
+
         from django.conf import settings
         from django.contrib.auth import authenticate
-        import json
 
         # Authenticate the requesting peer store
         token = request.headers.get("X-Sync-Token", "")

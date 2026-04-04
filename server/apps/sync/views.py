@@ -1,17 +1,21 @@
 import json
-from django.utils.decorators import method_decorator
-from django.views.decorators.csrf import csrf_exempt
-from django.http import HttpResponse, JsonResponse
 
 from apps.users.models import User
 from apps.users.permissions import RoleRequiredMixin
+from django.http import HttpResponse, JsonResponse
 from django.shortcuts import get_object_or_404
 from django.template.loader import render_to_string
+from django.utils.decorators import method_decorator
 from django.views import View
+from django.views.decorators.csrf import csrf_exempt
 from django.views.generic import TemplateView
 
 from .models import SyncConflictLog, SyncOutboxEvent, SyncProjectionState
-from .services import resolve_sync_conflict, retry_failed_outbox_events, ingest_event_from_peer
+from .services import (
+    ingest_event_from_peer,
+    resolve_sync_conflict,
+    retry_failed_outbox_events,
+)
 from .tasks import process_pending_outbox_events_async
 
 

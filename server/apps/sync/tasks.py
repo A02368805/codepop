@@ -2,13 +2,13 @@ from __future__ import annotations
 
 from celery import shared_task
 
+from .models import SyncOutboxEvent, SyncPeerDelivery
 from .services import (
     process_pending_outbox_events,
+    push_event_to_peer,
     retry_failed_outbox_events,
     retry_failed_peer_deliveries,
-    push_event_to_peer,
 )
-from .models import SyncOutboxEvent, SyncPeerDelivery
 
 
 @shared_task
@@ -34,7 +34,9 @@ def push_pending_peer_deliveries_async(event_id: str):
     except SyncOutboxEvent.DoesNotExist:
         return
 
-    for delivery in event.peer_deliveries.filter(status=SyncPeerDelivery.Status.PENDING):
+    for delivery in event.peer_deliveries.filter(
+        status=SyncPeerDelivery.Status.PENDING
+    ):
         push_event_to_peer(event, delivery)
 
 
