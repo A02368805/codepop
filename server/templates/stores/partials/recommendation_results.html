@@ -1,15 +1,21 @@
-<p class="muted">Latest recommendation snapshot.</p>
+<p class="muted">Recommended pickup locations based on your current inputs.</p>
 {% if store_recommendations %}
     <div class="surface-list">
         {% for recommendation in store_recommendations %}
             <article class="list-card">
                 <div class="list-card__main">
                     <div class="inline-cluster">
-                        <span class="pill">Score {{ recommendation.score|floatformat:1 }}</span>
+                        {% if can_start_order %}
+                            <span class="pill">Recommended</span>
+                        {% else %}
+                            <span class="pill">Score {{ recommendation.score|floatformat:1 }}</span>
+                        {% endif %}
                         {% if recommendation.distance_miles %}
                             <span class="pill pill--soft">{{ recommendation.distance_miles|floatformat:1 }} mi</span>
                         {% endif %}
-                        <span class="pill pill--soft">Region {{ recommendation.store.region.code }}</span>
+                        {% if not can_start_order %}
+                            <span class="pill pill--soft">Region {{ recommendation.store.region.code }}</span>
+                        {% endif %}
                     </div>
                     <h3>{{ recommendation.store.name }}</h3>
                     <p class="muted">{{ recommendation.store.full_address }}</p>
@@ -17,7 +23,7 @@
                 </div>
                 <div class="list-card__actions">
                     {% if can_start_order %}
-                        <a class="button button--primary" href="{% url 'orders:menu' recommendation.store.store_code %}">Order Here</a>
+                        <a class="button button--primary" href="{% url 'orders:menu' recommendation.store.store_code %}">Order here</a>
                     {% else %}
                         <span class="pill">Customer ordering only</span>
                     {% endif %}

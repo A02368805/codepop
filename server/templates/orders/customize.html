@@ -52,18 +52,18 @@
                 <div class="builder-stage__caption">
                     <p class="eyebrow">Live Cup</p>
                     <h2 class="builder-stage__title" data-builder-heading>{{ menu_item.name }}</h2>
-                    <p class="muted" data-builder-summary>Choose a base, add flavor layers, and let FloatStack AI refine the balance without locking anything in.</p>
+                    <p class="muted" data-builder-summary>Choose your base, layer flavors, and adjust every detail until it tastes right.</p>
                     <div class="badge-row builder-stage__chips" data-builder-chips></div>
                 </div>
             </div>
         </div>
 
         <div class="builder-overview-card">
-            <p class="eyebrow">What makes this one work</p>
+            <p class="eyebrow">Quick Tips</p>
             <ul class="mini-list">
-                <li>Grouped ingredients keep the build fast to scan.</li>
-                <li>AI fill uses preferences, past orders, and your current selections.</li>
-                <li>Pricing updates live, but the server still validates everything at checkout.</li>
+                <li>Start with a base and one syrup for a balanced flavor.</li>
+                <li>Add-ins and float finishes are optional, so you can keep it simple.</li>
+                <li>Your live total updates while you build.</li>
             </ul>
         </div>
 
@@ -73,7 +73,7 @@
                     <p class="eyebrow">Step 1</p>
                     <h2>Choose your size</h2>
                 </div>
-                <p class="lede-small">Start with the cup size and FloatStack will keep totals aligned as you build.</p>
+                <p class="lede-small">Pick the cup size you want and we will update pricing as you customize.</p>
             </div>
             <div class="choice-grid choice-grid--segmented">
                 {% for option in size_cards %}
@@ -97,7 +97,7 @@
                     <p class="eyebrow">Step 2</p>
                     <h2>Pick your soda base</h2>
                 </div>
-                <p class="lede-small">These are the backbone of the drink, so we grouped them the way customers actually browse.</p>
+                <p class="lede-small">Choose the soda base first, then layer flavor on top.</p>
             </div>
             <div class="group-stack">
                 {% for group in soda_cards %}
@@ -132,7 +132,7 @@
                     <p class="eyebrow">Step 3</p>
                     <h2>Layer in flavor shots</h2>
                 </div>
-                <p class="lede-small">Add one or two syrups for a clean signature build, or keep going if you want a bigger soda-shop feel.</p>
+                <p class="lede-small">Add syrup flavors to build your perfect mix.</p>
             </div>
             <div class="group-stack">
                 {% for group in syrup_cards %}
@@ -168,7 +168,7 @@
                     <p class="eyebrow">Step 4</p>
                     <h2>Add texture and finishes</h2>
                 </div>
-                <p class="lede-small">Creamy extras, fresh garnishes, and purees help the drink feel more complete without overcomplicating it.</p>
+                <p class="lede-small">Top it off with cream, fruit, or other finishing touches.</p>
             </div>
             <div class="group-stack">
                 {% for group in add_in_cards %}
@@ -204,7 +204,7 @@
                     <p class="eyebrow">Optional Float Finish</p>
                     <h2>Top it with ice cream</h2>
                 </div>
-                <p class="lede-small">Leave it off for a crisp soda or add a scoop for a richer float experience.</p>
+                <p class="lede-small">Leave it soda-only or add a scoop for a richer float.</p>
             </div>
             {% for group in ice_cream_cards %}
                 <section class="ingredient-group">
@@ -240,7 +240,7 @@
                     <p class="eyebrow">Finish</p>
                     <h2>Quantity and pickup notes</h2>
                 </div>
-                <p class="lede-small">Everything stays editable after AI fills the builder, including quantity and notes.</p>
+                <p class="lede-small">Set how many drinks you want and add any pickup notes.</p>
             </div>
             <div class="builder-detail-grid">
                 <label class="field">
@@ -267,7 +267,7 @@
         <div class="builder-price-card">
             <p class="eyebrow">Live Total</p>
             <h2 data-builder-total>$0.00</h2>
-            <p class="muted">This preview updates instantly, and checkout still recalculates totals on the server.</p>
+            <p class="muted">Your total updates instantly as you make changes.</p>
             <dl class="summary-list">
                 <div>
                     <dt>Pickup Store</dt>
@@ -283,7 +283,7 @@
                 </div>
             </dl>
             <div class="action-row">
-                <button class="button button--primary" type="submit" form="drink-builder-form">Add to cart</button>
+                <button class="button button--primary" type="submit" form="drink-builder-form">Add to order</button>
                 <a class="button button--ghost" href="{% url 'orders:menu' store.store_code %}">Keep browsing</a>
             </div>
         </div>

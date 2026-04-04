@@ -5,7 +5,9 @@
                 <div class="list-card__main">
                     <div class="inline-cluster">
                         <span class="pill">{{ notification.get_category_display }}</span>
-                        <span class="pill pill--soft">{{ notification.get_notification_type_display }}</span>
+                        {% if request.user.role != "account_user" %}
+                            <span class="pill pill--soft">{{ notification.get_notification_type_display }}</span>
+                        {% endif %}
                         {% if notification.is_read %}
                             <span class="pill pill--soft">Read</span>
                         {% endif %}
@@ -16,7 +18,7 @@
                 </div>
                 <div class="list-card__actions">
                     {% if notification.payload_json.action_url %}
-                        <a href="{{ notification.payload_json.action_url }}">Open related workflow</a>
+                        <a href="{{ notification.payload_json.action_url }}">View details</a>
                     {% endif %}
                     {% if not notification.is_read %}
                         <form

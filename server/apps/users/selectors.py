@@ -20,10 +20,11 @@ ROLE_METADATA = {
         "dashboard_route": "customer-dashboard",
         "description": "Track orders, preferences, and your preferred pickup store.",
         "navigation": [
-            NavigationItem("Stores", "stores:index"),
-            NavigationItem("Orders", "orders:history"),
+            NavigationItem("Browse Drinks", "stores:index"),
+            NavigationItem("My Orders", "orders:history"),
             NavigationItem("Cart", "orders:cart"),
-            NavigationItem("Support", "support:index"),
+            NavigationItem("Favorites", "orders:favorites"),
+            NavigationItem("Help", "support:index"),
         ],
     },
     User.Role.MANAGER: {
@@ -134,10 +135,10 @@ def build_brandmark(user) -> dict:
 def build_navigation(user) -> list[dict]:
     if not getattr(user, "is_authenticated", False):
         items = []
-        items.append({"label": "Stores", "url": reverse("stores:index")})
-        items.append({"label": "Support", "url": reverse("support:index")})
+        items.append({"label": "Browse Drinks", "url": reverse("stores:index")})
+        items.append({"label": "Help", "url": reverse("support:index")})
         items.append({"label": "Sign In", "url": reverse("login")})
-        items.append({"label": "Sign up", "url": reverse("register")})
+        items.append({"label": "Create Account", "url": reverse("register")})
         return items
 
     metadata = get_role_metadata(user.role)
@@ -150,7 +151,7 @@ def build_navigation(user) -> list[dict]:
         items.append(item)
     items.append(
         {
-            "label": "Notifications",
+            "label": "Updates",
             "url": reverse("notifications:index"),
             "badge": unread_notifications,
             "badge_id": "nav-notification-badge",

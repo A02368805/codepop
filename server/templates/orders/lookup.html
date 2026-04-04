@@ -6,8 +6,8 @@
 <section class="auth-shell">
     <div class="auth-card">
         <p class="eyebrow">Guest Order Lookup</p>
-        <h1>Find a one-time guest order</h1>
-        <p class="lede-small">Enter the lookup code shown after checkout. Guest orders do not create a persistent full user account.</p>
+        <h1>Find your guest order</h1>
+        <p class="lede-small">Enter the lookup code from your confirmation page to track pickup progress.</p>
         <form method="post" class="auth-form">
             {% csrf_token %}
             {{ form.non_field_errors }}
@@ -16,7 +16,7 @@
                 {{ form.lookup_code }}
                 {{ form.lookup_code.errors }}
             </label>
-            <button class="button button--primary" type="submit">Open order</button>
+            <button class="button button--primary" type="submit">Track order</button>
         </form>
     </div>
 </section>

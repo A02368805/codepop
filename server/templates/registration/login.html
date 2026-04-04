@@ -5,9 +5,9 @@
 {% block content %}
 <section class="auth-shell">
     <div class="auth-card">
-        <p class="eyebrow">Session Authentication</p>
-        <h1>Sign in to FloatStack</h1>
-        <p class="lede-small">Use your customer or operations account to get into the right workspace. Guests can still place one-time orders without signing in.</p>
+        <p class="eyebrow">Welcome Back</p>
+        <h1>Sign in</h1>
+        <p class="lede-small">Sign in to view orders, favorites, and account preferences. Guests can still place one-time orders without an account.</p>
         <form method="post" class="auth-form">
             {% csrf_token %}
             {{ form.non_field_errors }}
@@ -23,7 +23,7 @@
         </form>
         <div class="cta-row">
             <a class="button button--ghost" href="{% url 'register' %}">Create account</a>
-            <a class="button button--ghost" href="{% url 'orders:guest-lookup' %}">Guest order lookup</a>
+            <a class="button button--ghost" href="{% url 'orders:guest-lookup' %}">Track guest order</a>
         </div>
     </div>
 </section>

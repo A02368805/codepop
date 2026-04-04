@@ -5,9 +5,9 @@
 {% block content %}
 <section class="hero hero--dashboard">
     <div>
-        <p class="eyebrow">Live Support Chat</p>
-        <h1>Chat with FloatStack support AI</h1>
-        <p class="lede">Ask anything about your order, pickup timing, guest lookup, refunds, or account help. Messages are sent directly to the support AI API with your conversation context.</p>
+        <p class="eyebrow">Support Chat</p>
+        <h1>Need help with an order?</h1>
+        <p class="lede">Ask about pickup timing, order updates, guest lookup, refunds, or account help. We will guide you through the next step.</p>
         <div class="cta-row">
             <form
                 method="post"
@@ -16,17 +16,17 @@
                 hx-swap="innerHTML"
             >
                 {% csrf_token %}
-                <button class="button button--ghost" type="submit">Start new conversation</button>
+                <button class="button button--ghost" type="submit">Start new chat</button>
             </form>
-            <a class="button button--ghost" href="{% url 'orders:guest-lookup' %}">Guest lookup</a>
+            <a class="button button--ghost" href="{% url 'orders:guest-lookup' %}">Track guest order</a>
         </div>
     </div>
     <div class="hero-card">
         <p class="eyebrow">Tips</p>
         <ul class="mini-list">
-            <li>Paste your order code like FS-C-C001-XXXXXX for exact status help</li>
-            <li>Ask follow-up questions naturally in the same thread</li>
-            <li>Use escalation if your issue still needs human review</li>
+            <li>Share your order code for the fastest status help.</li>
+            <li>Ask follow-up questions in the same chat thread.</li>
+            <li>Submit escalation if you still need team follow-up.</li>
         </ul>
     </div>
 </section>
