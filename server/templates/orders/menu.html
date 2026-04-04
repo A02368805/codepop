@@ -54,32 +54,64 @@
     </div>
 </section>
 
-<section class="panel">
-    <div class="section-heading">
-        <div>
-            <p class="eyebrow">Signature Drinks</p>
-            <h2>Pick a favorite and make it yours.</h2>
+{% if menu_nav %}
+    <nav class="panel home-subnav-panel" aria-label="Browse this store menu by drink base">
+        <div class="home-subnav">
+            {% for item in menu_nav %}
+                <a
+                    class="home-subnav__link{% if forloop.first %} is-active{% endif %}"
+                    href="#{{ item.anchor_id }}"
+                    data-home-nav-link
+                    aria-current="{% if forloop.first %}true{% else %}false{% endif %}"
+                >
+                    <span>{{ item.label }}</span>
+                </a>
+            {% endfor %}
         </div>
-        <p class="lede-small">Choose any drink below to open the same full customize flow.</p>
-    </div>
-    <div class="card-grid">
-        {% for item in menu_items %}
-            <article class="menu-card">
-                <div class="badge-row">
-                    {% for tag in item.tags %}
-                        <span class="pill pill--soft">{{ tag }}</span>
+    </nav>
+
+    <section class="panel home-browse-panel">
+        <div class="section-heading">
+            <div>
+                <p class="eyebrow">Browse Drinks</p>
+                <h2>Choose a base, then customize your drink.</h2>
+            </div>
+            <p class="lede-small">Use the sub-nav to jump to any base section in this store menu.</p>
+        </div>
+
+        {% for section in menu_sections %}
+            <section
+                class="home-drink-track"
+                id="{{ section.anchor_id }}"
+                aria-label="{{ section.label }} drinks at {{ store.name }}"
+            >
+                <div class="home-drink-track__header">
+                    <p class="eyebrow">{{ section.label }}</p>
+                    <h3>{{ section.label }} Drinks</h3>
+                    {% if section.description %}
+                        <p class="muted">{{ section.description }}</p>
+                    {% endif %}
+                </div>
+                <div class="home-drink-row">
+                    {% for item in section.cards %}
+                        {% include "home/partials/drink_card.html" with item=item %}
+                    {% empty %}
+                        <article class="empty-state home-empty-state">
+                            <h3>No drinks in this section</h3>
+                            <p>Try another base to keep browsing.</p>
+                        </article>
                     {% endfor %}
                 </div>
-                <h3>{{ item.name }}</h3>
-                <p>{{ item.description }}</p>
-                <dl class="price-list">
-                    <div><dt>Small</dt><dd>${{ item.base_prices.small|floatformat:2 }}</dd></div>
-                    <div><dt>Medium</dt><dd>${{ item.base_prices.medium|floatformat:2 }}</dd></div>
-                    <div><dt>Large</dt><dd>${{ item.base_prices.large|floatformat:2 }}</dd></div>
-                </dl>
-                <a class="button button--primary" href="{% url 'orders:customize' store.store_code item.slug %}">Customize drink</a>
-            </article>
+            </section>
         {% endfor %}
-    </div>
-</section>
+    </section>
+{% else %}
+    <section class="panel">
+        <div class="empty-state">
+            <h2>No drinks are available for this store yet.</h2>
+            <p>Choose another store to start an order.</p>
+            <a class="button button--primary" href="{% url 'stores:index' %}">Browse stores</a>
+        </div>
+    </section>
+{% endif %}
 {% endblock %}

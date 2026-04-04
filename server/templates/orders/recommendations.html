@@ -22,9 +22,20 @@
 <section class="panel">
     <div class="card-grid">
         {% for recommendation in recommendations %}
-            <article class="menu-card">
+            <article class="menu-card recommendation-card">
+                <div class="recommendation-card__visual">
+                    <img
+                        class="recommendation-card__image"
+                        src="{{ recommendation.image_url }}"
+                        alt="{{ recommendation.image_alt }}"
+                        loading="lazy"
+                        width="1200"
+                        height="1500"
+                    >
+                </div>
                 <div class="inline-cluster">
                     <span class="pill">Recommended</span>
+                    <span class="pill pill--soft">{{ recommendation.base_label }}</span>
                     {% for tag in recommendation.tags %}
                         <span class="pill pill--soft">{{ tag }}</span>
                     {% endfor %}

@@ -24,6 +24,7 @@ from django.core.exceptions import PermissionDenied
 from django.http import HttpResponse, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.template.loader import render_to_string
+from django.templatetags.static import static
 from django.urls import reverse
 from django.utils import timezone
 from django.views import View
@@ -71,6 +72,183 @@ from .selectors import (
     user_can_view_order,
 )
 from .services import create_order, get_refund_eligibility, transition_order_status
+
+MENU_BASE_IMAGE_ASSETS = {
+    "coke": "hero-coke.svg",
+    "diet-coke": "hero-coke.svg",
+    "coke-zero": "hero-coke.svg",
+    "pepsi": "hero-pepsi.svg",
+    "diet-pepsi": "hero-pepsi.svg",
+    "mountain-dew": "hero-mtn-dew.svg",
+    "diet-mountain-dew": "hero-mtn-dew.svg",
+    "dr-pepper": "hero-dr-pepper.svg",
+    "diet-dr-pepper": "hero-dr-pepper.svg",
+    "sprite": "hero-sprite.svg",
+    "sprite-zero": "hero-sprite.svg",
+    "lemon-lime": "hero-sprite.svg",
+    "root-beer": "hero-root-beer.svg",
+    "orange-soda": "hero-orange-soda.svg",
+    "club-soda": "hero-club-soda.svg",
+    "cream-soda": "hero-cream-soda.svg",
+}
+
+MENU_BASE_FAMILIES = [
+    {
+        "key": "coke",
+        "label": "Coke",
+        "slugs": {"coke", "diet-coke", "coke-zero"},
+        "description": "Classic cola favorites and zero-sugar picks.",
+    },
+    {
+        "key": "pepsi",
+        "label": "Pepsi",
+        "slugs": {"pepsi", "diet-pepsi"},
+        "description": "Smooth Pepsi builds with bright and creamy options.",
+    },
+    {
+        "key": "mtn-dew",
+        "label": "Mtn Dew",
+        "slugs": {"mountain-dew", "diet-mountain-dew"},
+        "description": "Bolder citrus profiles with extra flavor energy.",
+    },
+    {
+        "key": "dr-pepper",
+        "label": "Dr Pepper",
+        "slugs": {"dr-pepper", "diet-dr-pepper"},
+        "description": "Spiced cola-style combinations with layered sweetness.",
+    },
+    {
+        "key": "sprite",
+        "label": "Sprite",
+        "slugs": {"sprite", "sprite-zero", "lemon-lime"},
+        "description": "Crisp citrus and clean soda-shop refreshers.",
+    },
+    {
+        "key": "root-beer",
+        "label": "Root Beer",
+        "slugs": {"root-beer"},
+        "description": "Rich root-beer recipes built for smooth finishes.",
+    },
+]
+
+
+def _menu_base_category(base_slug):
+    for family in MENU_BASE_FAMILIES:
+        if base_slug in family["slugs"]:
+            return family["key"], family["label"], family.get("description", "")
+    fallback = SODA_OPTIONS.get(base_slug, {})
+    return (
+        base_slug,
+        fallback.get("label", base_slug.replace("-", " ").title()),
+        fallback.get("description", ""),
+    )
+
+
+def _menu_item_visual_payload(menu_item):
+    base_slug = menu_item.get("default_soda", "")
+    base_label = SODA_OPTIONS.get(base_slug, {}).get(
+        "label", base_slug.replace("-", " ").title() or "Signature"
+    )
+    has_float_profile = bool(menu_item.get("default_ice_cream")) or any(
+        str(tag).lower() == "float" for tag in menu_item.get("tags", [])
+    )
+    asset_name = (
+        "hero-float.svg"
+        if has_float_profile
+        else MENU_BASE_IMAGE_ASSETS.get(base_slug, "hero-float.svg")
+    )
+    return {
+        "image_url": static(f"images/drinks/{asset_name}"),
+        "image_alt": f"{menu_item.get('name', 'Signature drink')} in an iced cup",
+        "base_label": base_label,
+    }
+
+
+def _build_store_menu_sections(*, store):
+    cards = []
+    categories = {}
+    float_cards = []
+    for item in get_menu_items():
+        base_slug = item.get("default_soda", "")
+        category_key, category_label, category_description = _menu_base_category(
+            base_slug
+        )
+        tags = list(item.get("tags", []))
+        has_float_profile = bool(item.get("default_ice_cream")) or any(
+            str(tag).lower() == "float" for tag in tags
+        )
+        card = {
+            "slug": item["slug"],
+            "name": item["name"],
+            "description": item.get("description", ""),
+            "base_slug": base_slug,
+            "category_key": category_key,
+            "category_label": category_label,
+            "tags": tags[:3],
+            "badge": item.get("home_badge", ""),
+            "starting_price": item["base_prices"].get("small", ""),
+            "customize_url": reverse(
+                "orders:customize", args=[store.store_code, item["slug"]]
+            ),
+            **_menu_item_visual_payload(item),
+        }
+        cards.append(card)
+        categories.setdefault(
+            category_key,
+            {
+                "key": category_key,
+                "label": category_label,
+                "description": category_description,
+                "cards": [],
+            },
+        )["cards"].append(card)
+        if has_float_profile:
+            float_cards.append(card)
+
+    sections = []
+    for family in MENU_BASE_FAMILIES:
+        family_section = categories.get(family["key"])
+        if family_section:
+            family_section["description"] = family.get(
+                "description", family_section.get("description", "")
+            )
+            family_section["count"] = len(family_section["cards"])
+            family_section["anchor_id"] = f"menu-section-{family_section['key']}"
+            sections.append(family_section)
+
+    family_keys = {family["key"] for family in MENU_BASE_FAMILIES}
+    extra_sections = [
+        section
+        for key, section in categories.items()
+        if key not in family_keys and section["cards"]
+    ]
+    for section in sorted(extra_sections, key=lambda value: value["label"]):
+        section["count"] = len(section["cards"])
+        section["anchor_id"] = f"menu-section-{section['key']}"
+        sections.append(section)
+
+    if float_cards:
+        sections.append(
+            {
+                "key": "floats",
+                "label": "Floats",
+                "description": "Creamier float builds with ice-cream-forward profiles.",
+                "cards": float_cards,
+                "count": len(float_cards),
+                "anchor_id": "menu-section-floats",
+            }
+        )
+
+    nav = [
+        {
+            "key": section["key"],
+            "label": section["label"],
+            "count": section["count"],
+            "anchor_id": section["anchor_id"],
+        }
+        for section in sections
+    ]
+    return cards, sections, nav
 
 
 def _parse_date(value):
@@ -223,10 +401,13 @@ class MenuView(CustomerOrderingRequiredMixin, TemplateView):
             Store, store_code=self.kwargs["store_code"], is_active=True
         )
         cart = get_cart(self.request.session)
+        menu_items, menu_sections, menu_nav = _build_store_menu_sections(store=store)
         context.update(
             {
                 "store": store,
-                "menu_items": get_menu_items(),
+                "menu_items": menu_items,
+                "menu_sections": menu_sections,
+                "menu_nav": menu_nav,
                 "cart": cart,
                 "cart_item_count": cart_item_count(cart),
                 "recommendations": recommend_drinks_for_user(
@@ -837,9 +1018,17 @@ class RecommendationView(CustomerOrderingRequiredMixin, TemplateView):
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        context["recommendations"] = recommend_drinks_for_user(
+        menu_items_by_slug = {item["slug"]: item for item in get_menu_items()}
+        recommendations = recommend_drinks_for_user(
             self.request.user if self.request.user.is_authenticated else None
         )
+        hydrated_recommendations = []
+        for recommendation in recommendations:
+            row = dict(recommendation)
+            menu_item = menu_items_by_slug.get(row.get("slug", "")) or {}
+            row.update(_menu_item_visual_payload(menu_item or row))
+            hydrated_recommendations.append(row)
+        context["recommendations"] = hydrated_recommendations
         return context
 
 

@@ -298,13 +298,7 @@ h3 {
 
 .card-grid {
     grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
-    align-items: stretch;
-}
-
-.card-grid > .menu-card,
-.card-grid > .role-card,
-.card-grid > .empty-state {
-    height: 100%;
+    align-items: start;
 }
 
 .metric-grid {
@@ -427,7 +421,36 @@ h3 {
 
 .menu-card {
     display: grid;
-    gap: 0.75rem;
+    gap: 0.5rem;
+    align-content: start;
+}
+
+.menu-card__visual,
+.recommendation-card__visual {
+    height: 148px;
+    border-radius: 14px;
+    border: 1px solid var(--line);
+    background: var(--surface-soft);
+    overflow: hidden;
+    display: flex;
+    align-items: flex-end;
+    justify-content: center;
+}
+
+.menu-card__image,
+.recommendation-card__image {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    object-position: center bottom;
+    padding: 0.2rem 0.2rem 0;
+    display: block;
+}
+
+.menu-card h3,
+.menu-card p,
+.menu-card .price-list {
+    margin: 0;
 }
 
 .metric strong {
@@ -1120,7 +1143,7 @@ h3 {
 
 .home-drink-card {
     display: grid;
-    grid-template-rows: 218px minmax(0, 1fr) auto;
+    grid-template-rows: 206px auto auto;
     gap: 0.85rem;
     border: 1px solid var(--line);
     border-radius: 24px;
@@ -1131,7 +1154,7 @@ h3 {
         );
     padding: 0.95rem;
     scroll-snap-align: start;
-    height: 376px;
+    min-height: 410px;
     box-shadow: 0 12px 26px rgba(var(--ink-rgb), 0.08);
     transition: transform 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
 }
@@ -1151,7 +1174,7 @@ h3 {
         rgba(var(--berry-rgb), 0.08)
     );
     min-height: 0;
-    height: 218px;
+    height: 206px;
     display: grid;
     align-content: end;
     overflow: hidden;
@@ -1233,10 +1256,10 @@ h3 {
 .home-drink-card__meta .muted {
     margin-bottom: 0;
     display: -webkit-box;
-    -webkit-line-clamp: 2;
+    -webkit-line-clamp: 3;
     -webkit-box-orient: vertical;
     overflow: hidden;
-    min-height: 3em;
+    min-height: 4.5em;
 }
 
 .home-drink-card__meta .badge-row {
@@ -1247,7 +1270,6 @@ h3 {
 }
 
 .home-drink-card__footer {
-    margin-top: auto;
     display: grid;
     gap: 0.65rem;
 }
@@ -1874,6 +1896,11 @@ h3 {
         grid-auto-columns: 260px;
     }
 
+    .menu-card__visual,
+    .recommendation-card__visual {
+        height: 136px;
+    }
+
     .compact-stats,
     .price-list {
         grid-template-columns: 1fr;
@@ -1940,17 +1967,22 @@ h3 {
     }
 
     .home-drink-card {
-        grid-template-rows: 196px minmax(0, 1fr) auto;
-        height: 344px;
+        grid-template-rows: 184px auto auto;
+        min-height: 374px;
     }
 
     .home-drink-card__visual {
         min-height: 0;
-        height: 196px;
+        height: 184px;
     }
 
     .home-drink-row {
         grid-auto-columns: 84vw;
+    }
+
+    .menu-card__visual,
+    .recommendation-card__visual {
+        height: 126px;
     }
 
     .order-history-card__header,
