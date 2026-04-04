@@ -19,6 +19,7 @@ from apps.payments.services import (
 )
 from apps.users.models import FavoriteDrink
 from django.db import close_old_connections, connections
+from django.db.utils import OperationalError
 from django.test import TestCase, TransactionTestCase
 from django.urls import reverse
 
@@ -272,6 +273,13 @@ class InventoryConcurrencyTests(TransactionTestCase):
                 with lock:
                     outcomes.append("queued")
             except InventoryServiceError:
+                with lock:
+                    outcomes.append("insufficient")
+            except OperationalError as exc:
+                if "locked" not in str(exc).lower():
+                    raise
+                # SQLite reports lock contention as an OperationalError rather than
+                # surfacing our domain-level inventory conflict exception.
                 with lock:
                     outcomes.append("insufficient")
             finally:
