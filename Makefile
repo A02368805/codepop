@@ -1,4 +1,4 @@
-.PHONY: up down build logs shell migrate test demo ci-test check-docker lint format coverage
+.PHONY: up down build logs shell migrate test demo ci-test check-docker lint format coverage multi-up multi-down multi-build multi-logs multi-migrate multi-demo
 
 check-docker:
 	@command -v docker >/dev/null 2>&1 || { \
@@ -49,3 +49,33 @@ format:
 lint:
 	docker compose exec -w /app web black --check .
 	docker compose exec -w /app web isort --check-only .
+
+# --- Multi-store distributed testing ---
+STORES ?= 2
+
+_MULTI_PROFILES = --profile store-b
+ifeq ($(shell test $(STORES) -ge 3 && echo yes),yes)
+  _MULTI_PROFILES = --profile store-b --profile store-c
+endif
+
+multi-up: check-docker
+	docker compose -f docker-compose.multi.yml $(_MULTI_PROFILES) up -d
+
+multi-down:
+	docker compose -f docker-compose.multi.yml --profile store-b --profile store-c down
+
+multi-build: check-docker
+	docker compose -f docker-compose.multi.yml --profile store-b --profile store-c build
+
+multi-logs:
+	docker compose -f docker-compose.multi.yml logs -f
+
+multi-migrate:
+	docker compose -f docker-compose.multi.yml exec web_a python manage.py migrate
+	docker compose -f docker-compose.multi.yml exec -e DJANGO_SETTINGS_MODULE=config.settings.dev web_b python manage.py migrate 2>/dev/null || true
+	docker compose -f docker-compose.multi.yml exec -e DJANGO_SETTINGS_MODULE=config.settings.dev web_c python manage.py migrate 2>/dev/null || true
+
+multi-demo:
+	docker compose -f docker-compose.multi.yml exec web_a python manage.py bootstrap_demo_data --reset
+	docker compose -f docker-compose.multi.yml exec -e DJANGO_SETTINGS_MODULE=config.settings.dev web_b python manage.py bootstrap_demo_data --reset 2>/dev/null || true
+	docker compose -f docker-compose.multi.yml exec -e DJANGO_SETTINGS_MODULE=config.settings.dev web_c python manage.py bootstrap_demo_data --reset 2>/dev/null || true

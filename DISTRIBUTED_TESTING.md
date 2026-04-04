@@ -41,6 +41,7 @@ Each store has its own PostgreSQL database:
 ```bash
 make multi-demo
 ```
+Each store only seeds its own region and store (no fake cross-region data).
 
 ### View logs:
 ```bash
@@ -51,6 +52,22 @@ make multi-logs
 ```bash
 make multi-migrate
 ```
+
+## Demo Data Structure
+
+In distributed mode, **each store instance seeds ONLY its own data**:
+
+- **Store A** → Region A (Chicago, IL) with Store A001
+- **Store B** → Region B (New Jersey / New York) with Store B001
+- **Store C** → Region C (Logan, UT) with Store C001
+
+Users are created per-store:
+- 1 Logistics Manager (scoped to region)
+- 1 Super Admin
+- 1 Store Manager
+- 1 Store Admin
+
+No orders, transfers, machines, or inter-store dependencies are seeded in distributed mode — the focus is on testing sync infrastructure, not demo workflows.
 
 ## How Distributed Sync Works
 

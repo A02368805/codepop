@@ -524,6 +524,13 @@ REPAIR_ASSIGNMENTS = {
 class Command(BaseCommand):
     help = "Bootstraps prompt-2 demo data for the Django-first FloatStack architecture."
 
+    # Mapping of STORE_ID to (region_code, store_code) for distributed multi-store setup
+    STORE_ID_MAPPING = {
+        "store-a": ("A", "A001"),
+        "store-b": ("B", "B001"),
+        "store-c": ("C", "C001"),
+    }
+
     def add_arguments(self, parser):
         parser.add_argument(
             "--reset",
@@ -551,29 +558,42 @@ class Command(BaseCommand):
             self._reset_demo_data()
 
         password = options["password"]
-        regions = self._seed_regions()
-        stores = self._seed_stores(regions)
+
+        # Check if running in distributed mode (STORE_ID set)
+        store_id = os.getenv("STORE_ID", "").lower()
+        region_code, store_code = None, None
+        if store_id in self.STORE_ID_MAPPING:
+            region_code, store_code = self.STORE_ID_MAPPING[store_id]
+            self.stdout.write(
+                f"Seeding data for {store_id} (region={region_code}, store={store_code})"
+            )
+
+        regions = self._seed_regions(region_code=region_code)
+        stores = self._seed_stores(regions, store_code=store_code)
         hubs = self._seed_hubs(regions)
         inventory_items = self._seed_inventory_catalog()
         users = self._seed_users(password=password, regions=regions, stores=stores)
         self._seed_balances(stores=stores, hubs=hubs, inventory_items=inventory_items)
-        self._seed_suppliers(
-            stores=stores, regions=regions, inventory_items=inventory_items, users=users
-        )
-        machine_types = self._seed_machine_types()
-        machines = self._seed_machines(stores=stores, machine_types=machine_types)
-        self._seed_maintenance_policies(regions=regions, machine_types=machine_types)
-        self._seed_orders(stores=stores, users=users)
-        self._seed_customer_preferences(users=users)
-        self._seed_transfers(
-            stores=stores, hubs=hubs, inventory_items=inventory_items, users=users
-        )
 
-        if not options["skip_imports"]:
-            self._run_sample_imports(users=users)
-            self._seed_repair_work(users=users)
+        # Only seed full demo data in non-distributed mode
+        if not region_code:
+            self._seed_suppliers(
+                stores=stores, regions=regions, inventory_items=inventory_items, users=users
+            )
+            machine_types = self._seed_machine_types()
+            machines = self._seed_machines(stores=stores, machine_types=machine_types)
+            self._seed_maintenance_policies(regions=regions, machine_types=machine_types)
+            self._seed_orders(stores=stores, users=users)
+            self._seed_customer_preferences(users=users)
+            self._seed_transfers(
+                stores=stores, hubs=hubs, inventory_items=inventory_items, users=users
+            )
 
-        self._seed_notifications(users=users)
+            if not options["skip_imports"]:
+                self._run_sample_imports(users=users)
+                self._seed_repair_work(users=users)
+
+            self._seed_notifications(users=users)
         self.stdout.write(
             self.style.SUCCESS(
                 "Demo data bootstrapped: "
@@ -615,9 +635,15 @@ class Command(BaseCommand):
         Store.objects.all().delete()
         Region.objects.all().delete()
 
-    def _seed_regions(self):
+    def _seed_regions(self, region_code=None):
         regions = {}
-        for code, definition in REGION_DEFINITIONS.items():
+        # If region_code specified, only seed that region (distributed mode)
+        codes_to_seed = [region_code] if region_code else REGION_DEFINITIONS.keys()
+
+        for code in codes_to_seed:
+            if code not in REGION_DEFINITIONS:
+                continue
+            definition = REGION_DEFINITIONS[code]
             region, _ = Region.objects.update_or_create(
                 code=code,
                 defaults={
@@ -632,11 +658,15 @@ class Command(BaseCommand):
             regions[code] = region
         return regions
 
-    def _seed_stores(self, regions):
+    def _seed_stores(self, regions, store_code=None):
         stores = {}
         for region_code, rows in STORE_DEFINITIONS.items():
+            # Skip regions not in our loaded regions (distributed mode filter)
+            if region_code not in regions:
+                continue
+
             for (
-                store_code,
+                code,
                 name,
                 city,
                 state_code,
@@ -645,11 +675,15 @@ class Command(BaseCommand):
                 latitude,
                 longitude,
             ) in rows:
+                # If store_code specified, only seed that store (distributed mode)
+                if store_code and code != store_code:
+                    continue
+
                 store, _ = Store.objects.update_or_create(
-                    store_code=store_code,
+                    store_code=code,
                     defaults={
                         "region": regions[region_code],
-                        "slug": slugify(f"{store_code}-{name}"),
+                        "slug": slugify(f"{code}-{name}"),
                         "name": name,
                         "city": city,
                         "state_code": state_code,
@@ -657,12 +691,12 @@ class Command(BaseCommand):
                         "postal_code": postal_code,
                         "latitude": Decimal(latitude),
                         "longitude": Decimal(longitude),
-                        "contact_email": f"{store_code.lower()}@floatstack.local",
+                        "contact_email": f"{code.lower()}@floatstack.local",
                         "timezone": "America/Denver",
                         "is_active": True,
                     },
                 )
-                stores[store_code] = store
+                stores[code] = store
         return stores
 
     def _seed_hubs(self, regions):
@@ -751,12 +785,14 @@ class Command(BaseCommand):
             role=User.Role.SUPER_ADMIN,
             first_name="System",
             last_name="Admin",
-            default_region=regions["C"],
+            default_region=next(iter(regions.values())) if regions else None,
             is_superuser=True,
         )
         users["super_admin"] = super_admin
 
         for store_code in PRIMARY_STORE_CODES:
+            if store_code not in stores:
+                continue
             store = stores[store_code]
             manager = upsert_user(
                 f"manager.{store_code.lower()}@floatstack.local",
@@ -791,6 +827,8 @@ class Command(BaseCommand):
             ("account.jules@floatstack.local", "Jules", "Customer", "F001"),
         ]
         for email, first_name, last_name, preferred_store_code in account_rows:
+            if preferred_store_code not in stores:
+                continue
             preferred_store = stores[preferred_store_code]
             upsert_user(
                 email,
@@ -807,15 +845,21 @@ class Command(BaseCommand):
             "repair.south@floatstack.local": ("Utah", "South"),
         }
         for email, (first_name, last_name) in repair_people.items():
+            assigned_stores = REPAIR_ASSIGNMENTS.get(email.split("@")[0], [])
+            # Only create repair staff if they have assigned stores in this seeding
+            available_stores = [sc for sc in assigned_stores if sc in stores]
+            if not available_stores:
+                continue
+
             user = upsert_user(
                 email,
                 role=User.Role.REPAIR_STAFF,
                 first_name=first_name,
                 last_name=last_name,
-                default_region=regions["C"],
-                preferred_store=stores[REPAIR_ASSIGNMENTS[email.split("@")[0]][0]],
+                default_region=stores[available_stores[0]].region,
+                preferred_store=stores[available_stores[0]],
             )
-            for store_code in REPAIR_ASSIGNMENTS[email.split("@")[0]]:
+            for store_code in available_stores:
                 UserStoreAssignment.objects.get_or_create(
                     user=user,
                     store=stores[store_code],
@@ -892,6 +936,10 @@ class Command(BaseCommand):
         ]
         suppliers = {}
         for name, region_code, contact_name, email, phone_number in supplier_rows:
+            # Only create supplier if region exists in this seeding
+            if region_code not in regions:
+                continue
+
             supplier, _ = LocalSupplier.objects.update_or_create(
                 name=name,
                 defaults={
@@ -921,6 +969,11 @@ class Command(BaseCommand):
             quantity_received,
             recorded_by_email,
         ) in replenishment_rows:
+            # Skip if supplier, store, user, or sku don't exist in this seeding
+            if (region_code not in suppliers or store_code not in stores or
+                recorded_by_email not in users or sku not in inventory_items):
+                continue
+
             SupplierReplenishment.objects.update_or_create(
                 supplier=suppliers[region_code],
                 store=stores[store_code],
@@ -950,6 +1003,11 @@ class Command(BaseCommand):
             quantity_requested,
             requested_by_email,
         ) in pending_order_rows:
+            # Skip if supplier, store, user, or sku don't exist in this seeding
+            if (region_code not in suppliers or store_code not in stores or
+                requested_by_email not in users or sku not in inventory_items):
+                continue
+
             SupplierReplenishment.objects.update_or_create(
                 supplier=suppliers[region_code],
                 store=stores[store_code],
@@ -1002,6 +1060,10 @@ class Command(BaseCommand):
         ]
         machines = {}
         for store_code, machine_type_code, operational_from_date in machine_specs:
+            # Skip if store or machine type not in this seeding
+            if store_code not in stores or machine_type_code not in machine_types:
+                continue
+
             store = stores[store_code]
             machine_uid = (
                 f"{store_code}-{machine_type_code}-{operational_from_date.isoformat()}"
@@ -1047,6 +1109,10 @@ class Command(BaseCommand):
             warning_days,
             schedule_days,
         ) in policy_rows:
+            # Skip if region or machine type not in this seeding
+            if region_code not in regions or machine_type_code not in machine_types:
+                continue
+
             MaintenancePolicy.objects.update_or_create(
                 machine_type=machine_types[machine_type_code],
                 region=regions[region_code],
@@ -1123,6 +1189,12 @@ class Command(BaseCommand):
             if Order.objects.filter(
                 public_order_code=row["public_order_code"]
             ).exists():
+                continue
+
+            # Skip if store or customer not in this seeding
+            if row["store_code"] not in stores:
+                continue
+            if row["customer_email"] and row["customer_email"] not in users:
                 continue
 
             customer = (
