@@ -193,9 +193,9 @@ FloatStack123!
 Useful demo logins:
 
 - Customer: `account.casey@floatstack.local`
-- Customer: `account.river@floatstack.local`
+- Customer: ``
 - Manager: `manager.c001@floatstack.local`
-- Admin: `admin.c001@floatstack.local`
+- Admin: `admin.c001@floatstack.loaccount.river@floatstack.localcal`
 - Logistics manager: `logistics.c@floatstack.local`
 - Repair staff: `repair.north@floatstack.local`
 - Super admin: `superadmin@floatstack.local`
