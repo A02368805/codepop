@@ -839,6 +839,21 @@ class Command(BaseCommand):
                 preferred_store=preferred_store,
             )
 
+        # In distributed mode (region_code set), also create account users per store
+        # for testing cross-store federated login
+        if region_code and stores:
+            # Get the first (and only) store in this seeding
+            store = next(iter(stores.values()))
+            account_email = f"account.{store.store_code.lower()}@floatstack.local"
+            upsert_user(
+                account_email,
+                role=User.Role.ACCOUNT_USER,
+                first_name=store.name.split()[0],
+                last_name="Customer",
+                default_region=store.region,
+                preferred_store=store,
+            )
+
         repair_people = {
             "repair.north@floatstack.local": ("Cache", "North"),
             "repair.metro@floatstack.local": ("Wasatch", "Metro"),

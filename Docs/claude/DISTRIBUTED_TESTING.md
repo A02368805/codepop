@@ -19,13 +19,58 @@ make multi-up STORES=3
 make multi-down
 ```
 
-## Endpoints
+## Endpoints & Login
 
 Once stores are running:
 
 - **Store A**: http://localhost:8001
 - **Store B**: http://localhost:8002
 - **Store C**: http://localhost:8003 (if STORES=3)
+
+### Default Users
+
+After running `make multi-demo`, each store has these accounts (default password: `CodePop123!`):
+
+**All Stores:**
+- Super Admin: `superadmin@floatstack.local` (can see all stores)
+
+**Store A (Region A - Chicago):**
+- Logistics Manager: `logistics.a@floatstack.local` (region A - scoped)
+- Store Manager: `manager.a001@floatstack.local` (store A001 only)
+- Store Admin: `admin.a001@floatstack.local` (store A001 only)
+
+**Store B (Region B - New Jersey/New York):**
+- Logistics Manager: `logistics.b@floatstack.local` (region B - scoped)
+- Store Manager: `manager.b001@floatstack.local` (store B001 only)
+- Store Admin: `admin.b001@floatstack.local` (store B001 only)
+
+**Store C (Region C - Logan, UT):**
+- Logistics Manager: `logistics.c@floatstack.local` (region C - scoped)
+- Store Manager: `manager.c001@floatstack.local` (store C001 only)
+- Store Admin: `admin.c001@floatstack.local` (store C001 only)
+
+### Login Flow
+
+1. Visit http://localhost:8001 (or 8002, 8003)
+2. Click "Login"
+3. Enter email and password (`CodePop123!`)
+4. For cross-store sync testing, use the Logistics Manager or Super Admin (they see sync events)
+
+### Cross-Store Account User Login (Federated)
+
+Account users can log in to **any store** — even if their account was created on a different store. The system uses **federated authentication**: if a user isn't found locally, other stores are asked to validate the credentials.
+
+**Example:**
+1. Store A has `account.a001@floatstack.local`
+2. Store B does NOT have this user locally
+3. You visit http://localhost:8002 and enter `account.a001@floatstack.local` + `CodePop123!`
+4. Store B contacts Store A via `POST /federated-validate/` to validate
+5. Store A confirms the credentials are valid
+6. Store B creates a local user record and logs them in
+
+This enables order placement across stores while keeping each store's database independent (no shared DB needed).
+
+**Staff roles** (managers, admins, logistics managers) are **store-local only** — they cannot log in to other stores. This preserves data isolation and permissions per store.
 
 ## Database Access
 

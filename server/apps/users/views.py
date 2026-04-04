@@ -54,10 +54,13 @@ from django.contrib.auth import login
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.contrib.auth.views import LoginView, LogoutView
 from django.db.models import Count, Q, Sum
+from django.http import JsonResponse
 from django.shortcuts import get_object_or_404, redirect
 from django.templatetags.static import static
 from django.urls import reverse
 from django.utils import timezone
+from django.utils.decorators import method_decorator
+from django.views.decorators.csrf import csrf_exempt
 from django.views.generic import FormView, TemplateView, View
 
 from .forms import (
@@ -941,3 +944,62 @@ class AdminUserUpdateView(RoleRequiredMixin, LoginRequiredMixin, View):
         else:
             messages.error(request, "Could not update that account.")
         return redirect("admin-users")
+
+
+@method_decorator(csrf_exempt, name="dispatch")
+class FederatedValidateView(View):
+    """
+    Machine-to-machine endpoint for cross-store user authentication.
+
+    Other stores POST here when a user isn't found locally, to validate
+    credentials and get basic user data. Uses X-Sync-Token header auth
+    (same pattern as SyncIngestView).
+
+    Only validates ACCOUNT_USER role — staff roles are store-local.
+    """
+
+    def post(self, request, *args, **kwargs):
+        from django.conf import settings
+        from django.contrib.auth import authenticate
+        import json
+
+        # Authenticate the requesting peer store
+        token = request.headers.get("X-Sync-Token", "")
+        if not token or token != settings.SYNC_API_SECRET:
+            return JsonResponse({"error": "unauthorized"}, status=401)
+
+        origin_node_id = request.headers.get("X-Origin-Node", "")
+        if not origin_node_id:
+            return JsonResponse({"error": "missing origin"}, status=400)
+
+        # Parse request body
+        try:
+            data = json.loads(request.body)
+            email = data.get("email", "")
+            password = data.get("password", "")
+        except (json.JSONDecodeError, ValueError):
+            return JsonResponse({"error": "invalid json"}, status=400)
+
+        # Authenticate the user locally
+        user = authenticate(request, username=email, password=password)
+
+        # Reject if user not found or not an account_user
+        if not user or user.role != User.Role.ACCOUNT_USER:
+            # Return 200 "valid=false" instead of 401/403 to avoid leaking user existence
+            return JsonResponse({"valid": False}, status=200)
+
+        # Valid account user — return their data
+        return JsonResponse(
+            {
+                "valid": True,
+                "user": {
+                    "email": user.email,
+                    "first_name": user.first_name,
+                    "last_name": user.last_name,
+                    "role": user.role,
+                    "sweetness_preference": user.sweetness_preference or "",
+                    "adventurousness_preference": user.adventurousness_preference or "",
+                },
+            },
+            status=200,
+        )

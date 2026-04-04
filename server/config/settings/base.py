@@ -137,6 +137,7 @@ LOGOUT_REDIRECT_URL = "home"
 
 AUTHENTICATION_BACKENDS = [
     "django.contrib.auth.backends.ModelBackend",
+    "apps.users.backends.FederatedAuthBackend",
 ]
 
 SESSION_COOKIE_HTTPONLY = True
