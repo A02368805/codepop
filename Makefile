@@ -1,4 +1,4 @@
-.PHONY: up down build logs shell migrate test demo ci-test check-docker lint format
+.PHONY: up down build logs shell migrate test demo ci-test check-docker lint format coverage
 
 check-docker:
 	@command -v docker >/dev/null 2>&1 || { \
@@ -35,6 +35,9 @@ test:
 
 ci-test:
 	cd server && python manage.py test tests/
+
+coverage:
+	docker compose exec -e DJANGO_SETTINGS_MODULE=config.settings.test web sh -c "pip install coverage -q && coverage run --source='apps' manage.py test tests/ && coverage report && coverage html"
 
 demo:
 	docker compose exec web python manage.py bootstrap_demo_data --reset
