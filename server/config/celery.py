@@ -19,4 +19,8 @@ app.conf.beat_schedule = {
         "schedule": crontab(minute=0, hour="*/6"),
         "args": (100,),
     },
+    "retry-failed-peer-deliveries": {
+        "task": "apps.sync.tasks.retry_failed_peer_deliveries_async",
+        "schedule": crontab(minute="*/5"),
+    },
 }

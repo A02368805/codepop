@@ -63,9 +63,9 @@
 - [Section 7 - Data Layer](#section-7---data-layer)
   - [7.1 Database Schema](#71-database-schema)
   - [7.2 Synchronization Architecture](#72-synchronization-architecture)
-  - [7.3 Conflict Resolution](#73-conflict-resolution)
-  - [7.4 Offline Handling](#74-offline-handling)
-  - [7.5 Data Integrity Rules](#75-data-integrity-rules)
+  - [7.4 Conflict Resolution](#74-conflict-resolution)
+  - [7.5 Offline Handling](#75-offline-handling)
+  - [7.6 Data Integrity Rules](#76-data-integrity-rules)
 - [Section 8 - Integrations](#section-8---integrations)
   - [8.1 Stripe Integration](#81-stripe-integration)
   - [8.2 Push Notifications](#82-push-notifications)
@@ -1836,7 +1836,27 @@ classDiagram
 
 #### 7.2.1 Architectural Model
 
-The project simulates decentralized nodes inside one codebase, but synchronization rules are still documented because they shape data ownership and future architecture.
+The system implements a real distributed, multi-node architecture where each store is an independent Django application + PostgreSQL instance. Nodes communicate via REST API (HTTP transport layer). The transactional outbox pattern ensures durability and idempotency.
+
+**Production Deployment Model:**
+- Each store runs as a separate Django application with its own PostgreSQL database
+- Stores identified by `STORE_ID` (e.g., "store-a", "store-b")
+- Peer nodes listed in `PEER_STORES` environment variable (e.g., "store-b=http://store-b.example.com")
+- All nodes share credentials via `SYNC_API_SECRET` (HMAC token for inter-node auth)
+
+**Development Testing Model (docker-compose.multi.yml):**
+- Up to 3 store instances can run locally with Docker Compose
+- Each store has its own PostgreSQL database (separate per store)
+- Shared Redis broker for Celery (simplification for dev; can be separate in production)
+- Same environment variables and configuration as production
+
+**Key Features:**
+- **Transactional Outbox**: Local state committed first, outbox events generated in same transaction
+- **HTTP Push Transport**: After local processing succeeds, events are POSTed to peer `/sync/ingest/` endpoints
+- **Delivery Tracking**: `SyncPeerDelivery` model tracks per-peer delivery status (pending/delivered/failed)
+- **Retry with Backoff**: Failed deliveries retry with exponential backoff (1min → 5min → 15min → 1day)
+- **Idempotency Guards**: Events deduped by `(origin_node_id, remote_event_id)` unique constraint
+- **Loop Prevention**: Events received from peers (origin_node_id != "") are never re-pushed to other nodes
 
 #### 7.2.2 Node Types
 
@@ -1943,7 +1963,40 @@ Candidates:
 }
 ```
 
-#### 7.2.6 Versioning Strategy
+#### 7.2.6 HTTP Transport Layer
+
+**Outbound Push (after local processing succeeds):**
+1. Event marked `DISPATCHED` locally
+2. `SyncPeerDelivery` records created for each peer in `PEER_STORES`
+3. Celery task `push_pending_peer_deliveries_async` queued
+4. Task POSTs serialized event to each peer's `POST /sync/ingest/` endpoint
+5. Auth header: `X-Sync-Token: <SYNC_API_SECRET>`; Origin header: `X-Origin-Node: <STORE_ID>`
+6. On 200: delivery marked `DELIVERED`; on failure: attempt_count incremented, status=FAILED, next_attempt_at set with backoff
+7. Celery beat runs `retry_failed_peer_deliveries_async` every 5 minutes to sweep failed deliveries
+
+**Inbound Receive (`POST /sync/ingest/`):**
+1. Validate `X-Sync-Token` against `SYNC_API_SECRET` (reject 401 if invalid)
+2. Read `X-Origin-Node` header (origin store ID; reject 400 if missing)
+3. Parse JSON payload
+4. Dedup check: if `SyncOutboxEvent(origin_node_id=X-Origin-Node, remote_event_id=payload.event_id)` exists, return it
+5. Create local `SyncOutboxEvent` with `origin_node_id` and `remote_event_id` set (marks this as received from a peer)
+6. Call `process_outbox_event()` to apply projections/conflicts/notifications locally
+7. Return 200 OK with `{"status": "ok", "event_id": "<local-uuid>"}`
+
+**Loop Prevention:**
+- Events created locally have `origin_node_id = ""`
+- Events received from peers have `origin_node_id = "<peer-id>"`
+- `push_event_to_all_peers()` only runs if `origin_node_id == ""` (skip re-push for received events)
+
+**Configuration:**
+```
+STORE_ID=store-a
+SYNC_API_SECRET=shared-secret-all-nodes
+SYNC_PUSH_ENABLED=True   # Enable outbound push
+PEER_STORES=store-b=http://web_b:8000,store-c=http://web_c:8000
+```
+
+#### 7.2.7 Versioning Strategy
 
 Use monotonically increasing `version` integers or `updated_at` plus optimistic guards for synchronized entities.
 
@@ -1953,7 +2006,7 @@ Recommended rule:
 - incoming update must be newer,
 - conflicting non-owner writes are rejected or logged.
 
-### Section 7.3 - Conflict Resolution
+### Section 7.4 - Conflict Resolution
 
 #### 7.3.1 Composite ID Model – Eliminates Most Conflicts
 
@@ -2035,7 +2088,7 @@ Every privileged action should log:
 - new status/value,
 - timestamp.
 
-### Section 7.4 - Offline Handling
+### Section 7.5 - Offline Handling
 
 #### 7.4.1 Offline Mode Definition
 
@@ -2066,7 +2119,7 @@ The outbox table acts as the persistence layer for deferred outbound actions.
 3. alert counts re-evaluated,
 4. audit log records recovery.
 
-### Section 7.5 - Data Integrity Rules
+### Section 7.6 - Data Integrity Rules
 
 #### 7.5.1 Inventory Rules
 
