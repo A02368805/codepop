@@ -1004,7 +1004,7 @@ class PreferenceView(RoleRequiredMixin, LoginRequiredMixin, FormView):
             self.request,
             "Preferences saved. Your taste profile is now applied across FloatStack.",
         )
-        return redirect("dashboard")
+        return redirect("account-preferences")
 
 
 def _scoped_users_for_admin(user):

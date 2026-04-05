@@ -1267,7 +1267,7 @@ class AccountOrderHistoryView(RoleRequiredMixin, LoginRequiredMixin, TemplateVie
         return context
 
 
-class FavoriteListView(RoleRequiredMixin, LoginRequiredMixin, TemplateView):
+class FavoriteListView(RoleRequiredMixin, TemplateView):
     template_name = "orders/favorites.html"
     allowed_roles = (User.Role.ACCOUNT_USER,)
 

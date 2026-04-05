@@ -3,14 +3,36 @@
 {% block title %}Preferences | FloatStack{% endblock %}
 
 {% block content %}
-<section class="panel">
-    <div class="section-heading">
-        <div>
-            <p class="eyebrow">Taste Preferences</p>
-            <h2>Set what to prefer and what to avoid</h2>
-        </div>
-        <p class="lede-small">Configure category preferences to personalize recommendations.</p>
+<section class="hero hero--dashboard">
+    <div>
+        <p class="eyebrow">Taste Profile</p>
+        <h1>Set what to prefer and what to avoid</h1>
+        <p class="lede">Save favorite bases, syrups, and add-ins so recommendations and custom builds feel more personal.</p>
     </div>
+    <div class="hero-card">
+        <p class="eyebrow">Account Snapshot</p>
+        <dl class="compact-stats">
+            <div>
+                <dt>Preferred Store</dt>
+                <dd>{{ request.user.preferred_store.name|default:"Not set" }}</dd>
+            </div>
+            <div>
+                <dt>Region</dt>
+                <dd>{{ request.user.default_region.name|default:"Not set" }}</dd>
+            </div>
+            <div>
+                <dt>Saved Preferences</dt>
+                <dd>{{ saved_profile_count }}</dd>
+            </div>
+            <div>
+                <dt>Profile</dt>
+                <dd>Active</dd>
+            </div>
+        </dl>
+    </div>
+</section>
+
+<section class="panel">
 
     <form method="post" class="preferences-form">
         {% csrf_token %}

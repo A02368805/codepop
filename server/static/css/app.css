@@ -1014,7 +1014,7 @@ h3 {
 }
 
 .home-hero--carousel {
-    grid-template-columns: minmax(0, 1fr) minmax(360px, 1.22fr);
+    grid-template-columns: minmax(0, 1.1fr) minmax(320px, 1fr);
     align-items: stretch;
 }
 
@@ -1062,7 +1062,7 @@ h3 {
         radial-gradient(circle at 82% 20%, rgba(var(--berry-rgb), 0.22), transparent 44%),
         rgba(31, 35, 49, 0.82);
     height: clamp(320px, 35vw, 430px);
-    aspect-ratio: 16 / 10;
+    aspect-ratio: auto;
     overflow: hidden;
     box-shadow: 0 20px 36px rgba(var(--ink-rgb), 0.16);
 }
@@ -2007,38 +2007,54 @@ details.ingredient-group[open] .ingredient-group__header::after {
 }
 
 .preference-lane__title {
-    font-weight: 600;
-    font-size: 0.88rem;
-    margin-bottom: 0.35rem;
-}
-
-.preference-lane--prefer .preference-lane__title {
-    color: var(--accent);
-}
-
-.preference-lane--avoid .preference-lane__title {
-    color: #8f4a61;
+    font-weight: 700;
+    font-size: 0.8rem;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    margin-bottom: 0.25rem;
 }
 
 .preference-chip-grid {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 0.4rem;
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(110px, 1fr));
+    gap: 0.28rem;
 }
 
 .choice-card--compact {
     min-height: auto;
-    padding: 0.4rem 0.7rem;
-    font-size: 0.88rem;
+    padding: 0.55rem 0.4rem;
+    font-size: 0.78rem;
+    border-radius: 6px;
+    gap: 0;
+    text-align: center;
+    justify-content: center;
 }
 
 .choice-card--compact .choice-card__label {
-    font-size: 0.88rem;
+    font-size: 0.78rem;
+    line-height: 1.3;
 }
 
-.choice-card--avoid.is-selected {
-    border-color: rgba(184, 59, 72, 0.22);
-    background: linear-gradient(180deg, rgba(184, 59, 72, 0.12), rgba(184, 59, 72, 0.06));
+.choice-card--favorite.is-selected,
+.choice-card--favorite:has(input:checked) {
+    border-color: rgba(46, 139, 87, 0.35);
+    background: rgba(46, 139, 87, 0.1);
+    color: #1e6b45;
+}
+
+.choice-card--avoid.is-selected,
+.choice-card--avoid:has(input:checked) {
+    border-color: rgba(184, 59, 72, 0.35);
+    background: rgba(184, 59, 72, 0.1);
+    color: #8f4a61;
+}
+
+.preference-lane--prefer .preference-lane__title {
+    color: #1e6b45;
+}
+
+.preference-lane--avoid .preference-lane__title {
+    color: #8f4a61;
 }
 
 .preference-advanced > summary {
