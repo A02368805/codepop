@@ -13,6 +13,9 @@ document.addEventListener("DOMContentLoaded", () => {
     initHomeHeroCarousel();
     initHomeDrinkBrowser();
     initPickupDistance();
+    initSupportChat();
+    initPreferenceSelection();
+    initRegistrationPasswordGates();
 });
 
 function getCsrfToken() {
@@ -882,6 +885,156 @@ function initPreferenceProfile() {
     });
 
     syncSelectionState();
+}
+
+function initSupportChat() {
+    const workspace = document.querySelector("#support-workspace");
+    if (!workspace) {
+        return;
+    }
+
+    let preservedScrollY = null;
+
+    const scrollThreadToBottom = () => {
+        const thread = document.querySelector("#support-thread-log");
+        if (thread) {
+            thread.scrollTop = thread.scrollHeight;
+        }
+    };
+
+    scrollThreadToBottom();
+
+    document.body.addEventListener("htmx:beforeRequest", (event) => {
+        const form = event.target.closest("form[data-support-send-form]");
+        if (!form) {
+            return;
+        }
+        preservedScrollY = window.scrollY;
+        const status = form.querySelector("[data-support-send-status]");
+        if (status) {
+            status.hidden = false;
+        }
+        const submitButton = form.querySelector("button[type='submit']");
+        if (submitButton) {
+            submitButton.disabled = true;
+            if (!submitButton.dataset.originalLabel) {
+                submitButton.dataset.originalLabel = submitButton.textContent;
+            }
+            submitButton.textContent = "Creating message...";
+        }
+    });
+
+    document.body.addEventListener("htmx:afterSwap", (event) => {
+        const target = event.detail?.target;
+        if (!target || target.id !== "support-workspace") {
+            return;
+        }
+        if (typeof preservedScrollY === "number") {
+            window.scrollTo({ top: preservedScrollY, behavior: "auto" });
+        }
+        preservedScrollY = null;
+        scrollThreadToBottom();
+    });
+}
+
+function initPreferenceSelection() {
+    const form = document.querySelector(".preferences-form");
+    if (!form) {
+        return;
+    }
+
+    const syncInputGroup = (name) => {
+        if (!name) {
+            return;
+        }
+        form.querySelectorAll(`.choice-card input[name="${name}"]`).forEach((input) => {
+            const card = input.closest(".choice-card");
+            if (card) {
+                card.classList.toggle("is-selected", input.checked);
+            }
+        });
+    };
+
+    form.querySelectorAll(".choice-card input").forEach((input) => {
+        syncInputGroup(input.name);
+    });
+
+    form.addEventListener("change", (event) => {
+        const input = event.target.closest(".choice-card input");
+        if (!input) {
+            return;
+        }
+
+        const token = input.dataset.token || "";
+        const role = input.dataset.prefRole || "";
+        if (input.checked && token && role) {
+            form.querySelectorAll(".choice-card input[data-token]").forEach((peer) => {
+                if (peer === input) {
+                    return;
+                }
+                if (
+                    (peer.dataset.token || "") === token &&
+                    (peer.dataset.prefRole || "") &&
+                    peer.dataset.prefRole !== role
+                ) {
+                    peer.checked = false;
+                    syncInputGroup(peer.name);
+                }
+            });
+        }
+        syncInputGroup(input.name);
+    });
+}
+
+function initRegistrationPasswordGates() {
+    const form = document.querySelector(".auth-form");
+    if (!form) {
+        return;
+    }
+
+    const passwordField = form.querySelector("input[name=password1]");
+    const confirmField = form.querySelector("input[name=password2]");
+    const gates = document.querySelector("#password-gates");
+    if (!passwordField || !confirmField || !gates) {
+        return;
+    }
+
+    const gateNodes = {
+        length: gates.querySelector("[data-password-gate=length]"),
+        alnum: gates.querySelector("[data-password-gate=alnum]"),
+        match: gates.querySelector("[data-password-gate=match]"),
+    };
+
+    const setGateState = (node, isComplete, label) => {
+        if (!node) {
+            return;
+        }
+        node.textContent = `${isComplete ? "[x]" : "[ ]"} ${label}`;
+    };
+
+    const renderGates = () => {
+        const passwordValue = passwordField.value || "";
+        const confirmValue = confirmField.value || "";
+        const hasLength = passwordValue.length >= 8;
+        const hasLetterAndNumber = /[A-Za-z]/.test(passwordValue) && /\d/.test(passwordValue);
+        const isMatch = Boolean(passwordValue) && passwordValue === confirmValue;
+
+        setGateState(gateNodes.length, hasLength, "At least 8 characters");
+        setGateState(
+            gateNodes.alnum,
+            hasLetterAndNumber,
+            "Includes at least one letter and one number"
+        );
+        setGateState(
+            gateNodes.match,
+            isMatch,
+            "Password and re-entered password match"
+        );
+    };
+
+    passwordField.addEventListener("input", renderGates);
+    confirmField.addEventListener("input", renderGates);
+    renderGates();
 }
 
 function getCheckedLabels(form, fieldName) {
