@@ -23,12 +23,21 @@ class SyncOutboxEvent(models.Model):
     attempt_count = models.PositiveIntegerField(default=0)
     next_attempt_at = models.DateTimeField(null=True, blank=True)
     last_error = models.TextField(blank=True)
+    origin_node_id = models.CharField(max_length=80, blank=True, default="")
+    remote_event_id = models.UUIDField(null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
         ordering = ("-created_at",)
         indexes = [models.Index(fields=("status", "next_attempt_at"))]
+        constraints = [
+            models.UniqueConstraint(
+                fields=["origin_node_id", "remote_event_id"],
+                condition=models.Q(origin_node_id__gt=""),
+                name="unique_peer_event_idempotency",
+            )
+        ]
 
     def __str__(self):
         return self.event_type
@@ -170,3 +179,35 @@ class SyncConflictLog(models.Model):
 
     def __str__(self):
         return f"{self.conflict_type} / {self.aggregate_type} / {self.aggregate_id}"
+
+
+class SyncPeerDelivery(models.Model):
+    class Status(models.TextChoices):
+        PENDING = "pending", "Pending"
+        DELIVERED = "delivered", "Delivered"
+        FAILED = "failed", "Failed"
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    event = models.ForeignKey(
+        "sync.SyncOutboxEvent",
+        related_name="peer_deliveries",
+        on_delete=models.CASCADE,
+    )
+    peer_node_id = models.CharField(max_length=80)
+    peer_url = models.CharField(max_length=255)
+    status = models.CharField(
+        max_length=16, choices=Status.choices, default=Status.PENDING
+    )
+    attempt_count = models.PositiveIntegerField(default=0)
+    next_attempt_at = models.DateTimeField(null=True, blank=True)
+    last_error = models.TextField(blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        unique_together = [("event", "peer_node_id")]
+        ordering = ("-created_at",)
+        indexes = [models.Index(fields=("status", "next_attempt_at"))]
+
+    def __str__(self):
+        return f"{self.peer_node_id} / {self.status}"

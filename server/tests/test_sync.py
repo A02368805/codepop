@@ -1,3 +1,4 @@
+import json
 from datetime import timedelta
 from decimal import Decimal
 
@@ -8,8 +9,8 @@ from apps.inventory.services import (
 )
 from apps.orders.services import create_order
 from apps.sync.models import SyncConflictLog, SyncOutboxEvent, SyncProjectionState
-from apps.sync.services import process_outbox_event
-from django.test import TestCase
+from apps.sync.services import process_outbox_event, process_pending_outbox_events
+from django.test import TestCase, override_settings
 from django.urls import reverse
 from django.utils import timezone
 
@@ -230,3 +231,214 @@ class SyncWorkspaceTests(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, "Conflict Log")
         self.assertContains(response, "Receiver Projections")
+
+
+class SyncPeerTransportTests(TestCase):
+    """Tests for inter-store peer sync transport layer."""
+
+    @classmethod
+    def setUpTestData(cls):
+        cls.region = make_region(code="C", name="Logan, UT")
+        cls.store_a = make_store(
+            store_code="C001",
+            region=cls.region,
+            name="Store A",
+        )
+        cls.store_b = make_store(
+            store_code="C002",
+            region=cls.region,
+            name="Store B",
+            city="North Logan",
+            address_line_1="456 Canyon Rd",
+            latitude="41.769089",
+            longitude="-111.804093",
+        )
+        cls.manager = make_user(
+            email="peer-manager@test.local",
+            role="manager",
+            preferred_store=cls.store_a,
+            default_region=cls.region,
+        )
+        assign_store(cls.manager, cls.store_a)
+
+    def test_ingest_endpoint_rejects_invalid_token(self):
+        """Ingest endpoint returns 401 if X-Sync-Token is missing or invalid."""
+        response = self.client.post(
+            reverse("sync:ingest"),
+            data=b"{}",
+            content_type="application/json",
+        )
+        self.assertEqual(response.status_code, 401)
+
+        response = self.client.post(
+            reverse("sync:ingest"),
+            data=b"{}",
+            content_type="application/json",
+            HTTP_X_SYNC_TOKEN="wrong-secret",
+        )
+        self.assertEqual(response.status_code, 401)
+
+    def test_ingest_endpoint_rejects_missing_origin(self):
+        """Ingest endpoint returns 400 if X-Origin-Node header is missing."""
+        from django.test import override_settings
+
+        with override_settings(SYNC_API_SECRET="test-secret"):
+            response = self.client.post(
+                reverse("sync:ingest"),
+                data=b"{}",
+                content_type="application/json",
+                HTTP_X_SYNC_TOKEN="test-secret",
+            )
+            self.assertEqual(response.status_code, 400)
+            data = response.json()
+            self.assertEqual(data["error"], "missing origin")
+
+    def test_ingest_endpoint_accepts_valid_event(self):
+        """Ingest endpoint accepts valid event with correct auth and creates SyncOutboxEvent."""
+        import uuid
+
+        from django.test import override_settings
+
+        remote_event_id = uuid.uuid4()
+        payload = {
+            "event_id": str(remote_event_id),
+            "event_type": "order.created",
+            "aggregate_type": "Order",
+            "aggregate_id": str(uuid.uuid4()),
+            "entity_version": 1,
+            "source_scope": {"store_id": str(self.store_b.id), "region_code": "C"},
+            "payload": {"status": "created"},
+        }
+
+        with override_settings(SYNC_API_SECRET="test-secret"):
+            response = self.client.post(
+                reverse("sync:ingest"),
+                data=json.dumps(payload),
+                content_type="application/json",
+                HTTP_X_SYNC_TOKEN="test-secret",
+                HTTP_X_ORIGIN_NODE="store-b",
+            )
+
+        self.assertEqual(response.status_code, 200)
+        data = response.json()
+        self.assertEqual(data["status"], "ok")
+
+        # Verify event was created
+        event = SyncOutboxEvent.objects.get(remote_event_id=remote_event_id)
+        self.assertEqual(event.origin_node_id, "store-b")
+        self.assertEqual(event.event_type, "order.created")
+
+    def test_ingest_deduplicates_repeated_events(self):
+        """Repeated ingest of same event (same origin + remote_event_id) is idempotent."""
+        import uuid
+
+        from django.test import override_settings
+
+        remote_event_id = uuid.uuid4()
+        payload = {
+            "event_id": str(remote_event_id),
+            "event_type": "order.created",
+            "aggregate_type": "Order",
+            "aggregate_id": str(uuid.uuid4()),
+            "entity_version": 1,
+            "source_scope": {"store_id": str(self.store_b.id), "region_code": "C"},
+            "payload": {"status": "created"},
+        }
+
+        with override_settings(SYNC_API_SECRET="test-secret"):
+            response1 = self.client.post(
+                reverse("sync:ingest"),
+                data=json.dumps(payload),
+                content_type="application/json",
+                HTTP_X_SYNC_TOKEN="test-secret",
+                HTTP_X_ORIGIN_NODE="store-b",
+            )
+            response2 = self.client.post(
+                reverse("sync:ingest"),
+                data=json.dumps(payload),
+                content_type="application/json",
+                HTTP_X_SYNC_TOKEN="test-secret",
+                HTTP_X_ORIGIN_NODE="store-b",
+            )
+
+        self.assertEqual(response1.status_code, 200)
+        self.assertEqual(response2.status_code, 200)
+
+        # Should only have one event
+        event_count = SyncOutboxEvent.objects.filter(
+            origin_node_id="store-b",
+            remote_event_id=remote_event_id,
+        ).count()
+        self.assertEqual(event_count, 1)
+
+    @override_settings(
+        SYNC_PUSH_ENABLED=True,
+        STORE_ID="store-a",
+        PEER_STORES={"store-b": "http://store-b:8000"},
+        SYNC_API_SECRET="test-secret",
+    )
+    def test_process_outbox_creates_peer_deliveries(self):
+        """Processing local outbox event creates SyncPeerDelivery records."""
+        from unittest.mock import MagicMock, patch
+
+        from apps.sync.models import SyncPeerDelivery
+
+        # Create a simple outbox event directly
+        event = SyncOutboxEvent.objects.create(
+            event_type="test.event",
+            aggregate_type="Test",
+            aggregate_id="test-123",
+            entity_version=1,
+            source_scope={"store_id": str(self.store_a.id), "region_code": "C"},
+            payload={"test": "data"},
+        )
+
+        # Mock requests module
+        with patch("requests.post") as mock_post:
+            mock_response = MagicMock()
+            mock_response.status_code = 200
+            mock_post.return_value = mock_response
+
+            # Process the event
+            process_outbox_event(event)
+
+            # Check that peer deliveries were created
+            deliveries = SyncPeerDelivery.objects.filter(
+                event=event, peer_node_id="store-b"
+            )
+            self.assertEqual(
+                deliveries.count(), 1, "Peer delivery record was not created"
+            )
+
+    def test_ingested_event_does_not_re_push(self):
+        """Events received from peers (origin_node_id != '') are not re-pushed."""
+        import uuid
+
+        from django.test import override_settings
+
+        # Create an event with a peer origin
+        remote_event_id = uuid.uuid4()
+        event = SyncOutboxEvent.objects.create(
+            event_type="order.created",
+            aggregate_type="Order",
+            aggregate_id=str(uuid.uuid4()),
+            entity_version=1,
+            source_scope={"store_id": str(self.store_b.id), "region_code": "C"},
+            payload={"status": "created"},
+            origin_node_id="store-b",
+            remote_event_id=remote_event_id,
+        )
+
+        with override_settings(
+            SYNC_PUSH_ENABLED=True,
+            STORE_ID="store-a",
+            PEER_STORES={"store-c": "http://store-c:8000"},
+        ):
+            from apps.sync.models import SyncPeerDelivery
+
+            # Process the event
+            process_outbox_event(event)
+
+            # Should NOT have created peer deliveries (event is from peer, no re-push)
+            deliveries = SyncPeerDelivery.objects.filter(event=event)
+            self.assertEqual(deliveries.count(), 0)

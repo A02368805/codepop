@@ -781,6 +781,11 @@ def process_outbox_event(event):
         event.status = SyncOutboxEvent.Status.DISPATCHED
         event.next_attempt_at = None
         event.save(update_fields=["status", "next_attempt_at", "updated_at"])
+        # Queue peer push after local processing succeeds
+        try:
+            _enqueue_peer_push(event)
+        except Exception:
+            pass  # Peer push failure must not roll back local success
     except SyncProjectionConflictError as exc:
         event.status = SyncOutboxEvent.Status.FAILED
         event.last_error = str(exc)
@@ -828,3 +833,158 @@ def retry_failed_outbox_events(*, limit=25):
         )
         transaction.on_commit(_enqueue_outbox_processing)
     return len(event_ids)
+
+
+# --- Peer sync / distributed transport layer ---
+
+
+def _enqueue_peer_push(event: SyncOutboxEvent) -> None:
+    """Schedule peer push task if sync is enabled."""
+    from apps.sync.tasks import push_pending_peer_deliveries_async
+    from django.conf import settings
+
+    if not settings.SYNC_PUSH_ENABLED or event.origin_node_id != "":
+        return
+
+    # Create peer delivery records
+    push_event_to_all_peers(event)
+
+    # Queue async task to send them
+    transaction.on_commit(
+        lambda: push_pending_peer_deliveries_async.delay(str(event.pk))
+    )
+
+
+def push_event_to_peer(event: SyncOutboxEvent, delivery) -> None:
+    """
+    POST an outbox event to a peer node's ingest endpoint.
+    Updates delivery status and retry metadata.
+    """
+    from datetime import timedelta
+
+    import requests
+    from django.conf import settings
+
+    try:
+        payload = {
+            "event_id": str(event.pk),
+            "event_type": event.event_type,
+            "aggregate_type": event.aggregate_type,
+            "aggregate_id": str(event.aggregate_id),
+            "entity_version": event.entity_version,
+            "source_scope": event.source_scope,
+            "payload": event.payload,
+            "created_at": event.created_at.isoformat(),
+        }
+
+        response = requests.post(
+            f"{delivery.peer_url}/sync/ingest/",
+            json=payload,
+            headers={
+                "X-Sync-Token": settings.SYNC_API_SECRET,
+                "X-Origin-Node": settings.STORE_ID,
+            },
+            timeout=10,
+        )
+        response.raise_for_status()
+
+        # Success: mark delivered
+        delivery.status = "delivered"
+        delivery.save(update_fields=["status", "updated_at"])
+
+    except Exception as exc:
+        # Failure: increment attempt and schedule retry with backoff
+        delivery.attempt_count += 1
+        delivery.status = "failed"
+        delivery.last_error = str(exc)[:500]
+
+        # Exponential backoff: 1min, 5min, 15min, then daily
+        backoff_seconds = [60, 300, 900, 86400]
+        seconds = backoff_seconds[
+            min(delivery.attempt_count - 1, len(backoff_seconds) - 1)
+        ]
+        delivery.next_attempt_at = timezone.now() + timedelta(seconds=seconds)
+
+        delivery.save(
+            update_fields=[
+                "attempt_count",
+                "status",
+                "last_error",
+                "next_attempt_at",
+                "updated_at",
+            ]
+        )
+
+
+def push_event_to_all_peers(event: SyncOutboxEvent) -> None:
+    """
+    Create peer delivery records and queue async push for all configured peers.
+    Only runs if SYNC_PUSH_ENABLED and event was created locally (origin_node_id == "").
+    """
+    from apps.sync.models import SyncPeerDelivery
+    from django.conf import settings
+
+    if not settings.SYNC_PUSH_ENABLED or event.origin_node_id != "":
+        return
+
+    for peer_node_id, peer_url in settings.PEER_STORES.items():
+        SyncPeerDelivery.objects.get_or_create(
+            event=event,
+            peer_node_id=peer_node_id,
+            defaults={"peer_url": peer_url, "status": SyncPeerDelivery.Status.PENDING},
+        )
+
+
+def ingest_event_from_peer(payload: dict, *, origin_node_id: str) -> SyncOutboxEvent:
+    """
+    Receive and process a sync event from a peer node.
+    Returns the locally-created SyncOutboxEvent (idempotent on remote_event_id).
+    """
+    import uuid as uuid_module
+
+    remote_event_id = uuid_module.UUID(payload["event_id"])
+
+    # Idempotency: skip if already ingested
+    existing = SyncOutboxEvent.objects.filter(
+        origin_node_id=origin_node_id,
+        remote_event_id=remote_event_id,
+    ).first()
+    if existing:
+        return existing
+
+    # Create the event locally with peer origin marker
+    event = SyncOutboxEvent.objects.create(
+        event_type=payload["event_type"],
+        aggregate_type=payload["aggregate_type"],
+        aggregate_id=payload["aggregate_id"],
+        entity_version=payload["entity_version"],
+        source_scope=payload["source_scope"],
+        payload=payload["payload"],
+        origin_node_id=origin_node_id,
+        remote_event_id=remote_event_id,
+    )
+
+    # Process the event locally (projects, conflicts, notifications)
+    process_outbox_event(event)
+
+    return event
+
+
+def retry_failed_peer_deliveries() -> int:
+    """Retry failed peer deliveries due for retry."""
+    from apps.sync.models import SyncPeerDelivery
+
+    now = timezone.now()
+    deliveries = SyncPeerDelivery.objects.filter(
+        status=SyncPeerDelivery.Status.FAILED,
+        next_attempt_at__lte=now,
+    ).select_related("event")[:50]
+
+    count = 0
+    for delivery in deliveries:
+        delivery.status = SyncPeerDelivery.Status.PENDING
+        delivery.save(update_fields=["status"])
+        push_event_to_peer(delivery.event, delivery)
+        count += 1
+
+    return count

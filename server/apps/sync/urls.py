@@ -1,6 +1,7 @@
 from django.urls import path
 
 from .views import (
+    SyncIngestView,
     SyncPanelView,
     SyncProcessPendingView,
     SyncResolveConflictView,
@@ -20,4 +21,5 @@ urlpatterns = [
         SyncResolveConflictView.as_view(),
         name="resolve-conflict",
     ),
+    path("ingest/", SyncIngestView.as_view(), name="ingest"),
 ]

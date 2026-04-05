@@ -137,6 +137,7 @@ LOGOUT_REDIRECT_URL = "home"
 
 AUTHENTICATION_BACKENDS = [
     "django.contrib.auth.backends.ModelBackend",
+    "apps.users.backends.FederatedAuthBackend",
 ]
 
 SESSION_COOKIE_HTTPONLY = True
@@ -172,3 +173,17 @@ AI_PROVIDER_MAX_RETRIES = int(os.getenv("AI_PROVIDER_MAX_RETRIES", "2"))
 EMAIL_BACKEND = os.getenv(
     "EMAIL_BACKEND", "django.core.mail.backends.console.EmailBackend"
 )
+
+# Distributed multi-store sync configuration
+STORE_ID = os.getenv("STORE_ID", "")
+SYNC_API_SECRET = os.getenv("SYNC_API_SECRET", "")
+SYNC_PUSH_ENABLED = env_bool("SYNC_PUSH_ENABLED", False)
+
+# Parse PEER_STORES from env: "store-b=http://web_b:8000,store-c=http://web_c:8000"
+_peer_raw = os.getenv("PEER_STORES", "")
+PEER_STORES: dict[str, str] = {}
+if _peer_raw:
+    for entry in _peer_raw.split(","):
+        if "=" in entry:
+            node_id, url = entry.split("=", 1)
+            PEER_STORES[node_id.strip()] = url.strip()

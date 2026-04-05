@@ -1,0 +1,246 @@
+version: "3.9"
+
+# Multi-store distributed testing setup
+# Run with: docker compose -f docker-compose.multi.yml --profile store-b up -d (2 stores)
+# Or: docker compose -f docker-compose.multi.yml --profile store-b --profile store-c up -d (3 stores)
+
+services:
+  # Shared Redis broker for all stores
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+
+  # ===== STORE A (always active) =====
+  db_a:
+    image: postgres:16
+    environment:
+      POSTGRES_DB: codepop_store_a
+      POSTGRES_USER: codepop
+      POSTGRES_PASSWORD: codepop
+    ports:
+      - "5433:5432"
+    volumes:
+      - postgres_data_a:/var/lib/postgresql/data
+
+  web_a:
+    build: .
+    command: sh -c "python manage.py migrate && python manage.py runserver 0.0.0.0:8000"
+    env_file:
+      - .env.multi
+    environment:
+      DATABASE_URL: postgresql://codepop:codepop@db_a:5432/codepop_store_a
+      CELERY_BROKER_URL: redis://redis:6379/0
+      CELERY_RESULT_BACKEND: redis://redis:6379/0
+      CELERY_TASK_ALWAYS_EAGER: "False"
+      STORE_ID: store-a
+      PEER_STORES: "store-b=http://web_b:8000,store-c=http://web_c:8000"
+      SYNC_PUSH_ENABLED: "True"
+    ports:
+      - "8001:8000"
+    depends_on:
+      - db_a
+      - redis
+    volumes:
+      - .:/app
+
+  worker_a:
+    build: .
+    command: sh -c "celery -A config worker -l info"
+    env_file:
+      - .env.multi
+    environment:
+      DATABASE_URL: postgresql://codepop:codepop@db_a:5432/codepop_store_a
+      CELERY_BROKER_URL: redis://redis:6379/0
+      CELERY_RESULT_BACKEND: redis://redis:6379/0
+      CELERY_TASK_ALWAYS_EAGER: "False"
+      STORE_ID: store-a
+      PEER_STORES: "store-b=http://web_b:8000,store-c=http://web_c:8000"
+      SYNC_PUSH_ENABLED: "True"
+    depends_on:
+      - db_a
+      - redis
+    volumes:
+      - .:/app
+
+  beat_a:
+    build: .
+    command: sh -c "celery -A config beat -l info"
+    env_file:
+      - .env.multi
+    environment:
+      DATABASE_URL: postgresql://codepop:codepop@db_a:5432/codepop_store_a
+      CELERY_BROKER_URL: redis://redis:6379/0
+      CELERY_RESULT_BACKEND: redis://redis:6379/0
+      CELERY_TASK_ALWAYS_EAGER: "False"
+      STORE_ID: store-a
+      PEER_STORES: "store-b=http://web_b:8000,store-c=http://web_c:8000"
+      SYNC_PUSH_ENABLED: "True"
+    depends_on:
+      - db_a
+      - redis
+    volumes:
+      - .:/app
+
+  # ===== STORE B (optional, profile: store-b) =====
+  db_b:
+    image: postgres:16
+    profiles:
+      - store-b
+    environment:
+      POSTGRES_DB: codepop_store_b
+      POSTGRES_USER: codepop
+      POSTGRES_PASSWORD: codepop
+    ports:
+      - "5434:5432"
+    volumes:
+      - postgres_data_b:/var/lib/postgresql/data
+
+  web_b:
+    build: .
+    profiles:
+      - store-b
+    command: sh -c "python manage.py migrate && python manage.py runserver 0.0.0.0:8000"
+    env_file:
+      - .env.multi
+    environment:
+      DATABASE_URL: postgresql://codepop:codepop@db_b:5432/codepop_store_b
+      CELERY_BROKER_URL: redis://redis:6379/0
+      CELERY_RESULT_BACKEND: redis://redis:6379/0
+      CELERY_TASK_ALWAYS_EAGER: "False"
+      STORE_ID: store-b
+      PEER_STORES: "store-a=http://web_a:8000,store-c=http://web_c:8000"
+      SYNC_PUSH_ENABLED: "True"
+    ports:
+      - "8002:8000"
+    depends_on:
+      - db_b
+      - redis
+    volumes:
+      - .:/app
+
+  worker_b:
+    build: .
+    profiles:
+      - store-b
+    command: sh -c "celery -A config worker -l info"
+    env_file:
+      - .env.multi
+    environment:
+      DATABASE_URL: postgresql://codepop:codepop@db_b:5432/codepop_store_b
+      CELERY_BROKER_URL: redis://redis:6379/0
+      CELERY_RESULT_BACKEND: redis://redis:6379/0
+      CELERY_TASK_ALWAYS_EAGER: "False"
+      STORE_ID: store-b
+      PEER_STORES: "store-a=http://web_a:8000,store-c=http://web_c:8000"
+      SYNC_PUSH_ENABLED: "True"
+    depends_on:
+      - db_b
+      - redis
+    volumes:
+      - .:/app
+
+  beat_b:
+    build: .
+    profiles:
+      - store-b
+    command: sh -c "celery -A config beat -l info"
+    env_file:
+      - .env.multi
+    environment:
+      DATABASE_URL: postgresql://codepop:codepop@db_b:5432/codepop_store_b
+      CELERY_BROKER_URL: redis://redis:6379/0
+      CELERY_RESULT_BACKEND: redis://redis:6379/0
+      CELERY_TASK_ALWAYS_EAGER: "False"
+      STORE_ID: store-b
+      PEER_STORES: "store-a=http://web_a:8000,store-c=http://web_c:8000"
+      SYNC_PUSH_ENABLED: "True"
+    depends_on:
+      - db_b
+      - redis
+    volumes:
+      - .:/app
+
+  # ===== STORE C (optional, profile: store-c) =====
+  db_c:
+    image: postgres:16
+    profiles:
+      - store-c
+    environment:
+      POSTGRES_DB: codepop_store_c
+      POSTGRES_USER: codepop
+      POSTGRES_PASSWORD: codepop
+    ports:
+      - "5435:5432"
+    volumes:
+      - postgres_data_c:/var/lib/postgresql/data
+
+  web_c:
+    build: .
+    profiles:
+      - store-c
+    command: sh -c "python manage.py migrate && python manage.py runserver 0.0.0.0:8000"
+    env_file:
+      - .env.multi
+    environment:
+      DATABASE_URL: postgresql://codepop:codepop@db_c:5432/codepop_store_c
+      CELERY_BROKER_URL: redis://redis:6379/0
+      CELERY_RESULT_BACKEND: redis://redis:6379/0
+      CELERY_TASK_ALWAYS_EAGER: "False"
+      STORE_ID: store-c
+      PEER_STORES: "store-a=http://web_a:8000,store-b=http://web_b:8000"
+      SYNC_PUSH_ENABLED: "True"
+    ports:
+      - "8003:8000"
+    depends_on:
+      - db_c
+      - redis
+    volumes:
+      - .:/app
+
+  worker_c:
+    build: .
+    profiles:
+      - store-c
+    command: sh -c "celery -A config worker -l info"
+    env_file:
+      - .env.multi
+    environment:
+      DATABASE_URL: postgresql://codepop:codepop@db_c:5432/codepop_store_c
+      CELERY_BROKER_URL: redis://redis:6379/0
+      CELERY_RESULT_BACKEND: redis://redis:6379/0
+      CELERY_TASK_ALWAYS_EAGER: "False"
+      STORE_ID: store-c
+      PEER_STORES: "store-a=http://web_a:8000,store-b=http://web_b:8000"
+      SYNC_PUSH_ENABLED: "True"
+    depends_on:
+      - db_c
+      - redis
+    volumes:
+      - .:/app
+
+  beat_c:
+    build: .
+    profiles:
+      - store-c
+    command: sh -c "celery -A config beat -l info"
+    env_file:
+      - .env.multi
+    environment:
+      DATABASE_URL: postgresql://codepop:codepop@db_c:5432/codepop_store_c
+      CELERY_BROKER_URL: redis://redis:6379/0
+      CELERY_RESULT_BACKEND: redis://redis:6379/0
+      CELERY_TASK_ALWAYS_EAGER: "False"
+      STORE_ID: store-c
+      PEER_STORES: "store-a=http://web_a:8000,store-b=http://web_b:8000"
+      SYNC_PUSH_ENABLED: "True"
+    depends_on:
+      - db_c
+      - redis
+    volumes:
+      - .:/app
+
+volumes:
+  postgres_data_a:
+  postgres_data_b:
+  postgres_data_c:

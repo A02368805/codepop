@@ -1,13 +1,21 @@
+import json
+
 from apps.users.models import User
 from apps.users.permissions import RoleRequiredMixin
-from django.http import HttpResponse
+from django.http import HttpResponse, JsonResponse
 from django.shortcuts import get_object_or_404
 from django.template.loader import render_to_string
+from django.utils.decorators import method_decorator
 from django.views import View
+from django.views.decorators.csrf import csrf_exempt
 from django.views.generic import TemplateView
 
 from .models import SyncConflictLog, SyncOutboxEvent, SyncProjectionState
-from .services import resolve_sync_conflict, retry_failed_outbox_events
+from .services import (
+    ingest_event_from_peer,
+    resolve_sync_conflict,
+    retry_failed_outbox_events,
+)
 from .tasks import process_pending_outbox_events_async
 
 
@@ -139,3 +147,39 @@ class SyncResolveConflictView(RoleRequiredMixin, View):
             )
 
         return _render_sync_panel(request)
+
+
+@method_decorator(csrf_exempt, name="dispatch")
+class SyncIngestView(View):
+    """
+    Machine-to-machine endpoint for receiving sync events from peer stores.
+    Authenticates via X-Sync-Token header (must match SYNC_API_SECRET).
+    """
+
+    def post(self, request, *args, **kwargs):
+        from django.conf import settings
+
+        # Authenticate via shared secret
+        token = request.headers.get("X-Sync-Token", "")
+        if not token or token != settings.SYNC_API_SECRET:
+            return JsonResponse({"error": "unauthorized"}, status=401)
+
+        # Get origin node ID
+        origin_node_id = request.headers.get("X-Origin-Node", "")
+        if not origin_node_id:
+            return JsonResponse({"error": "missing origin"}, status=400)
+
+        # Parse payload
+        try:
+            payload = json.loads(request.body)
+        except (json.JSONDecodeError, ValueError):
+            return JsonResponse({"error": "invalid json"}, status=400)
+
+        try:
+            event = ingest_event_from_peer(payload, origin_node_id=origin_node_id)
+            return JsonResponse({"status": "ok", "event_id": str(event.pk)})
+        except Exception as exc:
+            return JsonResponse(
+                {"error": "processing failed", "detail": str(exc)},
+                status=400,
+            )
