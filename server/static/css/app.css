@@ -1996,6 +1996,57 @@ details.ingredient-group[open] .ingredient-group__header::after {
     font-size: 1.02rem;
 }
 
+.preference-block__content {
+    padding: 0.6rem 0.72rem 0.72rem;
+}
+
+.preference-block__columns {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.75rem;
+}
+
+.preference-lane__title {
+    font-weight: 600;
+    font-size: 0.88rem;
+    margin-bottom: 0.35rem;
+}
+
+.preference-lane--prefer .preference-lane__title {
+    color: var(--accent);
+}
+
+.preference-lane--avoid .preference-lane__title {
+    color: #8f4a61;
+}
+
+.preference-chip-grid {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.4rem;
+}
+
+.choice-card--compact {
+    min-height: auto;
+    padding: 0.4rem 0.7rem;
+    font-size: 0.88rem;
+}
+
+.choice-card--compact .choice-card__label {
+    font-size: 0.88rem;
+}
+
+.choice-card--avoid.is-selected {
+    border-color: rgba(184, 59, 72, 0.22);
+    background: linear-gradient(180deg, rgba(184, 59, 72, 0.12), rgba(184, 59, 72, 0.06));
+}
+
+.preference-advanced > summary {
+    cursor: pointer;
+    font-weight: 600;
+    padding: 0.6rem 0;
+}
+
 .pill--warning {
     background: rgba(180, 122, 15, 0.12);
     color: #8b6112;
