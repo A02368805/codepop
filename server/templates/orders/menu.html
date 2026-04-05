@@ -7,82 +7,112 @@
     <div>
         <p class="eyebrow">Drink Menu</p>
         <h1>{{ store.name }}</h1>
-        <p class="lede">{{ store.full_address }}. Build a drink, keep the cart tied to this store, and head to pickup when the order is ready.</p>
+        <p class="lede">{{ store.full_address }}. Pick a signature drink, customize it your way, and we will have it ready for pickup.</p>
         <div class="cta-row">
-            <a class="button button--primary" href="{% url 'orders:cart' %}">View cart{% if cart_item_count %} ({{ cart_item_count }}){% endif %}</a>
-            <a class="button button--ghost" href="{% url 'stores:index' %}">Choose another store</a>
+            <a class="button button--primary" href="{% url 'orders:cart' %}">View cart{% if cart_item_count %} ({{ cart_item_count }} drink{{ cart_item_count|pluralize }}){% endif %}</a>
+            <a class="button button--ghost" href="{% url 'stores:index' %}">Pick a different store</a>
             {% if request.user.is_authenticated and request.user.role == "account_user" %}
                 <a class="button button--ghost" href="{% url 'orders:favorites' %}">Favorites</a>
-                <a class="button button--ghost" href="{% url 'account-preferences' %}">Taste Profile</a>
+                <a class="button button--ghost" href="{% url 'account-preferences' %}">Taste profile</a>
             {% endif %}
         </div>
-    </div>
-    <div class="hero-card">
-        <p class="eyebrow">Suggested For You</p>
-        <ul class="mini-list">
-            {% for recommendation in recommendations %}
-                <li><strong>{{ recommendation.name }}</strong>: {{ recommendation.explanation }}</li>
-            {% empty %}
-                <li>Open any signature drink to let FloatStack start helping with the build.</li>
-            {% endfor %}
-        </ul>
-        <div class="menu-ai-launcher">
-            <button class="button button--ghost" type="button" id="menu-ai-open">Open AI builder</button>
-            <div class="menu-ai-panel" id="menu-ai-panel" {% if request.GET.open_ai != "1" %}hidden{% endif %}>
+        <div class="menu-ai-launcher menu-ai-launcher--compact">
+            <p class="eyebrow">AI Drink Prompt</p>
+            <div class="menu-ai-panel menu-ai-panel--inline" id="menu-ai-panel">
                 <form
                     method="post"
                     hx-post="{% url 'orders:menu-ai' store.store_code %}"
                     hx-target="#menu-ai-result"
                     hx-swap="innerHTML"
-                    hx-indicator="#menu-ai-indicator"
                     class="menu-ai-form"
                 >
                     {% csrf_token %}
                     <label class="field">
-                        <span>What kind of drink do you want?</span>
+                        <span>Tell us what you are craving</span>
                         {{ menu_ai_form.prompt }}
                     </label>
-                    <p class="assistant-scope-note">Describe flavor, base soda, sweetness, or ingredients and AI will generate a drink you can edit.</p>
                     <div class="action-row">
-                        <button class="button button--primary" type="submit">Get suggestions</button>
-                        <button class="button button--ghost" type="button" id="menu-ai-close">Close</button>
+                        <button class="button button--primary" type="submit">Generate drink ideas</button>
                     </div>
-                    <p class="htmx-indicator ai-loading-indicator" id="menu-ai-indicator">Creating your custom drink suggestion...</p>
                 </form>
-                <div id="menu-ai-result">
-                    {% include "orders/partials/menu_ai_result.html" %}
+                <div id="menu-ai-result" class="menu-ai-result menu-ai-result--compact" aria-live="polite">
+                    {% if menu_ai_result %}
+                        {% include "orders/partials/menu_ai_result.html" with menu_ai_oob=False menu_ai_hero_cards=hero_recommendation_cards %}
+                    {% endif %}
                 </div>
             </div>
         </div>
     </div>
+    <div class="hero-card">
+        <p class="eyebrow">Recommended Picks</p>
+        <h2>Not sure what to order?</h2>
+        <p class="muted">Start with one of these four drink ideas, then customize everything your way.</p>
+    </div>
+    <div class="menu-hero-recommendations" aria-label="Recommended drinks at {{ store.name }}">
+        <div id="menu-hero-ai-reco-row" class="menu-reco-row">
+            {% include "orders/partials/menu_hero_recommendation_cards.html" with hero_recommendation_cards=hero_recommendation_cards %}
+        </div>
+    </div>
 </section>
 
-<section class="panel">
-    <div class="section-heading">
-        <div>
-            <p class="eyebrow">Signature Drinks</p>
-            <h2>Start with a signature, then customize the details.</h2>
+{% if menu_nav %}
+    <nav class="panel home-subnav-panel" aria-label="Browse this store menu by drink base">
+        <div class="home-subnav">
+            {% for item in menu_nav %}
+                <a
+                    class="home-subnav__link{% if forloop.first %} is-active{% endif %}"
+                    href="#{{ item.anchor_id }}"
+                    data-home-nav-link
+                    aria-current="{% if forloop.first %}true{% else %}false{% endif %}"
+                >
+                    <span>{{ item.label }}</span>
+                </a>
+            {% endfor %}
         </div>
-        <p class="lede-small">Start with a signature recipe, then tailor every ingredient to your taste.</p>
-    </div>
-    <div class="card-grid">
-        {% for item in menu_items %}
-            <article class="menu-card">
-                <div class="badge-row">
-                    {% for tag in item.tags %}
-                        <span class="pill pill--soft">{{ tag }}</span>
+    </nav>
+
+    <section class="panel home-browse-panel">
+        <div class="section-heading">
+            <div>
+                <p class="eyebrow">Browse Drinks</p>
+                <h2>Choose a base, then customize your drink.</h2>
+            </div>
+            <p class="lede-small">Use the sub-nav to jump to any base section in this store menu.</p>
+        </div>
+
+        {% for section in menu_sections %}
+            <section
+                class="home-drink-track"
+                id="{{ section.anchor_id }}"
+                aria-label="{{ section.label }} drinks at {{ store.name }}"
+            >
+                <div class="home-drink-track__header">
+                    <p class="eyebrow">{{ section.label }}</p>
+                    <h3>{{ section.label }} Drinks</h3>
+                    {% if section.description %}
+                        <p class="muted">{{ section.description }}</p>
+                    {% endif %}
+                </div>
+                <div class="home-drink-row">
+                    {% for item in section.cards %}
+                        {% include "home/partials/drink_card.html" with item=item %}
+                    {% empty %}
+                        <article class="empty-state home-empty-state">
+                            <h3>No drinks in this section</h3>
+                            <p>Try another base to keep browsing.</p>
+                        </article>
                     {% endfor %}
                 </div>
-                <h3>{{ item.name }}</h3>
-                <p>{{ item.description }}</p>
-                <dl class="price-list">
-                    <div><dt>Small</dt><dd>${{ item.base_prices.small }}</dd></div>
-                    <div><dt>Medium</dt><dd>${{ item.base_prices.medium }}</dd></div>
-                    <div><dt>Large</dt><dd>${{ item.base_prices.large }}</dd></div>
-                </dl>
-                <a class="button button--primary" href="{% url 'orders:customize' store.store_code item.slug %}">Customize drink</a>
-            </article>
+            </section>
         {% endfor %}
-    </div>
-</section>
+    </section>
+{% else %}
+    <section class="panel">
+        <div class="empty-state">
+            <h2>No drinks are available for this store yet.</h2>
+            <p>Choose another store to start an order.</p>
+            <a class="button button--primary" href="{% url 'stores:index' %}">Browse stores</a>
+        </div>
+    </section>
+{% endif %}
 {% endblock %}

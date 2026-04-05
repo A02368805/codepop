@@ -7,7 +7,7 @@
     <div>
         <p class="eyebrow">Checkout</p>
         <h1>Confirm pickup details and place the order.</h1>
-        <p class="lede">Confirm your details and complete your order.</p>
+        <p class="lede">You are one step away from pickup. Confirm your details, place your order, and we will handle the rest.</p>
     </div>
     <div class="hero-card">
         <p class="eyebrow">Pickup Store</p>
@@ -25,6 +25,32 @@
         <div class="panel">
             <form id="checkout-form" method="post" class="form-grid">
                 {% csrf_token %}
+                <div class="callout">
+                    <strong>Payment mode:</strong>
+                    {% if payment_mode_is_mock %}
+                        Demo checkout is active, so you can place this order without entering a real card.
+                    {% elif payment_checkout_flow == "elements" %}
+                        Secure card payment is available after you place this order.
+                    {% else %}
+                        You will be redirected to Stripe after you place this order.
+                    {% endif %}
+                </div>
+                {% if payment_mode != "stripe" %}
+                    <div class="flash flash--warning">
+                        Card entry is not available in this environment, but demo checkout still works.
+                    </div>
+                {% elif payment_checkout_flow != "elements" %}
+                    <div class="flash flash--warning">
+                        Card entry is not embedded on this page. You can still complete payment on the next step.
+                    </div>
+                {% elif not stripe_publishable_key %}
+                    <div class="flash flash--warning">
+                        Card entry is temporarily unavailable. You can continue and finish payment through the available flow.
+                    </div>
+                {% endif %}
+                <div class="callout">
+                    <strong>Pricing check:</strong> totals are confirmed again when you place your order.
+                </div>
                 <label class="field">
                     <span>{{ form.pickup_time_choice.label }}</span>
                     {{ form.pickup_time_choice }}
@@ -57,7 +83,7 @@
                         hx-swap="innerHTML"
                         hx-include="#checkout-form"
                     >
-                        Refresh totals
+                        Refresh summary
                     </button>
                 </div>
             </form>
@@ -69,8 +95,8 @@
 {% else %}
     <section class="panel">
         <div class="empty-state">
-            <h2>There is nothing ready to check out.</h2>
-            <p>Add at least one drink from a store menu before you place an order.</p>
+            <h2>Nothing to check out yet.</h2>
+            <p>Add at least one drink before you place your order.</p>
             <a class="button button--primary" href="{% url 'stores:index' %}">Choose a store</a>
         </div>
     </section>

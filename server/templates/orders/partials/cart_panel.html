@@ -3,8 +3,8 @@
         <div class="panel">
             <div class="section-heading">
                 <div>
-                    <p class="eyebrow">Line Items</p>
-                    <h2>{{ cart.items|length }} item{{ cart.items|length|pluralize }}</h2>
+                    <p class="eyebrow">Your Drinks</p>
+                    <h2>{{ cart.items|length }} drink{{ cart.items|length|pluralize }}</h2>
                 </div>
             </div>
             <div class="surface-list">
@@ -13,7 +13,7 @@
                         <div class="list-card__main">
                             <h3>{{ item.display_name }}</h3>
                             <p class="muted">{{ item.description }}</p>
-                            <p>${{ item.base_price }} base + ${{ item.extras_total }} extras</p>
+                            <p>Base ${{ item.base_price|floatformat:2 }} · Extras ${{ item.extras_total|floatformat:2 }} each</p>
                         </div>
                         <div class="list-card__actions">
                             <form
@@ -22,16 +22,11 @@
                                 hx-post="{% url 'orders:cart-item-update' item.item_id %}"
                                 hx-target="#cart-panel"
                                 hx-swap="innerHTML"
-                                hx-trigger="change from:input[name='quantity'] delay:200ms"
-                                hx-indicator="#qty-indicator-{{ item.item_id }}"
                             >
                                 {% csrf_token %}
                                 <input type="number" name="quantity" min="0" max="12" value="{{ item.quantity }}">
-                                <span class="htmx-indicator muted" id="qty-indicator-{{ item.item_id }}">Updating...</span>
+                                <button class="button button--ghost" type="submit">Update qty</button>
                             </form>
-                            {% if store and item.menu_key %}
-                                <a class="button button--ghost" href="{% url 'orders:customize' store.store_code item.menu_key %}">Edit drink</a>
-                            {% endif %}
                             <form
                                 method="post"
                                 hx-post="{% url 'orders:cart-item-remove' item.item_id %}"
@@ -47,18 +42,17 @@
             </div>
         </div>
         <div class="panel">
-            <p class="eyebrow">Checkout Summary</p>
+            <p class="eyebrow">Order Summary</p>
             <dl class="summary-list">
                 <div><dt>Store</dt><dd>{{ store.name }}</dd></div>
-                <div><dt>Subtotal</dt><dd>${{ pricing.subtotal_amount }}</dd></div>
-                <div><dt>Tax</dt><dd>${{ pricing.tax_amount }}</dd></div>
-                <div><dt>Total</dt><dd>${{ pricing.total_amount }}</dd></div>
+                <div><dt>Subtotal</dt><dd>${{ pricing.subtotal_amount|floatformat:2 }}</dd></div>
+                <div><dt>Tax</dt><dd>${{ pricing.tax_amount|floatformat:2 }}</dd></div>
+                <div><dt>Total</dt><dd>${{ pricing.total_amount|floatformat:2 }}</dd></div>
             </dl>
             <div class="action-row">
-                <a class="button button--primary" href="{% url 'orders:checkout' %}">Continue to checkout</a>
+                <a class="button button--primary" href="{% url 'orders:checkout' %}">Checkout</a>
                 {% if store %}
                     <a class="button button--ghost" href="{% url 'orders:menu' store.store_code %}">Add another drink</a>
-                    <a class="button button--ghost" href="{% url 'stores:index' %}">Change store</a>
                 {% endif %}
             </div>
         </div>
@@ -67,7 +61,7 @@
     <section class="panel">
         <div class="empty-state">
             <h2>Your cart is empty.</h2>
-            <p>Pick a store and start with one of the signature drinks.</p>
+            <p>Pick a store and add a drink to get started.</p>
             <a class="button button--primary" href="{% url 'stores:index' %}">Choose a store</a>
         </div>
     </section>

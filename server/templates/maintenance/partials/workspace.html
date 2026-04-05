@@ -11,6 +11,7 @@
         <div>
             <p class="eyebrow">Maintenance Workspace</p>
             <h1>Urgency queue, route batches, and repair execution</h1>
+            <p class="muted">Status events stay auditable, assignments stay action-oriented, and route groups stay practical for the current repair scope.</p>
         </div>
         <form
             method="get"
@@ -32,7 +33,7 @@
     </div>
     <div class="badge-row">
         <span class="pill">{{ machines|length }} urgent machine{{ machines|length|pluralize }}</span>
-        <span class="pill pill--soft">{{ assignments|length }} active assignment{{ assignments|length|pluralize }}</span>
+        <span class="pill pill--soft">{{ assignments|length }} scoped assignment{{ assignments|length|pluralize }}</span>
         <span class="pill pill--soft">{{ route_groups|length }} route batch{{ route_groups|length|pluralize }}</span>
     </div>
     <div id="urgent-queue">
@@ -45,7 +46,7 @@
         <div class="section-heading">
             <div>
                 <p class="eyebrow">Route-Aware Queue</p>
-                <h2>Grouped by city batches</h2>
+                <h2>Grouped by practical city batches</h2>
             </div>
         </div>
         {% include "maintenance/partials/route_groups.html" %}
@@ -54,7 +55,7 @@
         <div class="section-heading">
             <div>
                 <p class="eyebrow">Repair Assignments</p>
-                <h2>{% if request.user.role == "repair_staff" %}My active and recent work{% else %}Team repair work{% endif %}</h2>
+                <h2>{% if request.user.role == "repair_staff" %}My active and recent work{% else %}Scoped repair work{% endif %}</h2>
             </div>
         </div>
         {% include "maintenance/partials/assignment_cards.html" %}

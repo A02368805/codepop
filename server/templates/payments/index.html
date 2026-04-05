@@ -10,9 +10,9 @@
             <h1>Transaction and revenue view</h1>
             <p class="muted">
                 {% if payment_mode_is_mock %}
-                    Test payment mode is active for this environment.
+                    Demo payment mode is active. Totals are still validated on the server, but checkout completes without a live processor.
                 {% else %}
-                    Stripe mode is active{% if not stripe_ready %}, but setup is incomplete{% endif %}.
+                    Stripe mode is active{% if not stripe_ready %}, but credentials are incomplete{% endif %}. Server pricing remains authoritative.
                 {% endif %}
             </p>
         </div>

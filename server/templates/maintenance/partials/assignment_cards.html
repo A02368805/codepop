@@ -1,7 +1,7 @@
 {% if assignments %}
     <div class="surface-list">
         {% for assignment in assignments %}
-            <article class="list-card maintenance-assignment-card" id="assignment-{{ assignment.id }}">
+            <article class="list-card" id="assignment-{{ assignment.id }}">
                 <div class="list-card__main">
                     <div class="inline-cluster">
                         <span class="pill">{{ assignment.get_status_display }}</span>
@@ -31,14 +31,14 @@
                         </ul>
                     {% endif %}
                 </div>
-                <div class="list-card__actions maintenance-assignment-actions">
+                <div class="list-card__actions">
                     {% if request.user.role == "repair_staff" and request.user.id == assignment.assigned_to_id or request.user.role == "super_admin" %}
                         <form
                             method="post"
                             hx-post="{% url 'maintenance:assignment-action' assignment.id %}"
                             hx-target="#maintenance-workspace"
                             hx-swap="innerHTML"
-                            class="panel-stack maintenance-assignment-form"
+                            class="panel-stack"
                         >
                             {% csrf_token %}
                             <input type="hidden" name="status" value="{{ status_filter }}">
@@ -75,7 +75,7 @@
                                 hx-post="{% url 'maintenance:assignment-action' assignment.id %}"
                                 hx-target="#maintenance-workspace"
                                 hx-swap="innerHTML"
-                                class="panel-stack maintenance-assignment-form"
+                                class="panel-stack"
                             >
                                 {% csrf_token %}
                                 <input type="hidden" name="status" value="{{ status_filter }}">
@@ -93,5 +93,5 @@
         {% endfor %}
     </div>
 {% else %}
-    <div class="empty-state"><p>No assignments in this view.</p></div>
+    <div class="empty-state"><p>No assignments in this scope.</p></div>
 {% endif %}
