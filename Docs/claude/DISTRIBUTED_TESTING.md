@@ -29,7 +29,7 @@ Once stores are running:
 
 ### Default Users
 
-After running `make multi-demo`, each store has these accounts (default password: `CodePop123!`):
+After running `make multi-demo`, each store has these accounts (default password: `FloatStack123!`):
 
 **All Stores:**
 - Super Admin: `superadmin@floatstack.local` (can see all stores)
@@ -53,7 +53,7 @@ After running `make multi-demo`, each store has these accounts (default password
 
 1. Visit http://localhost:8001 (or 8002, 8003)
 2. Click "Login"
-3. Enter email and password (`CodePop123!`)
+3. Enter email and password (`FloatStack123!`)
 4. For cross-store sync testing, use the Logistics Manager or Super Admin (they see sync events)
 
 ### Cross-Store Account User Login (Federated)
@@ -63,7 +63,7 @@ Account users can log in to **any store** — even if their account was created 
 **Example:**
 1. Store A has `account.a001@floatstack.local`
 2. Store B does NOT have this user locally
-3. You visit http://localhost:8002 and enter `account.a001@floatstack.local` + `CodePop123!`
+3. You visit http://localhost:8002 and enter `account.a001@floatstack.local` + `FloatStack123!`
 4. Store B contacts Store A via `POST /federated-validate/` to validate
 5. Store A confirms the credentials are valid
 6. Store B creates a local user record and logs them in
