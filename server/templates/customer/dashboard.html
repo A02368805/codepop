@@ -5,13 +5,21 @@
 {% block content %}
 <section class="hero hero--dashboard">
     <div>
-        <p class="eyebrow">Account Home</p>
+        <p class="eyebrow">Customer Dashboard</p>
         <h1>{{ dashboard.title }}</h1>
         <p class="lede">{{ dashboard.intro }}</p>
         <div class="cta-row">
-            <a class="button button--primary" href="{% url 'stores:index' %}">Start an order</a>
-            <a class="button button--ghost" href="{% url 'orders:history' %}">View orders</a>
-            <a class="button button--ghost" href="{% url 'orders:favorites' %}">Open favorites</a>
+            {% if order_store %}
+                <a class="button button--primary" href="{% url 'orders:menu' order_store.store_code %}?open_ai=1#menu-ai-panel">Open AI builder</a>
+                <a class="button button--ghost" href="{% url 'orders:menu' order_store.store_code %}">Open manual builder</a>
+                <a class="button button--ghost" href="{% url 'stores:index' %}">Change store</a>
+            {% else %}
+                <a class="button button--primary" href="{% url 'stores:index' %}">Choose store to build</a>
+            {% endif %}
+        </div>
+        <div class="cta-row">
+            <a class="button button--ghost" href="{% url 'orders:history' %}">View order history</a>
+            <a class="button button--ghost" href="{% url 'support:index' %}">Get support</a>
         </div>
     </div>
     <div class="hero-card" id="dashboard-metrics" hx-get="{{ dashboard.refresh_url }}" hx-trigger="load, every 30s" hx-swap="innerHTML">
@@ -33,27 +41,27 @@
                     <div class="list-card__main">
                         <h3><a href="{% url 'orders:detail' order.public_order_code %}">{{ order.public_order_code }}</a></h3>
                         <p class="muted">{{ order.store.name }}</p>
-                        <p>{{ order.get_status_display }} · ${{ order.total_amount|floatformat:2 }}</p>
+                        <p>{{ order.get_status_display }} · ${{ order.total_amount }}</p>
                     </div>
                 </article>
             {% empty %}
                 <div class="empty-state">
-                    <p>No orders yet. Your recent pickups will appear here.</p>
+                    <p>No account orders yet.</p>
                 </div>
             {% endfor %}
         </div>
     </div>
     <div class="panel">
-        <p class="eyebrow">Taste Profile</p>
+        <p class="eyebrow">Preferences + Favorites</p>
         <ul class="mini-list">
             {% for preference in taste_preferences %}
                 <li>{{ preference.get_preference_type_display }}: {{ preference.ingredient_name }}</li>
             {% empty %}
-                <li>No preferences saved yet.</li>
+                <li>No taste preferences saved yet.</li>
             {% endfor %}
         </ul>
         <div class="action-row">
-            <a class="button button--ghost" href="{% url 'account-preferences' %}">Edit taste profile</a>
+            <a class="button button--ghost" href="{% url 'account-preferences' %}">Edit preferences</a>
             <a class="button button--ghost" href="{% url 'orders:favorites' %}">Open favorites</a>
         </div>
     </div>
@@ -62,23 +70,27 @@
 <section class="panel">
     <div class="section-heading">
         <div>
-            <p class="eyebrow">For You</p>
+            <p class="eyebrow">Recommendations</p>
             <h2>Suggested drinks</h2>
         </div>
-        <a class="button button--ghost" href="{% url 'orders:recommendations' %}">See all suggestions</a>
+        <a href="{% url 'orders:recommendations' %}">See full recommendation page</a>
     </div>
     <div class="card-grid">
         {% for recommendation in recommended_drinks %}
             <article class="menu-card">
-                <h3>{{ recommendation.name }}</h3>
+                {% if order_store and recommendation.slug %}
+                    <h3><a href="{% url 'orders:customize' order_store.store_code recommendation.slug %}">{{ recommendation.name }}</a></h3>
+                {% else %}
+                    <h3>{{ recommendation.name }}</h3>
+                {% endif %}
                 <p>{{ recommendation.description }}</p>
                 <p class="muted">{{ recommendation.explanation }}</p>
-                <a class="button button--ghost" href="{% url 'stores:index' %}">Order this drink</a>
+                {% if order_store and recommendation.slug %}
+                    <a class="button button--ghost" href="{% url 'orders:customize' order_store.store_code recommendation.slug %}">Create this drink</a>
+                {% else %}
+                    <a class="button button--ghost" href="{% url 'stores:index' %}">Choose a store to order</a>
+                {% endif %}
             </article>
-        {% empty %}
-            <div class="empty-state">
-                <p>Order a few drinks to unlock personalized suggestions.</p>
-            </div>
         {% endfor %}
     </div>
 </section>

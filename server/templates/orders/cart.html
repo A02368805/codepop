@@ -7,7 +7,7 @@
     <div>
         <p class="eyebrow">Cart</p>
         <h1>Your current order</h1>
-        <p class="lede">Review your drinks, update quantities, and head to checkout when everything looks right.</p>
+        <p class="lede">Review your drinks, update quantities, and continue to checkout when ready.</p>
     </div>
     <div class="hero-card">
         <p class="eyebrow">Store</p>
@@ -18,6 +18,7 @@
             <h2>No store selected yet</h2>
             <p class="muted">Pick a store before you start building drinks.</p>
         {% endif %}
+        <a class="button button--ghost" href="{% url 'stores:index' %}">Change store</a>
     </div>
 </section>
 

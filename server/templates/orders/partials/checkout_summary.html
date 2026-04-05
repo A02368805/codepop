@@ -1,12 +1,11 @@
-<p class="eyebrow">Order Summary</p>
+<p class="eyebrow">Pricing</p>
 {% if pricing %}
     <dl class="summary-list">
         <div><dt>Items</dt><dd>{{ cart.items|length }}</dd></div>
-        <div><dt>Subtotal</dt><dd>${{ pricing.subtotal_amount|floatformat:2 }}</dd></div>
-        <div><dt>Tax</dt><dd>${{ pricing.tax_amount|floatformat:2 }}</dd></div>
-        <div><dt>Total</dt><dd>${{ pricing.total_amount|floatformat:2 }}</dd></div>
+        <div><dt>Subtotal</dt><dd>${{ pricing.subtotal_amount }}</dd></div>
+        <div><dt>Tax</dt><dd>${{ pricing.tax_amount }}</dd></div>
+        <div><dt>Total</dt><dd>${{ pricing.total_amount }}</dd></div>
     </dl>
-    <p class="muted">Final totals are confirmed when your order is placed.</p>
 {% else %}
-    <p>Order pricing is not available yet.</p>
+    <p>No pricing is available for this cart yet.</p>
 {% endif %}

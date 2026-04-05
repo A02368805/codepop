@@ -26,7 +26,7 @@
             <p class="eyebrow">Operational Scope</p>
             <h2>Region, store, and date filters</h2>
         </div>
-        <p class="lede-small">Only authorized regions and stores appear here, so filtering cannot leak data outside your scope.</p>
+        <p class="lede-small">Filter by region, store, and date.</p>
     </div>
     <form method="get" class="filter-bar">
         <select name="region">
@@ -86,7 +86,7 @@
                     <div class="list-card__main">
                         <div class="inline-cluster">
                             <span class="pill">{{ recommendation.source_type }}</span>
-                            <span class="pill pill--soft">{{ recommendation.quantity }}</span>
+                            <span class="pill pill--soft">{{ recommendation.quantity|floatformat:"-2" }}</span>
                         </div>
                         <h3>{{ recommendation.destination_store.name }} · {{ recommendation.inventory_item.name }}</h3>
                         <p class="muted">Suggested source: {{ recommendation.source_label }}</p>
@@ -154,7 +154,7 @@
                         <td>{{ row.store__name }}</td>
                         <td>{{ row.tracked_items }}</td>
                         <td>{{ row.below_threshold }}</td>
-                        <td>{{ row.on_hand_total|default:"0" }}</td>
+                        <td>{{ row.on_hand_total|default:"0"|floatformat:"-2" }}</td>
                     </tr>
                 {% empty %}
                     <tr>
@@ -181,7 +181,7 @@
                         <p class="muted">{{ balance.inventory_item.name }}</p>
                     </div>
                     <div class="list-card__actions">
-                        <span class="pill">On hand {{ balance.on_hand_quantity }}</span>
+                        <span class="pill">On hand {{ balance.on_hand_quantity|floatformat:"-2" }}</span>
                     </div>
                 </article>
             {% empty %}
@@ -247,7 +247,7 @@
                         <p class="muted">{{ replenishment.supplier.name }}</p>
                     </div>
                     <div class="list-card__actions">
-                        <span class="pill">{{ replenishment.quantity_requested }}</span>
+                        <span class="pill">{{ replenishment.quantity_requested|floatformat:"-2" }}</span>
                     </div>
                 </article>
             {% empty %}
@@ -274,7 +274,7 @@
                     <p class="muted">Usage in selected window</p>
                 </div>
                 <div class="list-card__actions">
-                    <span class="pill">{{ row.total_used }}</span>
+                    <span class="pill">{{ row.total_used|floatformat:"-2" }}</span>
                 </div>
             </article>
         {% empty %}
@@ -311,7 +311,7 @@
             {% for row in inventory_category_rows %}
                 <article class="metric metric--info">
                     <p>{{ row.inventory_item__category|title }}</p>
-                    <strong>{{ row.total_on_hand|default:"0" }}</strong>
+                    <strong>{{ row.total_on_hand|default:"0"|floatformat:"-2" }}</strong>
                 </article>
             {% endfor %}
         </div>
@@ -342,7 +342,7 @@
                 <article class="list-card">
                     <div class="list-card__main">
                         <h3>{{ schedule.store.name }} · {{ schedule.inventory_item.name }}</h3>
-                        <p class="muted">{{ schedule.recommended_quantity }} every {{ schedule.recommended_frequency_days }} day{{ schedule.recommended_frequency_days|pluralize }}</p>
+                        <p class="muted">{{ schedule.recommended_quantity|floatformat:"-2" }} every {{ schedule.recommended_frequency_days }} day{{ schedule.recommended_frequency_days|pluralize }}</p>
                     </div>
                 </article>
             {% empty %}

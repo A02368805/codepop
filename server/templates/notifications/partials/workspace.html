@@ -11,11 +11,7 @@
         <div>
             <p class="eyebrow">Notifications</p>
             <h1>Unread and recent updates</h1>
-            {% if request.user.role == "account_user" %}
-                <p class="muted">Stay on top of order progress, support follow-ups, and account activity.</p>
-            {% else %}
-                <p class="muted">Alerts stay scoped to your signed-in role and workspace.</p>
-            {% endif %}
+            <p class="muted">Track order, inventory, maintenance, and account updates in one place.</p>
         </div>
         <div class="action-row">
             <a
@@ -26,7 +22,7 @@
                 hx-swap="innerHTML"
                 hx-push-url="true"
             >
-                All updates
+                All
             </a>
             <a
                 class="button {% if state_filter == 'unread' %}button--primary{% else %}button--ghost{% endif %}"
@@ -49,9 +45,7 @@
     </div>
     <div class="badge-row">
         <span class="pill">{{ unread_count }} unread</span>
-        {% if request.user.role != "account_user" %}
-            <span class="pill pill--soft">{{ notifications|length }} shown</span>
-        {% endif %}
+        <span class="pill pill--soft">{{ notifications|length }} shown</span>
     </div>
     <div id="notification-list">
         {% include "notifications/partials/list.html" %}

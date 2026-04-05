@@ -2,7 +2,7 @@
     <div class="section-heading section-heading--tight">
         <div>
             <p class="eyebrow">{{ assistant.title }}</p>
-            <h2>{{ assistant.ai_button_label }}</h2>
+            <h2>Builder Assistant</h2>
         </div>
         {% if assistant.ai_applied %}
             <span class="pill">Applied</span>
@@ -18,11 +18,11 @@
     </button>
 
     <div class="callout">
-        <strong>Your current build:</strong>
+        <strong>Current build:</strong>
         {% if assistant.selected_snapshot %}
             {{ assistant.selected_snapshot|join:", " }}
         {% else %}
-            Start with your current selections or let us build a fresh idea.
+            FloatStack can start from your current selections or build one from scratch.
         {% endif %}
     </div>
 
@@ -38,8 +38,8 @@
     </div>
 
     {% if assistant.uses_preferences %}
-        <p class="muted">Your saved preferences are helping personalize these suggestions, and you can still edit everything.</p>
+        <p class="muted">Uses your saved preferences and current selections, then applies an editable recommendation.</p>
     {% else %}
-        <p class="muted">You can still get great suggestions without a profile, but preferences make recommendations more personal.</p>
+        <p class="muted">Uses your current selections to generate an editable recommendation.</p>
     {% endif %}
 </div>

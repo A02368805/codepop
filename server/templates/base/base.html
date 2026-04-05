@@ -19,13 +19,7 @@
                     <img class="brandmark__logo" src="{% static 'images/floatstack-logo.png' %}" alt="FloatStack">
                     <span class="brandmark__wordmark">
                         <span class="brandmark__text">FloatStack</span>
-                        <span class="brandmark__subtext">
-                            {% if not request.user.is_authenticated or request.user.role == "account_user" %}
-                                Custom Soda Ordering
-                            {% else %}
-                                Ordering + Operations
-                            {% endif %}
-                        </span>
+                        <span class="brandmark__subtext">Ordering + Operations</span>
                     </span>
                 </a>
             {% else %}
@@ -82,13 +76,8 @@
         </main>
 
         <footer class="footer">
-            {% if not request.user.is_authenticated or request.user.role == "account_user" %}
-                <p>Build your drink, customize every detail, and pick up fast.</p>
-                <p class="muted">Need help? Use support chat or guest lookup anytime.</p>
-            {% else %}
-                <p>FloatStack keeps customer ordering and operational workflows in one responsive web product.</p>
-                <p class="muted">Session auth, scoped dashboards, and server-side business rules stay aligned across the demo.</p>
-            {% endif %}
+            <p>FloatStack keeps customer ordering and operational workflows in one responsive web product.</p>
+            <p class="muted">Secure accounts, scoped dashboards, and reliable order workflows keep every role in sync.</p>
         </footer>
     </div>
 </body>

@@ -5,28 +5,30 @@
 {% block content %}
 <section class="hero hero--dashboard">
     <div>
-        <p class="eyebrow">Support Chat</p>
-        <h1>Need help with an order?</h1>
-        <p class="lede">Ask about pickup timing, order updates, guest lookup, refunds, or account help. We will guide you through the next step.</p>
+        <p class="eyebrow">Live Support Chat</p>
+        <h1>Chat with FloatStack support</h1>
+        <p class="lede">Ask about ordering, pickup, guest lookup, refunds, or account help.</p>
         <div class="cta-row">
             <form
                 method="post"
                 hx-post="{% url 'support:start' %}"
                 hx-target="#support-workspace"
                 hx-swap="innerHTML"
+                hx-indicator="#support-start-indicator"
             >
                 {% csrf_token %}
-                <button class="button button--ghost" type="submit">Start new chat</button>
+                <button class="button button--ghost" type="submit">Start new conversation</button>
+                <p class="htmx-indicator ai-loading-indicator" id="support-start-indicator">Starting support conversation...</p>
             </form>
-            <a class="button button--ghost" href="{% url 'orders:guest-lookup' %}">Track guest order</a>
+            <a class="button button--ghost" href="{% url 'orders:guest-lookup' %}">Guest lookup</a>
         </div>
     </div>
     <div class="hero-card">
         <p class="eyebrow">Tips</p>
         <ul class="mini-list">
-            <li>Share your order code for the fastest status help.</li>
-            <li>Ask follow-up questions in the same chat thread.</li>
-            <li>Submit escalation if you still need team follow-up.</li>
+            <li>Paste your order code like FS-C-C001-XXXXXX for exact status help</li>
+            <li>Keep follow-up questions in the same thread</li>
+            <li>Use escalation if your issue still needs human review</li>
         </ul>
     </div>
 </section>
