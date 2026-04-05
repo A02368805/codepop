@@ -2,12 +2,15 @@ from __future__ import annotations
 
 import json
 import logging
+import re
+import ssl
 import time
 from functools import lru_cache
 from pathlib import Path
 from urllib import error as url_error
 from urllib import request as url_request
 
+import certifi
 from apps.users.models import User
 from django.conf import settings
 
@@ -24,6 +27,7 @@ from .personalization import build_user_taste_profile, recommend_builder_configu
 
 logger = logging.getLogger(__name__)
 INGREDIENT_CATALOG_PATH = Path(__file__).resolve().parent / "data" / "ingredients.json"
+SSL_CONTEXT = ssl.create_default_context(cafile=certifi.where())
 
 MENU_AI_FALLBACK_PROMPTS = [
     "I want something fruity and refreshing",
@@ -31,6 +35,20 @@ MENU_AI_FALLBACK_PROMPTS = [
     "I want a caffeine-free drink",
     "I want something bold but not too sweet",
 ]
+MENU_AI_OUT_OF_SCOPE_KEYWORDS = (
+    "order status",
+    "order flow",
+    "where is my order",
+    "refund",
+    "cancel",
+    "pickup",
+    "guest lookup",
+    "account",
+    "password",
+    "login",
+    "what is floatstack",
+    "support",
+)
 
 
 def build_drink_builder_assistance(
@@ -143,6 +161,22 @@ def build_menu_ai_assistance(*, user, store, prompt, menu_items=None):
             "uses_ai": False,
         }
 
+    if _menu_prompt_is_out_of_scope(prompt):
+        return {
+            "title": "FloatStack Menu AI",
+            "prompt": prompt,
+            "answer": (
+                "I can only help with drink suggestions and ingredient combinations. "
+                "For order flow, pickup, refunds, or account help, use Support Chat."
+            ),
+            "quick_prompts": MENU_AI_FALLBACK_PROMPTS,
+            "recipe": None,
+            "drink": None,
+            "menu_matches": [],
+            "can_save": False,
+            "uses_ai": False,
+        }
+
     anthropic_result = _call_anthropic_menu_ai(
         user=user,
         store=store,
@@ -177,6 +211,11 @@ def build_menu_ai_assistance(*, user, store, prompt, menu_items=None):
         ),
         "uses_ai": False,
     }
+
+
+def _menu_prompt_is_out_of_scope(prompt):
+    lowered = (prompt or "").lower()
+    return any(keyword in lowered for keyword in MENU_AI_OUT_OF_SCOPE_KEYWORDS)
 
 
 def _authenticated_preferences(user):
@@ -393,6 +432,39 @@ def _build_recipe_reason(prompt, base_soda, syrup_one, syrup_two, add_in, ice_cr
     return "Built from existing ingredients to give you something new to try."
 
 
+def _parse_menu_ai_json_payload(text_block):
+    raw = str(text_block or "").strip()
+    if not raw:
+        raise ValueError("Anthropic response did not include text.")
+
+    candidates = [raw]
+    if raw.startswith("```"):
+        stripped = re.sub(r"^```(?:json)?\s*", "", raw, flags=re.IGNORECASE)
+        stripped = re.sub(r"\s*```$", "", stripped, flags=re.IGNORECASE)
+        candidates.append(stripped.strip())
+
+    first_brace = raw.find("{")
+    last_brace = raw.rfind("}")
+    if first_brace != -1 and last_brace != -1 and last_brace > first_brace:
+        candidates.append(raw[first_brace : last_brace + 1].strip())
+
+    errors = []
+    seen = set()
+    for candidate in candidates:
+        if not candidate or candidate in seen:
+            continue
+        seen.add(candidate)
+        try:
+            return json.loads(candidate)
+        except json.JSONDecodeError as exc:
+            errors.append(str(exc))
+
+    raise ValueError(
+        "Anthropic menu response was not valid JSON. "
+        f"Parse attempts: {' | '.join(errors[:3]) or 'unknown'}"
+    )
+
+
 def _call_anthropic_menu_ai(*, user, store, prompt, menu_items, ingredient_catalog):
     api_key = str(getattr(settings, "ANTHROPIC_API_KEY", "") or "").strip()
     if not api_key:
@@ -423,12 +495,14 @@ def _call_anthropic_menu_ai(*, user, store, prompt, menu_items, ingredient_catal
         "You are FloatStack Menu AI, a concise assistant that creates a custom soda suggestion from the provided ingredient catalog. "
         "Only use the ingredient catalog and menu context provided to you. Do not invent ingredients, prices, or menu items. "
         "Respect FloatStack rules: orders stay scoped to one store, and you are only helping choose a drink. "
-        'Return JSON only with this exact shape: {"answer": string, "recipe": {"name": string, "description": string, "reason": string, "base_soda_slug": string, "syrup_slugs": [string, ...], "add_in_slugs": [string, ...], "ice_cream_slug": string, "starter_menu_slug": string}, "quick_prompts": [string, ...], "menu_matches": [{"slug": string, "reason": string}]}. '
+        'Return minified JSON only with this exact shape: {"answer": string, "recipe": {"name": string, "description": string, "reason": string, "base_soda_slug": string, "syrup_slugs": [string, ...], "add_in_slugs": [string, ...], "ice_cream_slug": string, "starter_menu_slug": string}, "quick_prompts": [string, ...], "menu_matches": [{"slug": string, "reason": string}]}. '
+        "Do not wrap JSON in markdown or code fences. Use double quotes for all keys and string values. "
         "Choose existing ingredients only. Keep the answer friendly and under 120 words."
     )
     body = {
         "model": model,
-        "max_tokens": 400,
+        "max_tokens": 800,
+        "temperature": 0,
         "messages": [
             {
                 "role": "user",
@@ -462,7 +536,11 @@ def _call_anthropic_menu_ai(*, user, store, prompt, menu_items, ingredient_catal
                 },
                 method="POST",
             )
-            with url_request.urlopen(req, timeout=timeout_seconds) as resp:
+            with url_request.urlopen(
+                req,
+                timeout=timeout_seconds,
+                context=SSL_CONTEXT,
+            ) as resp:
                 payload = json.loads(resp.read().decode("utf-8"))
 
             text_block = ""
@@ -473,7 +551,7 @@ def _call_anthropic_menu_ai(*, user, store, prompt, menu_items, ingredient_catal
             if not text_block:
                 raise ValueError("Anthropic response did not contain text content.")
 
-            parsed = json.loads(text_block)
+            parsed = _parse_menu_ai_json_payload(text_block)
             recipe = _normalize_recipe(
                 parsed.get("recipe") or {}, ingredient_catalog, menu_items
             )
@@ -516,7 +594,9 @@ def _call_anthropic_menu_ai(*, user, store, prompt, menu_items, ingredient_catal
             url_error.HTTPError,
         ) as exc:
             logger.warning(
-                "menu_ai_provider_attempt_failed",
+                "menu_ai_provider_attempt_failed type=%s detail=%s",
+                exc.__class__.__name__,
+                str(exc),
                 extra={
                     "attempt": attempt,
                     "latency_ms": int((time.perf_counter() - started_at) * 1000),
