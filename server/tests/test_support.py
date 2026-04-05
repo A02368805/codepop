@@ -200,3 +200,25 @@ class SupportAssistantServiceTests(TestCase):
 
         self.assertIn("public order code", response["reply_text"].lower())
         self.assertEqual(response["intent"], "chat")
+
+    @patch("apps.support.services._call_anthropic_support_ai")
+    def test_out_of_scope_message_is_declined_without_ai_call(self, mock_ai_call):
+        conversation = SupportConversation.objects.create(user=self.customer)
+        factory = RequestFactory()
+
+        request = factory.get("/")
+        middleware = SessionMiddleware(lambda req: None)
+        middleware.process_request(request)
+        request.session.save()
+        request.user = self.customer
+        response = process_support_message(
+            request=request,
+            conversation=conversation,
+            message_text="What is the weather in Paris tomorrow?",
+        )
+
+        self.assertIn(
+            "only help with floatstack support topics", response["reply_text"].lower()
+        )
+        self.assertEqual(response["intent"], "chat")
+        mock_ai_call.assert_not_called()

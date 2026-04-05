@@ -82,10 +82,7 @@ class CheckoutForm(forms.Form):
 
 
 class GuestLookupForm(forms.Form):
-    lookup_code = forms.CharField(
-        max_length=32,
-        label="Order code, guest lookup code, or 3-digit pickup combo",
-    )
+    lookup_code = forms.CharField(max_length=24)
 
 
 class MenuAiPromptForm(forms.Form):
@@ -94,7 +91,10 @@ class MenuAiPromptForm(forms.Form):
         widget=forms.Textarea(
             attrs={
                 "rows": 4,
-                "placeholder": "Tell FloatStack what kind of drink you want, like fruity, creamy, caffeine-free, or bold.",
+                "placeholder": (
+                    "Describe your drink vibe (fruity, creamy, caffeine-free, bold) "
+                    "plus ingredients you want, like diet coke and pineapple."
+                ),
                 "id": "menu-ai-prompt",
             }
         ),
