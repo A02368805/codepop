@@ -188,7 +188,7 @@ class CustomerOrderingViewTests(TestCase):
         )
         self.assertEqual(response.status_code, 200)
         self.assertNotContains(response, "Cancel order")
-        self.assertContains(response, "Refunds are disallowed after preparation begins")
+        self.assertContains(response, "This order can no longer be canceled online.")
 
     def test_checkout_with_stale_inventory_snapshot_fails_gracefully(self):
         self.client.force_login(self.customer)
@@ -269,7 +269,7 @@ class CustomerOrderingViewTests(TestCase):
 
         self.customer.refresh_from_db()
         self.assertEqual(response.status_code, 302)
-        self.assertEqual(response.headers["Location"], reverse("dashboard"))
+        self.assertEqual(response.headers["Location"], reverse("account-preferences"))
         follow_response = self.client.get(response.headers["Location"], follow=True)
         self.assertEqual(follow_response.status_code, 200)
         self.assertContains(
@@ -365,12 +365,12 @@ class CustomerOrderingViewTests(TestCase):
         response = self.client.get(reverse("orders:recommendations"))
 
         self.assertEqual(response.status_code, 200)
-        self.assertContains(response, "Open AI builder")
-        self.assertContains(response, "Open manual builder")
-        self.assertContains(response, "Change store")
+        self.assertContains(response, "Recommended Drinks")
+        self.assertContains(response, "Update taste profile")
+        self.assertContains(response, "Create this drink")
         self.assertContains(
             response,
-            reverse("orders:menu", args=[self.store.store_code]),
+            reverse("orders:customize", args=[self.store.store_code, "berry-burst"]),
         )
 
     def test_account_preferences_save_defaults_missing_style_fields(self):
@@ -391,7 +391,7 @@ class CustomerOrderingViewTests(TestCase):
 
         self.customer.refresh_from_db()
         self.assertEqual(response.status_code, 302)
-        self.assertEqual(response.headers["Location"], reverse("dashboard"))
+        self.assertEqual(response.headers["Location"], reverse("account-preferences"))
         self.assertEqual(
             self.customer.sweetness_preference,
             self.customer.SweetnessPreference.BALANCED,
@@ -562,7 +562,7 @@ class DashboardAndHtmxViewTests(TestCase):
     def test_role_dashboards_render_expected_sections(self):
         dashboard_expectations = [
             (self.manager, "manager-dashboard", "Orders awaiting store action"),
-            (self.admin, "admin-dashboard", "Scoped Users"),
+            (self.admin, "admin-dashboard", "Managed Users"),
             (self.logistics, "logistics-dashboard", "Pending Transfers"),
             (self.repair, "repair-dashboard", "Assigned Work"),
             (self.super_admin, "super-admin-dashboard", "Region Comparison"),
