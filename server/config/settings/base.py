@@ -21,11 +21,13 @@ def env_bool(name: str, default: bool = False) -> bool:
 SECRET_KEY = os.getenv("SECRET_KEY", "dev-only-codepop-secret-key")
 DEBUG = env_bool("DEBUG", False)
 
-ALLOWED_HOSTS = [
+_allowed_hosts = [
     host.strip()
     for host in os.getenv("ALLOWED_HOSTS", "127.0.0.1,localhost").split(",")
     if host.strip()
 ]
+# In development, allow all hosts for easier docker-compose multi-store setup
+ALLOWED_HOSTS = _allowed_hosts if not DEBUG else ["*"]
 
 CSRF_TRUSTED_ORIGINS = [
     origin.strip()
@@ -137,7 +139,7 @@ LOGOUT_REDIRECT_URL = "home"
 
 AUTHENTICATION_BACKENDS = [
     "django.contrib.auth.backends.ModelBackend",
-    "apps.users.backends.FederatedAuthBackend",
+    "apps.users.backends.PeerStoreAuthBackend",
 ]
 
 SESSION_COOKIE_HTTPONLY = True
