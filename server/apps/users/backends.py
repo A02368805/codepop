@@ -49,8 +49,9 @@ class PeerStoreAuthBackend:
     """
 
     def authenticate(self, request, username=None, password=None, **kwargs):
-        import requests
         import logging
+
+        import requests
 
         logger = logging.getLogger("peer_auth")
 
@@ -78,7 +79,9 @@ class PeerStoreAuthBackend:
         print(f"⏳ checking local database...", end=" ")
         if local_user and local_user.has_usable_password():
             print("✅ user found with valid password")
-            logger.debug(f"Local user {username} has usable password, letting ModelBackend handle it")
+            logger.debug(
+                f"Local user {username} has usable password, letting ModelBackend handle it"
+            )
             return None
         elif local_user:
             print("✅ user found (peer user)")

@@ -225,8 +225,9 @@ class PeerStoreAuthBackendTests(TestCase):
 
     def test_peer_auth_get_user_nonexistent(self):
         """PeerStoreAuthBackend.get_user returns None for nonexistent user."""
-        from apps.users.backends import PeerStoreAuthBackend
         import uuid
+
+        from apps.users.backends import PeerStoreAuthBackend
 
         backend = PeerStoreAuthBackend()
         user = backend.get_user(uuid.uuid4())
@@ -297,6 +298,7 @@ class PeerStoreAuthIntegrationTests(TestCase):
         """Account user from peer store can log in via HTML form."""
         # First, authenticate via Django to provision the user
         from django.contrib.auth import authenticate
+
         user = authenticate(
             username="account.a001@floatstack.local",
             password="FloatStack123!",
