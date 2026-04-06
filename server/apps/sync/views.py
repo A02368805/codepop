@@ -150,6 +150,52 @@ class SyncResolveConflictView(RoleRequiredMixin, View):
 
 
 @method_decorator(csrf_exempt, name="dispatch")
+class NodeHealthView(View):
+    """
+    Health check endpoint for distributed node monitoring.
+    Returns this node's identity, status, and peer connectivity.
+    Authenticates via X-Sync-Token for peer info, or returns basic status without auth.
+    """
+
+    def get(self, request, *args, **kwargs):
+        import requests as http_requests
+        from django.conf import settings
+
+        node_id = settings.STORE_ID or "unconfigured"
+        sync_enabled = settings.SYNC_PUSH_ENABLED
+        authenticated = (
+            request.headers.get("X-Sync-Token", "") == settings.SYNC_API_SECRET
+            and settings.SYNC_API_SECRET
+        )
+
+        health = {
+            "status": "ok",
+            "node_id": node_id,
+            "sync_enabled": sync_enabled,
+        }
+
+        # Only expose peer details to authenticated callers
+        if authenticated and settings.PEER_STORES:
+            peers = {}
+            for peer_id, peer_url in settings.PEER_STORES.items():
+                try:
+                    resp = http_requests.get(
+                        f"{peer_url}/sync/health/",
+                        headers={"X-Sync-Token": settings.SYNC_API_SECRET},
+                        timeout=3,
+                    )
+                    peers[peer_id] = {
+                        "url": peer_url,
+                        "reachable": resp.status_code == 200,
+                    }
+                except Exception:
+                    peers[peer_id] = {"url": peer_url, "reachable": False}
+            health["peers"] = peers
+
+        return JsonResponse(health)
+
+
+@method_decorator(csrf_exempt, name="dispatch")
 class SyncIngestView(View):
     """
     Machine-to-machine endpoint for receiving sync events from peer stores.

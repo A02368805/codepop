@@ -55,11 +55,6 @@ class PeerStoreAuthBackend:
 
         logger = logging.getLogger("peer_auth")
 
-        # Console output for show-and-tell
-        print(f"\n{'='*60}")
-        print(f"🔐 Peer Authentication Flow")
-        print(f"{'='*60}")
-
         # Only run if distributed mode is enabled
         if (
             not settings.PEER_STORES
@@ -69,70 +64,58 @@ class PeerStoreAuthBackend:
             logger.debug("Peer auth skipped: distributed mode not enabled")
             return None
 
-        print(f"📍 Store: {settings.STORE_ID}")
-        print(f"👤 Email: {username}")
-        print()
+        logger.info(
+            "Peer auth flow started for %s at store %s", username, settings.STORE_ID
+        )
 
         # Check if user exists locally and has a usable password
         local_user = User.objects.filter(email=username).first()
 
-        print(f"⏳ checking local database...", end=" ")
         if local_user and local_user.has_usable_password():
-            print("✅ user found with valid password")
             logger.debug(
-                f"Local user {username} has usable password, letting ModelBackend handle it"
+                "Local user %s has usable password, letting ModelBackend handle it",
+                username,
             )
             return None
-        elif local_user:
-            print("✅ user found (peer user)")
-        else:
-            print("❌ user not found")
 
-        print()
-        logger.info(f"Attempting peer validation for {username} at {settings.STORE_ID}")
+        logger.info(
+            "Attempting peer validation for %s at %s", username, settings.STORE_ID
+        )
 
         # Try each peer store to validate the user
         for peer_node_id, peer_url in settings.PEER_STORES.items():
             try:
-                print(f"🔄 contacting peer store {peer_node_id}...")
-                logger.info(f"Querying peer {peer_node_id} at {peer_url}")
+                logger.info("Querying peer %s at %s", peer_node_id, peer_url)
                 resp = requests.post(
                     f"{peer_url}/peer-validate/",
                     json={"email": username, "password": password},
                     headers={
-                        "Host": "localhost",  # Override Host header to avoid DisallowedHost
                         "X-Sync-Token": settings.SYNC_API_SECRET,
                         "X-Origin-Node": settings.STORE_ID,
                     },
                     timeout=5,
                 )
 
-                logger.info(f"Peer response from {peer_node_id}: {resp.status_code}")
+                logger.info("Peer response from %s: %s", peer_node_id, resp.status_code)
                 if resp.status_code == 200:
                     data = resp.json()
-                    logger.info(f"Peer data: {data}")
                     if data.get("valid"):
                         user_data = data.get("user", {})
-                        first_name = user_data.get("first_name", "")
-                        last_name = user_data.get("last_name", "")
-                        print(f"✅ peer {peer_node_id} validated password!")
-                        print(f"   Name: {first_name} {last_name}")
-                        print(f"🔧 setting up user in local database...")
-                        print(f"✨ authentication successful\n")
-                        logger.info(f"Peer validation SUCCESS for {username}")
+                        logger.info(
+                            "Peer validation SUCCESS for %s via %s",
+                            username,
+                            peer_node_id,
+                        )
                         user = _provision_peer_user(user_data)
                         return user
                     else:
-                        print(f"❌ peer validation returned valid=false")
-                        logger.info(f"Peer validation returned valid=false")
+                        logger.info("Peer %s returned valid=false", peer_node_id)
             except Exception as e:
                 # Peer unreachable or error — try next peer
-                print(f"⚠️  peer {peer_node_id} unreachable ({type(e).__name__})")
-                logger.error(f"Peer validation error: {e}")
+                logger.error("Peer %s unreachable: %s", peer_node_id, e)
                 continue
 
-        print(f"❌ all peers rejected - authentication denied\n")
-        logger.warning(f"Peer validation failed for {username}")
+        logger.warning("Peer validation failed for %s — all peers rejected", username)
         return None
 
     def get_user(self, user_id):

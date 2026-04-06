@@ -1,0 +1,135 @@
+# Multi-node distributed setup: two store nodes with separate databases.
+# Usage:
+#   docker compose -f docker-compose.multinode.yml up --build
+#   docker compose -f docker-compose.multinode.yml exec web_a python manage.py bootstrap_demo_data --reset
+#   docker compose -f docker-compose.multinode.yml exec web_b python manage.py bootstrap_demo_data --reset
+#
+# Store A: http://localhost:8001  (region A / store A001)
+# Store B: http://localhost:8002  (region B / store B001)
+
+x-common-env: &common-env
+  DJANGO_SETTINGS_MODULE: config.settings.dev
+  SECRET_KEY: dev-multinode-secret
+  DEBUG: "True"
+  CELERY_TASK_ALWAYS_EAGER: "False"
+  SYNC_PUSH_ENABLED: "True"
+  SYNC_API_SECRET: multinode-shared-secret
+  SEED_USER_PASSWORD: FloatStack123!
+  ALLOWED_HOSTS: "*"
+
+services:
+  # ── Store A ──────────────────────────────────────────────
+  web_a:
+    build: .
+    command: sh -c "python manage.py migrate && python manage.py runserver 0.0.0.0:8000"
+    environment:
+      <<: *common-env
+      DATABASE_URL: postgresql://codepop:codepop@db_a:5432/codepop
+      CELERY_BROKER_URL: redis://redis:6379/0
+      CELERY_RESULT_BACKEND: redis://redis:6379/0
+      STORE_ID: store-a
+      PEER_STORES: "store-b=http://web_b:8000"
+      CSRF_TRUSTED_ORIGINS: "http://localhost:8001"
+    ports:
+      - "8001:8000"
+    depends_on:
+      - db_a
+      - redis
+    volumes:
+      - .:/app
+
+  worker_a:
+    build: .
+    command: sh -c "celery -A config worker -l info -n worker_a@%h"
+    environment:
+      <<: *common-env
+      DATABASE_URL: postgresql://codepop:codepop@db_a:5432/codepop
+      CELERY_BROKER_URL: redis://redis:6379/0
+      CELERY_RESULT_BACKEND: redis://redis:6379/0
+      STORE_ID: store-a
+      PEER_STORES: "store-b=http://web_b:8000"
+    depends_on:
+      - db_a
+      - redis
+    volumes:
+      - .:/app
+
+  # ── Store B ──────────────────────────────────────────────
+  web_b:
+    build: .
+    command: sh -c "python manage.py migrate && python manage.py runserver 0.0.0.0:8000"
+    environment:
+      <<: *common-env
+      DATABASE_URL: postgresql://codepop:codepop@db_b:5432/codepop
+      CELERY_BROKER_URL: redis://redis:6379/1
+      CELERY_RESULT_BACKEND: redis://redis:6379/1
+      STORE_ID: store-b
+      PEER_STORES: "store-a=http://web_a:8000"
+      CSRF_TRUSTED_ORIGINS: "http://localhost:8002"
+    ports:
+      - "8002:8000"
+    depends_on:
+      - db_b
+      - redis
+    volumes:
+      - .:/app
+
+  worker_b:
+    build: .
+    command: sh -c "celery -A config worker -l info -n worker_b@%h"
+    environment:
+      <<: *common-env
+      DATABASE_URL: postgresql://codepop:codepop@db_b:5432/codepop
+      CELERY_BROKER_URL: redis://redis:6379/1
+      CELERY_RESULT_BACKEND: redis://redis:6379/1
+      STORE_ID: store-b
+      PEER_STORES: "store-a=http://web_a:8000"
+    depends_on:
+      - db_b
+      - redis
+    volumes:
+      - .:/app
+
+  # ── Shared beat scheduler (runs sync retries for both) ──
+  beat:
+    build: .
+    command: sh -c "celery -A config beat -l info"
+    environment:
+      <<: *common-env
+      DATABASE_URL: postgresql://codepop:codepop@db_a:5432/codepop
+      CELERY_BROKER_URL: redis://redis:6379/0
+      CELERY_RESULT_BACKEND: redis://redis:6379/0
+      STORE_ID: store-a
+      PEER_STORES: "store-b=http://web_b:8000"
+    depends_on:
+      - db_a
+      - redis
+    volumes:
+      - .:/app
+
+  # ── Databases (one per store) ────────────────────────────
+  db_a:
+    image: postgres:16
+    environment:
+      POSTGRES_DB: codepop
+      POSTGRES_USER: codepop
+      POSTGRES_PASSWORD: codepop
+    volumes:
+      - pg_store_a:/var/lib/postgresql/data
+
+  db_b:
+    image: postgres:16
+    environment:
+      POSTGRES_DB: codepop
+      POSTGRES_USER: codepop
+      POSTGRES_PASSWORD: codepop
+    volumes:
+      - pg_store_b:/var/lib/postgresql/data
+
+  # ── Shared Redis ─────────────────────────────────────────
+  redis:
+    image: redis:7-alpine
+
+volumes:
+  pg_store_a:
+  pg_store_b:

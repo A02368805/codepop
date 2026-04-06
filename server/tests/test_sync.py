@@ -442,3 +442,39 @@ class SyncPeerTransportTests(TestCase):
             # Should NOT have created peer deliveries (event is from peer, no re-push)
             deliveries = SyncPeerDelivery.objects.filter(event=event)
             self.assertEqual(deliveries.count(), 0)
+
+
+class NodeHealthViewTests(TestCase):
+    """Tests for the /sync/health/ endpoint."""
+
+    def test_health_returns_ok_without_auth(self):
+        """Health endpoint returns basic status without auth."""
+        response = self.client.get(reverse("sync:health"))
+        self.assertEqual(response.status_code, 200)
+        data = response.json()
+        self.assertEqual(data["status"], "ok")
+        self.assertNotIn("peers", data)
+
+    @override_settings(STORE_ID="store-a", SYNC_PUSH_ENABLED=True)
+    def test_health_returns_node_identity(self):
+        """Health endpoint returns configured node ID."""
+        response = self.client.get(reverse("sync:health"))
+        data = response.json()
+        self.assertEqual(data["node_id"], "store-a")
+        self.assertTrue(data["sync_enabled"])
+
+    @override_settings(
+        STORE_ID="store-a",
+        SYNC_API_SECRET="test-secret",
+        PEER_STORES={"store-b": "http://unreachable:9999"},
+    )
+    def test_health_shows_peers_when_authenticated(self):
+        """Authenticated request includes peer connectivity info."""
+        response = self.client.get(
+            reverse("sync:health"),
+            HTTP_X_SYNC_TOKEN="test-secret",
+        )
+        data = response.json()
+        self.assertIn("peers", data)
+        self.assertIn("store-b", data["peers"])
+        self.assertFalse(data["peers"]["store-b"]["reachable"])
