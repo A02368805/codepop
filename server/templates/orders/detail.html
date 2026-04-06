@@ -10,7 +10,7 @@
         {% if not request.user.is_authenticated or request.user.role == "account_user" %}
             <p class="lede">Track your drink from order placed to pickup ready. We will update this page as your order moves through the queue.</p>
         {% else %}
-            <p class="lede">Status updates are controlled on the server. Customers can cancel before preparation begins, and staff can move the queue from their scoped workspace.</p>
+            <p class="lede">Track progress in real time, from queued to ready for pickup.</p>
         {% endif %}
     </div>
     <div class="hero-card">

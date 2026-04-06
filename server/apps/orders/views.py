@@ -77,6 +77,27 @@ from .services import create_order, get_refund_eligibility, transition_order_sta
 
 PICKUP_COMBO_PATTERN = re.compile(r"^\d{3}$")
 
+
+def _resolve_customer_order_store(user):
+    if not getattr(user, "is_authenticated", False):
+        return None
+    preferred_store = getattr(user, "preferred_store", None)
+    if preferred_store and preferred_store.is_active:
+        return preferred_store
+    if getattr(user, "default_region_id", None):
+        regional_store = (
+            Store.objects.filter(
+                region_id=user.default_region_id,
+                is_active=True,
+            )
+            .order_by("name")
+            .first()
+        )
+        if regional_store:
+            return regional_store
+    return Store.objects.filter(is_active=True).order_by("name").first()
+
+
 MENU_BASE_IMAGE_ASSETS = {
     "coke": "hero-coke.svg",
     "diet-coke": "hero-coke.svg",
@@ -1246,7 +1267,7 @@ class AccountOrderHistoryView(RoleRequiredMixin, LoginRequiredMixin, TemplateVie
         return context
 
 
-class FavoriteListView(RoleRequiredMixin, LoginRequiredMixin, TemplateView):
+class FavoriteListView(RoleRequiredMixin, TemplateView):
     template_name = "orders/favorites.html"
     allowed_roles = (User.Role.ACCOUNT_USER,)
 
@@ -1308,6 +1329,7 @@ class RecommendationView(CustomerOrderingRequiredMixin, TemplateView):
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
+        order_store = _resolve_customer_order_store(self.request.user)
         menu_items_by_slug = {item["slug"]: item for item in get_menu_items()}
         recommendations = recommend_drinks_for_user(
             self.request.user if self.request.user.is_authenticated else None
@@ -1319,6 +1341,7 @@ class RecommendationView(CustomerOrderingRequiredMixin, TemplateView):
             row.update(_menu_item_visual_payload(menu_item or row))
             hydrated_recommendations.append(row)
         context["recommendations"] = hydrated_recommendations
+        context["order_store"] = order_store
         return context
 
 

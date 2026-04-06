@@ -29,12 +29,14 @@
         hx-target="#support-workspace"
         hx-swap="innerHTML"
         class="panel-stack"
+        data-support-send-form
     >
         {% csrf_token %}
         <label class="field">
             <span>Message</span>
             {{ message_form.message }}
         </label>
+        <p class="ai-loading-indicator htmx-indicator" data-support-send-status hidden>Processing your message...</p>
         <div class="action-row">
             <button class="button button--primary" type="submit">Send message</button>
             <a class="button button--ghost" href="{% url 'support:conversation-detail' conversation.id %}">Open full chat page</a>

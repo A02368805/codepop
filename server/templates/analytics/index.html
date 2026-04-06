@@ -7,7 +7,7 @@
     <div class="section-heading">
         <div>
             <p class="eyebrow">Analytics</p>
-            <h1>Regional and store-level health summary</h1>
+            <h1>Analytics summary</h1>
         </div>
     </div>
     <form method="get" class="filter-bar">
@@ -51,8 +51,8 @@
     <div class="panel">
         <p class="eyebrow">Revenue</p>
         <dl class="summary-list">
-            <div><dt>Gross</dt><dd>${{ gross_revenue }}</dd></div>
-            <div><dt>Net</dt><dd>${{ net_revenue }}</dd></div>
+            <div><dt>Gross</dt><dd>${{ gross_revenue|floatformat:2 }}</dd></div>
+            <div><dt>Net</dt><dd>${{ net_revenue|floatformat:2 }}</dd></div>
         </dl>
         <p class="muted">Window: {{ date_from }} to {{ date_to }}</p>
     </div>
@@ -71,7 +71,7 @@
         <div class="section-heading">
             <div>
                 <p class="eyebrow">Daily Revenue</p>
-                <h2>Day-by-day financial rollup</h2>
+                <h2>Daily revenue</h2>
             </div>
         </div>
         <table class="data-table">
@@ -101,7 +101,7 @@
         <div class="section-heading">
             <div>
                 <p class="eyebrow">Order-Backed Financial Rows</p>
-                <h2>Recent ledger entries with order links</h2>
+                <h2>Recent ledger entries</h2>
             </div>
         </div>
         <table class="data-table">
@@ -136,7 +136,7 @@
         <div class="section-heading">
             <div>
                 <p class="eyebrow">Revenue By Store</p>
-                <h2>Top stores in scope</h2>
+                <h2>Top stores</h2>
             </div>
         </div>
         <table class="data-table">
@@ -164,7 +164,7 @@
         <div class="section-heading">
             <div>
                 <p class="eyebrow">Supply Usage Trends</p>
-                <h2>Last 30 days</h2>
+                <h2>Recent trends</h2>
             </div>
         </div>
         <table class="data-table">
@@ -195,7 +195,7 @@
         <div class="section-heading">
             <div>
                 <p class="eyebrow">Maintenance Summary</p>
-                <h2>Current machine + assignment status mix</h2>
+                <h2>Machine and assignment status</h2>
             </div>
         </div>
         <table class="data-table">
@@ -239,7 +239,7 @@
         <div class="section-heading">
             <div>
                 <p class="eyebrow">AI Supply Drafts</p>
-                <h2>Draft schedules awaiting human action</h2>
+                <h2>Draft schedules</h2>
             </div>
         </div>
         <div class="surface-list">
@@ -247,7 +247,7 @@
                 <article class="list-card">
                     <div class="list-card__main">
                         <h3>{{ schedule.store.name }} · {{ schedule.inventory_item.name }}</h3>
-                        <p class="muted">{{ schedule.recommended_quantity }} every {{ schedule.recommended_frequency_days }} day{{ schedule.recommended_frequency_days|pluralize }}</p>
+                        <p class="muted">{{ schedule.recommended_quantity|floatformat:"-2" }} every {{ schedule.recommended_frequency_days }} day{{ schedule.recommended_frequency_days|pluralize }}</p>
                     </div>
                     <div class="list-card__actions">
                         <span class="pill {% if schedule.status == 'approved' %}pill--soft{% else %}pill--warning{% endif %}">

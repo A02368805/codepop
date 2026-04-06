@@ -14,8 +14,8 @@ from django.urls import reverse
 
 ROLE_COPY = {
     User.Role.ACCOUNT_USER: {
-        "title": "Your FloatStack Account",
-        "intro": "Keep ordering fast with favorites, personalized suggestions, and easy pickup tracking in one place.",
+        "title": "Customer Dashboard",
+        "intro": "Your account workspace keeps ordering fast while still giving you favorites, recommendations, and order tracking.",
         "focus_items": [
             "Saved preferences and favorites",
             "Ready-for-pickup order tracking",
@@ -24,7 +24,7 @@ ROLE_COPY = {
     },
     User.Role.MANAGER: {
         "title": "Manager Dashboard",
-        "intro": "Run a single store with queue controls, inventory visibility, revenue context, and machine watchlists.",
+        "intro": "Manage your store’s queue, inventory, revenue, and machine health.",
         "focus_items": [
             "Low-stock inventory watchlist",
             "Queued and preparing orders",
@@ -42,7 +42,7 @@ ROLE_COPY = {
     },
     User.Role.LOGISTICS_MANAGER: {
         "title": "Logistics Dashboard",
-        "intro": "The logistics workspace acts as an operations room for hubs, transfers, supply drafts, and imports.",
+        "intro": "Manage hubs, transfers, supply drafts, and imports from one dashboard.",
         "focus_items": [
             "Regional supply visibility",
             "Import queue health",
@@ -51,7 +51,7 @@ ROLE_COPY = {
     },
     User.Role.REPAIR_STAFF: {
         "title": "Repair Dashboard",
-        "intro": "Repair staff land on an urgency-first queue with assigned work, machine health context, and import history.",
+        "intro": "Prioritize urgent machine issues and keep repair work moving.",
         "focus_items": [
             "Open machine warnings and errors",
             "Assigned repair visits",
@@ -60,7 +60,7 @@ ROLE_COPY = {
     },
     User.Role.SUPER_ADMIN: {
         "title": "Super Admin Dashboard",
-        "intro": "System-wide oversight stays broad, while store and region ownership still belongs to the people closest to the work.",
+        "intro": "Monitor system-wide health, staffing, and operations.",
         "focus_items": [
             "Cross-region health checks",
             "Global staffing and dashboard access visibility",
@@ -100,7 +100,7 @@ def build_dashboard_payload(user, role):
                 "tone": "neutral",
             },
             {
-                "label": "Orders placed",
+                "label": "Orders on record",
                 "value": Order.objects.filter(customer=user).count(),
                 "tone": "neutral",
             },

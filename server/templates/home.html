@@ -187,8 +187,8 @@
     <section class="hero hero--landing">
         <div class="hero-copy">
             <p class="eyebrow">FloatStack</p>
-            <h1>Operations workspace for your scoped role.</h1>
-            <p class="lede">Your account is configured for operations dashboards. Customer ordering stays available to guests and account users only.</p>
+            <h1>Your operations workspace.</h1>
+            <p class="lede">Access your dashboard, analytics, and team tools from here.</p>
             <div class="cta-row">
                 <a class="button button--primary" href="{% url 'dashboard' %}">Open operations dashboard</a>
                 <a class="button button--ghost" href="{% url 'analytics:index' %}">Review analytics</a>
@@ -209,9 +209,9 @@
         <div class="section-heading">
             <div>
                 <p class="eyebrow">Role Workspaces</p>
-                <h2>Every dashboard stays scoped to the user who signed in.</h2>
+                <h2>Dashboards by role</h2>
             </div>
-            <p class="lede-small">Managers stay store-scoped, regional teams stay region-scoped, and super admins get the full oversight layer.</p>
+            <p class="lede-small">Each role sees the tools and data relevant to their responsibilities.</p>
         </div>
         <div class="card-grid">
             {% for card in role_cards %}

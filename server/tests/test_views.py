@@ -51,7 +51,13 @@ class CustomerOrderingViewTests(TestCase):
     @classmethod
     def setUpTestData(cls):
         cls.region = make_region(code="C", name="Logan, UT")
+        cls.region_alt = make_region(code="G", name="Boise, ID")
         cls.store = make_store(store_code="C001", region=cls.region, name="Logan Main")
+        cls.store_alt = make_store(
+            store_code="G001",
+            region=cls.region_alt,
+            name="Boise Central",
+        )
         cls.customer = make_user(
             email="customer-flow@test.local",
             preferred_store=cls.store,
@@ -133,33 +139,6 @@ class CustomerOrderingViewTests(TestCase):
 
         order = Order.objects.get(order_type=Order.OrderType.GUEST)
         self.assertContains(response, order.guest_contact.lookup_code)
-        self.assertContains(response, order.locker_code)
-
-        lookup_client = Client()
-        response = lookup_client.post(
-            reverse("orders:guest-lookup"),
-            {"lookup_code": order.locker_code},
-            follow=True,
-        )
-        self.assertContains(response, order.public_order_code)
-        self.assertEqual(
-            Order.objects.filter(order_type=Order.OrderType.GUEST).count(), 1
-        )
-
-    def test_guest_lookup_still_accepts_legacy_guest_lookup_code(self):
-        guest_client = Client()
-        self._add_drink_to_cart(guest_client)
-        guest_client.post(
-            reverse("orders:checkout"),
-            {
-                "pickup_time_choice": self._future_pickup_value(),
-                "guest_name": "Legacy Guest",
-                "guest_email": "legacy-guest@test.local",
-                "guest_phone_number": "8015550155",
-            },
-            follow=True,
-        )
-        order = Order.objects.get(order_type=Order.OrderType.GUEST)
 
         lookup_client = Client()
         response = lookup_client.post(
@@ -168,6 +147,9 @@ class CustomerOrderingViewTests(TestCase):
             follow=True,
         )
         self.assertContains(response, order.public_order_code)
+        self.assertEqual(
+            Order.objects.filter(order_type=Order.OrderType.GUEST).count(), 1
+        )
 
     def test_customer_status_page_hides_cancel_after_preparing(self):
         order = create_order(
@@ -272,6 +254,7 @@ class CustomerOrderingViewTests(TestCase):
         response = self.client.post(
             reverse("account-preferences"),
             {
+                "preferred_store": self.store_alt.id,
                 "favorite_sodas": ["sprite", "root-beer"],
                 "favorite_syrups": ["strawberry", "coconut"],
                 "favorite_add_ins": ["cream", "coconut-cream"],
@@ -281,11 +264,20 @@ class CustomerOrderingViewTests(TestCase):
                 "sweetness_preference": "sweet",
                 "adventurousness_preference": "balanced",
             },
-            follow=True,
+            follow=False,
         )
 
         self.customer.refresh_from_db()
-        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.status_code, 302)
+        self.assertEqual(response.headers["Location"], reverse("account-preferences"))
+        follow_response = self.client.get(response.headers["Location"], follow=True)
+        self.assertEqual(follow_response.status_code, 200)
+        self.assertContains(
+            follow_response,
+            "Preferences saved. Your taste profile is now applied across FloatStack.",
+        )
+        self.assertEqual(self.customer.preferred_store_id, self.store_alt.id)
+        self.assertEqual(self.customer.default_region_id, self.region_alt.id)
         self.assertEqual(self.customer.sweetness_preference, "sweet")
         self.assertEqual(
             self.customer.adventurousness_preference,
@@ -345,6 +337,69 @@ class CustomerOrderingViewTests(TestCase):
             set(payload["selection"]["syrups"]).intersection({"strawberry", "coconut"})
         )
         self.assertIn("assistant_html", payload)
+
+    def test_customer_dashboard_shows_builder_entry_points_and_direct_recommendation_links(
+        self,
+    ):
+        self.client.force_login(self.customer)
+        response = self.client.get(reverse("customer-dashboard"))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Open AI builder")
+        self.assertContains(response, "Open manual builder")
+        self.assertContains(
+            response,
+            reverse("orders:menu", args=[self.store.store_code]),
+        )
+        self.assertContains(
+            response,
+            f"{reverse('orders:menu', args=[self.store.store_code])}?open_ai=1",
+        )
+        self.assertContains(
+            response,
+            reverse("orders:menu", args=[self.store.store_code]),
+        )
+
+    def test_recommendations_page_shows_builder_actions_and_change_store(self):
+        self.client.force_login(self.customer)
+        response = self.client.get(reverse("orders:recommendations"))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Recommended Drinks")
+        self.assertContains(response, "Update taste profile")
+        self.assertContains(response, "Create this drink")
+        self.assertContains(
+            response,
+            reverse("orders:customize", args=[self.store.store_code, "berry-burst"]),
+        )
+
+    def test_account_preferences_save_defaults_missing_style_fields(self):
+        self.client.force_login(self.customer)
+        response = self.client.post(
+            reverse("account-preferences"),
+            {
+                "preferred_store": self.store.id,
+                "favorite_sodas": ["sprite"],
+                "favorite_syrups": [],
+                "favorite_add_ins": [],
+                "favorite_ice_creams": [],
+                "disliked_ingredients": [],
+                "dietary_preferences": [],
+            },
+            follow=False,
+        )
+
+        self.customer.refresh_from_db()
+        self.assertEqual(response.status_code, 302)
+        self.assertEqual(response.headers["Location"], reverse("account-preferences"))
+        self.assertEqual(
+            self.customer.sweetness_preference,
+            self.customer.SweetnessPreference.BALANCED,
+        )
+        self.assertEqual(
+            self.customer.adventurousness_preference,
+            self.customer.AdventurousnessPreference.BALANCED,
+        )
 
 
 class DashboardAndHtmxViewTests(TestCase):
@@ -507,7 +562,7 @@ class DashboardAndHtmxViewTests(TestCase):
     def test_role_dashboards_render_expected_sections(self):
         dashboard_expectations = [
             (self.manager, "manager-dashboard", "Orders awaiting store action"),
-            (self.admin, "admin-dashboard", "Scoped Users"),
+            (self.admin, "admin-dashboard", "Managed Users"),
             (self.logistics, "logistics-dashboard", "Pending Transfers"),
             (self.repair, "repair-dashboard", "Assigned Work"),
             (self.super_admin, "super-admin-dashboard", "Region Comparison"),

@@ -1,3 +1,5 @@
+import re
+
 from apps.orders.catalog import (
     ADD_IN_OPTIONS,
     ADVENTUROUSNESS_PREFERENCE_CHOICES,
@@ -30,10 +32,22 @@ class EmailAuthenticationForm(AuthenticationForm):
 
 class RegistrationForm(forms.ModelForm):
     password1 = forms.CharField(
-        widget=forms.PasswordInput(attrs={"autocomplete": "new-password"})
+        label="Enter password",
+        widget=forms.PasswordInput(
+            attrs={
+                "autocomplete": "new-password",
+                "placeholder": "Create a password",
+            }
+        ),
     )
     password2 = forms.CharField(
-        widget=forms.PasswordInput(attrs={"autocomplete": "new-password"})
+        label="Re-enter password",
+        widget=forms.PasswordInput(
+            attrs={
+                "autocomplete": "new-password",
+                "placeholder": "Re-enter password",
+            }
+        ),
     )
     preferred_store = forms.ModelChoiceField(
         queryset=Store.objects.filter(is_active=True).order_by("name"),
@@ -44,6 +58,10 @@ class RegistrationForm(forms.ModelForm):
     class Meta:
         model = User
         fields = ("email", "first_name", "last_name", "preferred_store")
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields["password1"].help_text = ""
 
     def clean_email(self):
         email = self.cleaned_data["email"].strip().lower()
@@ -58,10 +76,30 @@ class RegistrationForm(forms.ModelForm):
         if password1 and password2 and password1 != password2:
             self.add_error("password2", "Passwords must match.")
         if password1:
+            if not (re.search(r"[A-Za-z]", password1) and re.search(r"\d", password1)):
+                self.add_error(
+                    "password1",
+                    "Password must include at least one letter and one number.",
+                )
             try:
                 password_validation.validate_password(password1)
             except forms.ValidationError as exc:
-                self.add_error("password1", exc)
+                clarified_errors = []
+                for message in exc.messages:
+                    lower_message = message.lower()
+                    if "too common" in lower_message:
+                        clarified_errors.append(
+                            "This password is too common and easy to guess. "
+                            "Choose a less common phrase with a mix of letters and numbers."
+                        )
+                    elif "entirely numeric" in lower_message:
+                        clarified_errors.append(
+                            "Password cannot be only numbers. Include letters too."
+                        )
+                    else:
+                        clarified_errors.append(message)
+                for clarified_message in clarified_errors:
+                    self.add_error("password1", clarified_message)
         return cleaned_data
 
     def save(self, commit=True):
@@ -79,6 +117,12 @@ class RegistrationForm(forms.ModelForm):
 
 
 class PreferenceProfileForm(forms.Form):
+    preferred_store = forms.ModelChoiceField(
+        queryset=Store.objects.filter(is_active=True).order_by("name"),
+        required=False,
+        empty_label="No preferred store",
+        help_text="Set a default store so recommendations and flows start in the right place.",
+    )
     favorite_sodas = forms.MultipleChoiceField(
         required=False,
         choices=[(key, value["label"]) for key, value in SODA_OPTIONS.items()],
@@ -117,10 +161,14 @@ class PreferenceProfileForm(forms.Form):
     )
     sweetness_preference = forms.ChoiceField(
         choices=SWEETNESS_PREFERENCE_CHOICES,
+        required=False,
+        initial=User.SweetnessPreference.BALANCED,
         help_text="Tell FloatStack whether to keep recommendations lighter or sweeter.",
     )
     adventurousness_preference = forms.ChoiceField(
         choices=ADVENTUROUSNESS_PREFERENCE_CHOICES,
+        required=False,
+        initial=User.AdventurousnessPreference.BALANCED,
         help_text="Classic keeps things safer. Adventurous opens the door to bolder combinations.",
     )
 
@@ -135,9 +183,26 @@ class PreferenceProfileForm(forms.Form):
             favorite_sodas | favorite_syrups | favorite_add_ins | favorite_ice_creams
         ) & disliked_ingredients
         if overlap:
-            raise forms.ValidationError(
-                f"You selected the same option in both lists: {', '.join(sorted(overlap))}."
+            cleaned_data["disliked_ingredients"] = sorted(
+                disliked_ingredients - overlap
             )
+
+        sweetness = cleaned_data.get("sweetness_preference")
+        adventurousness = cleaned_data.get("adventurousness_preference")
+        sweetness_values = {value for value, _ in SWEETNESS_PREFERENCE_CHOICES}
+        adventurousness_values = {
+            value for value, _ in ADVENTUROUSNESS_PREFERENCE_CHOICES
+        }
+        cleaned_data["sweetness_preference"] = (
+            sweetness
+            if sweetness in sweetness_values
+            else User.SweetnessPreference.BALANCED
+        )
+        cleaned_data["adventurousness_preference"] = (
+            adventurousness
+            if adventurousness in adventurousness_values
+            else User.AdventurousnessPreference.BALANCED
+        )
         return cleaned_data
 
 

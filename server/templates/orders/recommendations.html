@@ -43,7 +43,11 @@
                 <h3>{{ recommendation.name }}</h3>
                 <p>{{ recommendation.description }}</p>
                 <p class="muted">{{ recommendation.explanation }}</p>
-                <a class="button button--ghost" href="{% url 'stores:index' %}">Choose a store to order</a>
+                {% if order_store and recommendation.slug %}
+                    <a class="button button--ghost" href="{% url 'orders:customize' order_store.store_code recommendation.slug %}">Create this drink</a>
+                {% else %}
+                    <a class="button button--ghost" href="{% url 'stores:index' %}">Choose a store to order</a>
+                {% endif %}
             </article>
         {% empty %}
             <div class="empty-state">

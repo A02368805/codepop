@@ -2,7 +2,17 @@ from django import forms
 
 
 class SupportMessageForm(forms.Form):
-    message = forms.CharField(max_length=1000, widget=forms.Textarea(attrs={"rows": 3}))
+    message = forms.CharField(
+        max_length=1000,
+        widget=forms.Textarea(
+            attrs={
+                "rows": 3,
+                "placeholder": (
+                    "Ask about orders, pickup, guest lookup, refunds, or account help."
+                ),
+            }
+        ),
+    )
 
 
 class SupportEscalationForm(forms.Form):

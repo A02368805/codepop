@@ -50,7 +50,7 @@
                         <td>{{ row.count }}</td>
                     </tr>
                 {% empty %}
-                    <tr><td colspan="2">No scoped role rows yet.</td></tr>
+                    <tr><td colspan="2">No role data available.</td></tr>
                 {% endfor %}
             </tbody>
         </table>
@@ -60,7 +60,7 @@
 <section class="panel">
     <div class="section-heading">
         <div>
-            <p class="eyebrow">Scoped Users</p>
+            <p class="eyebrow">Managed Users</p>
             <h2>People you can manage</h2>
         </div>
         <a href="{% url 'admin-users' %}">Open full management view</a>
@@ -82,7 +82,7 @@
                 </tr>
             {% empty %}
                 <tr>
-                    <td colspan="3">No users in scope.</td>
+                    <td colspan="3">No users to display.</td>
                 </tr>
             {% endfor %}
         </tbody>
@@ -94,14 +94,14 @@
         <div class="section-heading">
             <div>
                 <p class="eyebrow">Recent Audit Activity</p>
-                <h2>Store-scoped governance trail</h2>
+                <h2>Recent activity</h2>
             </div>
         </div>
         <ul class="mini-list">
             {% for log in recent_audit_logs %}
                 <li>{{ log.action }} · {{ log.actor.email|default:"system" }} · {{ log.created_at|date:"M j, g:i A" }}</li>
             {% empty %}
-                <li>No recent scoped audit events.</li>
+                <li>No recent audit events.</li>
             {% endfor %}
         </ul>
     </div>
