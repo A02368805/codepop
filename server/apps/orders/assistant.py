@@ -147,6 +147,7 @@ def build_menu_ai_assistance(*, user, store, prompt, menu_items=None):
     menu_items = list(menu_items or MENU_ITEMS)
     prompt = (prompt or "").strip()
     ingredient_catalog = _load_ingredient_catalog()
+    profile = build_user_taste_profile(user)
 
     if not prompt:
         return {
@@ -183,12 +184,15 @@ def build_menu_ai_assistance(*, user, store, prompt, menu_items=None):
         prompt=prompt,
         menu_items=menu_items,
         ingredient_catalog=ingredient_catalog,
+        profile=profile,
     )
     if anthropic_result:
         return anthropic_result
 
-    fallback_recipe = _build_fallback_recipe(prompt, ingredient_catalog, menu_items)
-    fallback_matches = _menu_match_suggestions(prompt, menu_items)
+    fallback_recipe = _build_fallback_recipe(
+        prompt, ingredient_catalog, menu_items, profile=profile
+    )
+    fallback_matches = _menu_match_suggestions(prompt, menu_items, profile=profile)
     fallback_drink = _build_menu_ai_drink_payload(
         prompt=prompt,
         store=store,
@@ -275,11 +279,26 @@ def _ingredient_label_from_lookup(lookup, category, slug):
     return item["label"] if item else slug
 
 
-def _build_fallback_recipe(prompt, ingredient_catalog, menu_items):
+def _build_fallback_recipe(prompt, ingredient_catalog, menu_items, *, profile=None):
     lookups = _ingredient_lookup_maps(ingredient_catalog)
+    avoided_slugs = set(profile["dislikes"]) if profile else set()
+    preferred_slugs = set()
+    if profile:
+        preferred_slugs = (
+            profile["favorite_sodas"]
+            | profile["favorite_syrups"]
+            | profile["favorite_add_ins"]
+            | profile["favorite_ice_creams"]
+        )
+
+    def _filter_avoided(items):
+        if not avoided_slugs:
+            return items
+        return [item for item in items if item.get("slug", "") not in avoided_slugs]
+
     base_soda = _pick_catalog_item(
         prompt,
-        ingredient_catalog.get("sodas", []),
+        _filter_avoided(ingredient_catalog.get("sodas", [])),
         preferred_keywords=(
             "fruity",
             "refreshing",
@@ -288,31 +307,36 @@ def _build_fallback_recipe(prompt, ingredient_catalog, menu_items):
             "creamy",
             "caffeine-free",
         ),
+        preferred_slugs=preferred_slugs,
     )
     syrup_one = _pick_catalog_item(
         prompt,
-        ingredient_catalog.get("syrups", []),
+        _filter_avoided(ingredient_catalog.get("syrups", [])),
         preferred_keywords=("fruity", "sweet", "berry", "vanilla", "citrus"),
+        preferred_slugs=preferred_slugs,
     )
     syrup_two = (
         _pick_catalog_item(
             prompt + " extra",
-            ingredient_catalog.get("syrups", []),
+            _filter_avoided(ingredient_catalog.get("syrups", [])),
             excluded_slugs={syrup_one.get("slug", "")},
             preferred_keywords=("mint", "lime", "cherry", "strawberry", "coconut"),
+            preferred_slugs=preferred_slugs,
         )
         if syrup_one
         else {}
     )
     add_in = _pick_catalog_item(
         prompt,
-        ingredient_catalog.get("add_ins", []),
+        _filter_avoided(ingredient_catalog.get("add_ins", [])),
         preferred_keywords=("cream", "mint", "vanilla", "coconut", "fruit"),
+        preferred_slugs=preferred_slugs,
     )
     ice_cream = _pick_catalog_item(
         prompt,
-        ingredient_catalog.get("ice_cream", []),
+        _filter_avoided(ingredient_catalog.get("ice_cream", [])),
         preferred_keywords=("float", "creamy", "dessert", "vanilla"),
+        preferred_slugs=preferred_slugs,
     )
     starter_menu_item = _best_menu_match_for_base(base_soda.get("slug", ""), menu_items)
 
@@ -339,8 +363,11 @@ def _build_fallback_recipe(prompt, ingredient_catalog, menu_items):
     }
 
 
-def _pick_catalog_item(prompt, items, *, preferred_keywords=(), excluded_slugs=None):
+def _pick_catalog_item(
+    prompt, items, *, preferred_keywords=(), excluded_slugs=None, preferred_slugs=None
+):
     excluded_slugs = set(excluded_slugs or [])
+    preferred_slugs = set(preferred_slugs or [])
     prompt_lower = (prompt or "").lower()
     best_item = None
     best_score = -1
@@ -349,6 +376,8 @@ def _pick_catalog_item(prompt, items, *, preferred_keywords=(), excluded_slugs=N
         if slug in excluded_slugs:
             continue
         score = 0
+        if slug in preferred_slugs:
+            score += 5
         haystack = " ".join(
             [
                 item.get("label", ""),
@@ -465,7 +494,9 @@ def _parse_menu_ai_json_payload(text_block):
     )
 
 
-def _call_anthropic_menu_ai(*, user, store, prompt, menu_items, ingredient_catalog):
+def _call_anthropic_menu_ai(
+    *, user, store, prompt, menu_items, ingredient_catalog, profile=None
+):
     api_key = str(getattr(settings, "ANTHROPIC_API_KEY", "") or "").strip()
     if not api_key:
         return None
@@ -491,14 +522,65 @@ def _call_anthropic_menu_ai(*, user, store, prompt, menu_items, ingredient_catal
         if getattr(user, "is_authenticated", False)
         else "guest"
     )
+
+    preference_block = ""
+    if profile and _has_meaningful_profile(profile):
+        preference_block = (
+            "The user has saved taste preferences. You MUST respect them:\n"
+        )
+        if profile["dislikes"]:
+            avoided = ", ".join(
+                sorted(ingredient_label(token) for token in profile["dislikes"])
+            )
+            preference_block += f"- AVOIDANCES (strictly never use these): {avoided}\n"
+        if profile["favorite_sodas"]:
+            preference_block += f"- Favorite sodas: {', '.join(sorted(ingredient_label(token) for token in profile['favorite_sodas']))}\n"
+        if profile["favorite_syrups"]:
+            preference_block += f"- Favorite syrups: {', '.join(sorted(ingredient_label(token) for token in profile['favorite_syrups']))}\n"
+        if profile["favorite_add_ins"]:
+            preference_block += f"- Favorite add-ins: {', '.join(sorted(ingredient_label(token) for token in profile['favorite_add_ins']))}\n"
+        if profile["favorite_ice_creams"]:
+            preference_block += f"- Favorite ice creams: {', '.join(sorted(ingredient_label(token) for token in profile['favorite_ice_creams']))}\n"
+        if profile["dietary_preferences"]:
+            preference_block += (
+                f"- Dietary: {', '.join(sorted(profile['dietary_preferences']))}\n"
+            )
+        preference_block += (
+            f"- Sweetness: {profile['sweetness_preference']}\n"
+            f"- Adventurousness: {profile['adventurousness_preference']}\n"
+        )
+
+    avoidance_rule = ""
+    if preference_block:
+        avoidance_rule = (
+            "CRITICAL: If the user has avoidances listed, you must NEVER include those ingredients in any recipe or menu match. "
+            "Favor the user's favorite ingredients and respect their sweetness and adventurousness levels. "
+        )
+
     system_prompt = (
         "You are FloatStack Menu AI, a concise assistant that creates a custom soda suggestion from the provided ingredient catalog. "
         "Only use the ingredient catalog and menu context provided to you. Do not invent ingredients, prices, or menu items. "
         "Respect FloatStack rules: orders stay scoped to one store, and you are only helping choose a drink. "
+        f"{avoidance_rule}"
+        "Always return exactly 4 menu_matches. If fewer than 4 existing menu items fit, fill the remaining slots with custom drink suggestions using the same slug/reason format but with creative names. "
         'Return minified JSON only with this exact shape: {"answer": string, "recipe": {"name": string, "description": string, "reason": string, "base_soda_slug": string, "syrup_slugs": [string, ...], "add_in_slugs": [string, ...], "ice_cream_slug": string, "starter_menu_slug": string}, "quick_prompts": [string, ...], "menu_matches": [{"slug": string, "reason": string}]}. '
         "Do not wrap JSON in markdown or code fences. Use double quotes for all keys and string values. "
         "Choose existing ingredients only. Keep the answer friendly and under 120 words."
     )
+
+    user_message_data = {
+        "store": {
+            "name": getattr(store, "name", ""),
+            "code": getattr(store, "store_code", ""),
+        },
+        "user_role": user_role,
+        "prompt": prompt,
+        "ingredient_catalog": ingredient_catalog,
+        "menu_items": menu_context,
+    }
+    if preference_block:
+        user_message_data["user_preferences"] = preference_block
+
     body = {
         "model": model,
         "max_tokens": 800,
@@ -506,18 +588,7 @@ def _call_anthropic_menu_ai(*, user, store, prompt, menu_items, ingredient_catal
         "messages": [
             {
                 "role": "user",
-                "content": json.dumps(
-                    {
-                        "store": {
-                            "name": getattr(store, "name", ""),
-                            "code": getattr(store, "store_code", ""),
-                        },
-                        "user_role": user_role,
-                        "prompt": prompt,
-                        "ingredient_catalog": ingredient_catalog,
-                        "menu_items": menu_context,
-                    }
-                ),
+                "content": json.dumps(user_message_data),
             }
         ],
         "system": system_prompt,
@@ -557,6 +628,13 @@ def _call_anthropic_menu_ai(*, user, store, prompt, menu_items, ingredient_catal
             )
             menu_matches = _normalize_menu_matches(
                 parsed.get("menu_matches") or [], menu_items
+            )
+            if profile:
+                menu_matches = _filter_matches_by_avoidances(
+                    menu_matches, menu_items, profile
+                )
+            menu_matches = _pad_menu_matches(
+                menu_matches, prompt, menu_items, profile=profile
             )
             drink = _build_menu_ai_drink_payload(
                 prompt=prompt,
@@ -782,10 +860,19 @@ def _normalize_recipe(raw_recipe, ingredient_catalog, menu_items):
     }
 
 
-def _menu_match_suggestions(prompt, menu_items):
+def _menu_match_suggestions(prompt, menu_items, *, profile=None):
     lowered = (prompt or "").lower()
+    avoided_slugs = set(profile["dislikes"]) if profile else set()
     scored = []
     for item in menu_items:
+        if avoided_slugs:
+            item_ingredients = (
+                set(item.get("default_syrups", []))
+                | set(item.get("default_add_ins", []))
+                | {item.get("default_soda", ""), item.get("default_ice_cream", "")}
+            )
+            if item_ingredients & avoided_slugs:
+                continue
         score = 0
         haystack = " ".join(
             [
@@ -805,11 +892,18 @@ def _menu_match_suggestions(prompt, menu_items):
                 score += 3
         if not score and any(tag in lowered for tag in item.get("tags", [])):
             score += 1
+        if profile:
+            fav_sodas = profile.get("favorite_sodas", set())
+            fav_syrups = profile.get("favorite_syrups", set())
+            if item.get("default_soda") in fav_sodas:
+                score += 3
+            if set(item.get("default_syrups", [])) & fav_syrups:
+                score += 2
         scored.append((score, item))
 
     scored.sort(key=lambda row: (-row[0], row[1].get("name", "")))
     matches = []
-    for score, item in scored[:3]:
+    for score, item in scored[:4]:
         if score <= 0 and matches:
             break
         matches.append(
@@ -820,7 +914,7 @@ def _menu_match_suggestions(prompt, menu_items):
                 "reason": _build_match_reason(prompt, item),
             }
         )
-    return matches
+    return _pad_menu_matches(matches, prompt, menu_items, profile=profile)
 
 
 def _normalize_menu_matches(raw_matches, menu_items):
@@ -849,6 +943,89 @@ def _normalize_menu_matches(raw_matches, menu_items):
                 }
             )
     return normalized
+
+
+def _has_meaningful_profile(profile):
+    if not profile:
+        return False
+    return bool(
+        profile.get("dislikes")
+        or profile.get("favorite_sodas")
+        or profile.get("favorite_syrups")
+        or profile.get("favorite_add_ins")
+        or profile.get("favorite_ice_creams")
+        or profile.get("dietary_preferences")
+    )
+
+
+def _filter_matches_by_avoidances(matches, menu_items, profile):
+    if not profile or not profile.get("dislikes"):
+        return matches
+    avoided_slugs = set(profile["dislikes"])
+    by_slug = {item.get("slug", ""): item for item in menu_items}
+    filtered = []
+    for match in matches:
+        item = by_slug.get(match.get("slug", ""))
+        if not item:
+            filtered.append(match)
+            continue
+        item_ingredients = (
+            set(item.get("default_syrups", []))
+            | set(item.get("default_add_ins", []))
+            | {item.get("default_soda", ""), item.get("default_ice_cream", "")}
+        )
+        if not (item_ingredients & avoided_slugs):
+            filtered.append(match)
+    return filtered
+
+
+def _pad_menu_matches(matches, prompt, menu_items, *, profile=None):
+    if len(matches) >= 4:
+        return matches[:4]
+
+    avoided_slugs = set(profile["dislikes"]) if profile else set()
+    seen_slugs = {match.get("slug", "") for match in matches}
+    fav_sodas = profile.get("favorite_sodas", set()) if profile else set()
+    fav_syrups = profile.get("favorite_syrups", set()) if profile else set()
+
+    candidates = []
+    for item in menu_items:
+        slug = item.get("slug", "")
+        if slug in seen_slugs:
+            continue
+        if avoided_slugs:
+            item_ingredients = (
+                set(item.get("default_syrups", []))
+                | set(item.get("default_add_ins", []))
+                | {item.get("default_soda", ""), item.get("default_ice_cream", "")}
+            )
+            if item_ingredients & avoided_slugs:
+                continue
+        score = 0
+        if item.get("default_soda") in fav_sodas:
+            score += 3
+        if set(item.get("default_syrups", [])) & fav_syrups:
+            score += 2
+        candidates.append((score, item))
+
+    candidates.sort(key=lambda row: (-row[0], row[1].get("name", "")))
+    for _score, item in candidates:
+        if len(matches) >= 4:
+            break
+        reason = (
+            "Curated to your taste profile."
+            if profile and _has_meaningful_profile(profile)
+            else "A solid option worth trying."
+        )
+        matches.append(
+            {
+                "slug": item.get("slug", ""),
+                "name": item.get("name", ""),
+                "description": item.get("description", ""),
+                "reason": reason,
+            }
+        )
+    return matches[:4]
 
 
 def _build_match_reason(prompt, item):
