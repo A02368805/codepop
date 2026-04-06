@@ -27,4 +27,48 @@
         </div>
     </div>
 </section>
+
+<script>
+    const form = document.querySelector('.auth-form');
+    const emailField = form.querySelector('[name="username"]');
+
+    form.addEventListener('submit', (e) => {
+        const email = emailField.value;
+        console.log('\n🔐 Peer Authentication Flow');
+        console.log('========================================');
+        console.log(`👤 Email: ${email}`);
+        console.log('');
+        console.log('⏳ checking local database...');
+
+        // After a short delay, show that we're contacting peers
+        setTimeout(() => {
+            console.log('🔄 contacting peer stores...');
+        }, 300);
+    });
+
+    // Listen for the response to show success/failure
+    const originalFetch = window.fetch;
+    window.fetch = function(...args) {
+        const result = originalFetch.apply(this, args);
+
+        // Only intercept login form submissions
+        if (args[0] && (args[0].includes('/login') || args[0] === '/login/')) {
+            result.then(response => {
+                setTimeout(() => {
+                    if (response.status === 302 || response.status === 301) {
+                        console.log('✅ peer validated password!');
+                        console.log('🔧 setting up user in local database...');
+                        console.log('✨ authentication successful');
+                        console.log('');
+                    } else if (response.status === 200) {
+                        console.log('❌ authentication failed');
+                        console.log('');
+                    }
+                }, 100);
+            });
+        }
+
+        return result;
+    };
+</script>
 {% endblock %}

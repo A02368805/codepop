@@ -947,15 +947,15 @@ class AdminUserUpdateView(RoleRequiredMixin, LoginRequiredMixin, View):
 
 
 @method_decorator(csrf_exempt, name="dispatch")
-class FederatedValidateView(View):
+class PeerValidateView(View):
     """
-    Machine-to-machine endpoint for cross-store user authentication.
+    Machine-to-machine endpoint for peer-store user validation.
 
-    Other stores POST here when a user isn't found locally, to validate
-    credentials and get basic user data. Uses X-Sync-Token header auth
-    (same pattern as SyncIngestView).
+    In a distributed system, other stores POST here when a user isn't found
+    locally to validate credentials and retrieve user profile data (name,
+    preferences). Uses X-Sync-Token header auth for peer authentication.
 
-    Only validates ACCOUNT_USER role — staff roles are store-local.
+    Only validates ACCOUNT_USER role — staff roles are store-local only.
     """
 
     def post(self, request, *args, **kwargs):
