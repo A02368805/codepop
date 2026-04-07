@@ -1,0 +1,68 @@
+{% if cart.items %}
+    <section class="page-grid page-grid--sidebar">
+        <div class="panel">
+            <div class="section-heading">
+                <div>
+                    <p class="eyebrow">Your Drinks</p>
+                    <h2>{{ cart.items|length }} drink{{ cart.items|length|pluralize }}</h2>
+                </div>
+            </div>
+            <div class="surface-list">
+                {% for item in cart.items %}
+                    <article class="list-card">
+                        <div class="list-card__main">
+                            <h3>{{ item.display_name }}</h3>
+                            <p class="muted">{{ item.description }}</p>
+                            <p>Base ${{ item.base_price|floatformat:2 }} · Extras ${{ item.extras_total|floatformat:2 }} each</p>
+                        </div>
+                        <div class="list-card__actions">
+                            <form
+                                method="post"
+                                class="inline-cluster"
+                                hx-post="{% url 'orders:cart-item-update' item.item_id %}"
+                                hx-target="#cart-panel"
+                                hx-swap="innerHTML"
+                            >
+                                {% csrf_token %}
+                                <input type="number" name="quantity" min="0" max="12" value="{{ item.quantity }}">
+                                <button class="button button--ghost" type="submit">Update qty</button>
+                            </form>
+                            <form
+                                method="post"
+                                hx-post="{% url 'orders:cart-item-remove' item.item_id %}"
+                                hx-target="#cart-panel"
+                                hx-swap="innerHTML"
+                            >
+                                {% csrf_token %}
+                                <button class="button button--ghost" type="submit">Remove</button>
+                            </form>
+                        </div>
+                    </article>
+                {% endfor %}
+            </div>
+        </div>
+        <div class="panel">
+            <p class="eyebrow">Order Summary</p>
+            <dl class="summary-list">
+                <div><dt>Store</dt><dd>{{ store.name }}</dd></div>
+                <div><dt>Subtotal</dt><dd>${{ pricing.subtotal_amount|floatformat:2 }}</dd></div>
+                <div><dt>Tax</dt><dd>${{ pricing.tax_amount|floatformat:2 }}</dd></div>
+                <div><dt>Total</dt><dd>${{ pricing.total_amount|floatformat:2 }}</dd></div>
+            </dl>
+            <div class="action-row">
+                <a class="button button--primary" href="{% url 'orders:checkout' %}">Checkout</a>
+                {% if store %}
+                    <a class="button button--ghost" href="{% url 'orders:menu' store.store_code %}">Add another drink</a>
+                {% endif %}
+            </div>
+        </div>
+    </section>
+{% else %}
+    <section class="panel">
+        <div class="empty-state">
+            <h2>Your cart is empty.</h2>
+            <p>Pick a store and add a drink to get started.</p>
+            <a class="button button--primary" href="{% url 'stores:index' %}">Choose a store</a>
+        </div>
+    </section>
+{% endif %}

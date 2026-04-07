@@ -1,0 +1,69 @@
+{% if transfer_error %}
+    <div class="flash flash--error">{{ transfer_error }}</div>
+{% endif %}
+
+{% if transfers %}
+    <table class="data-table">
+        <thead>
+            <tr>
+                <th>Destination</th>
+                <th>Source</th>
+                <th>Line Items</th>
+                <th>Status</th>
+                <th>Distance</th>
+                <th>Action</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for transfer in transfers %}
+                <tr>
+                    <td>
+                        <strong>{{ transfer.destination_store.name }}</strong>
+                        <div class="muted">{{ transfer.destination_store.region.name }}</div>
+                    </td>
+                    <td>
+                        {% if transfer.source_store %}
+                            {{ transfer.source_store.name }}
+                        {% elif transfer.source_hub %}
+                            {{ transfer.source_hub.name }}
+                        {% else %}
+                            Source pending
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% for line_item in transfer.line_items.all %}
+                            <div>{{ line_item.inventory_item.name }} · {{ line_item.quantity_requested }}</div>
+                        {% endfor %}
+                    </td>
+                    <td>
+                        <span class="pill">{{ transfer.get_status_display }}</span>
+                    </td>
+                    <td>{{ transfer.distance_miles }} mi</td>
+                    <td>
+                        {% if transfer.next_action.label %}
+                            {% if transfer.next_action.allowed %}
+                                <form
+                                    method="post"
+                                    hx-post="{% url transfer.next_action.url_name transfer.id %}"
+                                    hx-target="#transfer-table"
+                                    hx-swap="innerHTML"
+                                    hx-include="#supply-filters"
+                                >
+                                    {% csrf_token %}
+                                    <button class="button button--ghost" type="submit">{{ transfer.next_action.label }}</button>
+                                </form>
+                            {% else %}
+                                <button class="button button--ghost" type="button" disabled>{{ transfer.next_action.label }}</button>
+                                <div class="muted">{{ transfer.next_action.denied_reason }}</div>
+                            {% endif %}
+                        {% else %}
+                            <span class="muted">{{ transfer.get_status_display }}</span>
+                        {% endif %}
+                    </td>
+                </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+{% else %}
+    <div class="empty-state"><p>No transfers are waiting in this scope.</p></div>
+{% endif %}

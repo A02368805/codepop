@@ -1,0 +1,232 @@
+{% extends "base/base.html" %}
+
+{% block title %}FloatStack{% endblock %}
+
+{% block content %}
+{% if can_start_order %}
+    <section class="hero hero--landing home-hero home-hero--carousel">
+        <div class="home-hero__copy">
+            <p class="eyebrow">Fresh Soda Shop Picks</p>
+            <h1>Find your next favorite drink in minutes.</h1>
+            <p class="lede">Browse seasonal-looking signatures, jump by base, and customize every drink your way before pickup. Fast to order, easy to love.</p>
+            <div class="badge-row">
+                <span class="pill">Custom soda + floats</span>
+                <span class="pill pill--soft">Built for quick pickup</span>
+                <span class="pill pill--soft">Made to customize</span>
+            </div>
+            <div class="cta-row home-hero__primary-cta">
+                <a class="button button--primary" href="{{ home_browse_url }}">Start your order</a>
+            </div>
+        </div>
+
+        {% if home_hero_slides %}
+            <div
+                class="hero-card home-carousel"
+                data-home-carousel
+                aria-label="Featured drinks"
+                aria-roledescription="carousel"
+            >
+                <div class="home-carousel__viewport" aria-live="polite">
+                    {% for slide in home_hero_slides %}
+                        <article
+                            id="{{ slide.id }}"
+                            class="home-carousel__slide{% if forloop.first %} is-active{% endif %}"
+                            data-home-slide
+                            role="group"
+                            aria-roledescription="slide"
+                            aria-hidden="{% if forloop.first %}false{% else %}true{% endif %}"
+                            tabindex="{% if forloop.first %}0{% else %}-1{% endif %}"
+                            aria-label="{{ slide.name }}"
+                        >
+                            <img
+                                class="home-carousel__image"
+                                src="{{ slide.image_url }}"
+                                alt="{{ slide.image_alt }}"
+                                loading="{% if forloop.first %}eager{% else %}lazy{% endif %}"
+                                width="1200"
+                                height="1500"
+                            >
+                            <div class="home-carousel__overlay">
+                                <div class="badge-row">
+                                    <span class="pill">{{ slide.badge }}</span>
+                                    <span class="pill pill--soft">{{ slide.base_label }}</span>
+                                </div>
+                                <h2>{{ slide.name }}</h2>
+                                <p>{{ slide.description }}</p>
+                                <a class="button button--primary" href="{{ slide.customize_url }}">Customize Drink</a>
+                            </div>
+                        </article>
+                    {% endfor %}
+                </div>
+                <div class="home-carousel__controls">
+                    <button
+                        type="button"
+                        class="home-carousel__arrow"
+                        data-home-carousel-prev
+                        aria-label="Previous featured drink"
+                    >
+                        <span aria-hidden="true">←</span>
+                    </button>
+                    <div class="home-carousel__dots" role="tablist" aria-label="Featured drink slides">
+                        {% for slide in home_hero_slides %}
+                            <button
+                                type="button"
+                                class="home-carousel__dot{% if forloop.first %} is-active{% endif %}"
+                                data-home-carousel-dot="{{ forloop.counter0 }}"
+                                role="tab"
+                                aria-controls="{{ slide.id }}"
+                                aria-label="Go to slide {{ forloop.counter }}"
+                                aria-selected="{% if forloop.first %}true{% else %}false{% endif %}"
+                                tabindex="{% if forloop.first %}0{% else %}-1{% endif %}"
+                            ></button>
+                        {% endfor %}
+                    </div>
+                    <button
+                        type="button"
+                        class="home-carousel__arrow"
+                        data-home-carousel-next
+                        aria-label="Next featured drink"
+                    >
+                        <span aria-hidden="true">→</span>
+                    </button>
+                </div>
+            </div>
+        {% else %}
+            <div class="hero-card">
+                <p class="eyebrow">Featured Drinks</p>
+                <h2>Hand-picked soda and float combinations, ready to customize.</h2>
+                <p class="muted">Pick your base, layer flavors, and use the same builder flow already wired into checkout.</p>
+            </div>
+        {% endif %}
+    </section>
+
+    <nav class="panel home-subnav-panel" aria-label="Browse by drink base">
+        <div class="home-subnav">
+            {% for item in home_menu_nav %}
+                <a
+                    class="home-subnav__link{% if forloop.first %} is-active{% endif %}"
+                    href="#{{ item.anchor_id }}"
+                    data-home-nav-link
+                    aria-current="{% if forloop.first %}true{% else %}false{% endif %}"
+                >
+                    <span>{{ item.label }}</span>
+                </a>
+            {% endfor %}
+        </div>
+    </nav>
+
+    <section class="panel home-browse-panel">
+        <div class="section-heading">
+            <div>
+                <p class="eyebrow">Browse Drinks</p>
+                <h2>Jump to a base, then customize your order.</h2>
+            </div>
+            <p class="lede-small">Tap any base in the sub-nav, scroll to the section, and pick your drink. Every card keeps the same existing customize flow.</p>
+        </div>
+
+        {% for section in home_menu_sections %}
+            <section
+                class="home-drink-track"
+                id="{{ section.anchor_id }}"
+                aria-label="{{ section.label }} drinks"
+            >
+                <div class="home-drink-track__header">
+                    <p class="eyebrow">{{ section.label }}</p>
+                    <h3>{{ section.label }} Drinks</h3>
+                    {% if section.description %}
+                        <p class="muted">{{ section.description }}</p>
+                    {% endif %}
+                </div>
+                <div class="home-drink-row">
+                    {% for item in section.cards %}
+                        {% include "home/partials/drink_card.html" with item=item %}
+                    {% empty %}
+                        <article class="empty-state home-empty-state">
+                            <h3>No drinks found for this base</h3>
+                            <p>Try another base category to keep browsing.</p>
+                        </article>
+                    {% endfor %}
+                </div>
+            </section>
+        {% endfor %}
+    </section>
+
+    <section class="panel">
+        <div class="section-heading">
+            <div>
+                <p class="eyebrow">Why Guests Love It</p>
+                <h2>Easy to order, quick to pick up, always customizable.</h2>
+            </div>
+        </div>
+        <div class="card-grid">
+            <article class="role-card">
+                <p class="eyebrow">Fast Start</p>
+                <h3>Order in a few taps</h3>
+                <p>Pick a base, customize your drink, and check out quickly without extra steps.</p>
+                <a href="{{ home_browse_url }}">Start order</a>
+            </article>
+            <article class="role-card">
+                <p class="eyebrow">Built Your Way</p>
+                <h3>Customize every cup</h3>
+                <p>Choose your size, soda base, flavors, add-ins, and float finish exactly how you like it.</p>
+                {% if home_menu_nav %}
+                    <a href="#{{ home_menu_nav.0.anchor_id }}">Browse bases</a>
+                {% else %}
+                    <a href="{{ home_browse_url }}">Browse menu</a>
+                {% endif %}
+            </article>
+            <article class="role-card">
+                <p class="eyebrow">Pickup Ready</p>
+                <h3>Track and grab your drink</h3>
+                <p>Track with your order code or quick pickup combo, then swing by when your drink is ready.</p>
+                <a href="{% url 'orders:guest-lookup' %}">Track pickup</a>
+            </article>
+        </div>
+    </section>
+{% else %}
+    <section class="hero hero--landing">
+        <div class="hero-copy">
+            <p class="eyebrow">FloatStack</p>
+            <h1>Your operations workspace.</h1>
+            <p class="lede">Access your dashboard, analytics, and team tools from here.</p>
+            <div class="cta-row">
+                <a class="button button--primary" href="{% url 'dashboard' %}">Open operations dashboard</a>
+                <a class="button button--ghost" href="{% url 'analytics:index' %}">Review analytics</a>
+                <a class="button button--ghost" href="{% url 'support:index' %}">Support workspace</a>
+            </div>
+        </div>
+        <div class="hero-card hero-card--showcase">
+            <p class="eyebrow">Platform Principles</p>
+            <ul class="checklist">
+                {% for principle in platform_principles %}
+                    <li>{{ principle }}</li>
+                {% endfor %}
+            </ul>
+        </div>
+    </section>
+
+    <section class="panel">
+        <div class="section-heading">
+            <div>
+                <p class="eyebrow">Role Workspaces</p>
+                <h2>Dashboards by role</h2>
+            </div>
+            <p class="lede-small">Each role sees the tools and data relevant to their responsibilities.</p>
+        </div>
+        <div class="card-grid">
+            {% for card in role_cards %}
+                <article class="role-card">
+                    <p class="eyebrow">{{ card.title }}</p>
+                    <h3>{{ card.title }} Workspace</h3>
+                    <p>{{ card.description }}</p>
+                    {% if request.user.is_authenticated %}
+                        <a href="{% url card.dashboard_route %}">Open workspace</a>
+                    {% else %}
+                        <a href="{% url 'login' %}">Sign in for access</a>
+                    {% endif %}
+                </article>
+            {% endfor %}
+        </div>
+    </section>
+{% endif %}
+{% endblock %}

@@ -1,0 +1,24 @@
+<article class="menu-card menu-hero-reco-card">
+    <div class="menu-card__visual menu-hero-reco-card__visual">
+        <img
+            class="menu-card__image"
+            src="{{ item.image_url }}"
+            alt="{{ item.image_alt }}"
+            loading="lazy"
+            width="1200"
+            height="1500"
+        >
+        <div class="home-drink-card__base-chip menu-hero-reco-card__base-chip">
+            <span class="home-drink-card__base-dot" data-home-soda-base="{{ item.base_slug }}"></span>
+            <span>{{ item.base_label }}</span>
+        </div>
+    </div>
+    {% if item.badge %}
+        <div class="badge-row">
+            <span class="pill">{{ item.badge }}</span>
+        </div>
+    {% endif %}
+    <h3>{{ item.name }}</h3>
+    <p class="muted">{{ item.description }}</p>
+    <a class="button button--primary" href="{{ item.customize_url }}">Customize</a>
+</article>

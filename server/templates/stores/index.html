@@ -1,0 +1,139 @@
+{% extends "base/base.html" %}
+
+{% block title %}Choose a Store | FloatStack{% endblock %}
+
+{% block content %}
+<section class="hero hero--dashboard">
+    <div>
+        <p class="eyebrow">Pickup Locations</p>
+        {% if can_start_order %}
+            <h1>Choose where you want to pick up your drinks.</h1>
+            <p class="lede">Search by ZIP code or address, or use your location to see the best nearby options first.</p>
+        {% else %}
+            <h1>Browse all FloatStack locations.</h1>
+            <p class="lede">Review store details and regional coverage.</p>
+        {% endif %}
+    </div>
+    <div class="hero-card">
+        {% if can_start_order %}
+            <p class="eyebrow">Before You Order</p>
+            <ul class="mini-list">
+                <li>Pick one store first so your cart and pickup timing stay accurate.</li>
+                <li>Use location for quick nearby picks, or browse every location manually.</li>
+                <li>You can always switch stores before you start customizing drinks.</li>
+            </ul>
+        {% else %}
+            <p class="eyebrow">Quick Snapshot</p>
+            <dl class="compact-stats">
+                <div>
+                    <dt>Active Stores</dt>
+                    <dd>{{ stores|length }}</dd>
+                </div>
+                <div>
+                    <dt>Regions</dt>
+                    <dd>{{ regions|length }}</dd>
+                </div>
+                <div>
+                    <dt>Preferred Store</dt>
+                    <dd>
+                        {% if request.user.is_authenticated and request.user.preferred_store %}
+                            {{ request.user.preferred_store.name }}
+                        {% else %}
+                            Not set
+                        {% endif %}
+                    </dd>
+                </div>
+                <div>
+                    <dt>Guest Orders</dt>
+                    <dd>Available</dd>
+                </div>
+            </dl>
+        {% endif %}
+    </div>
+</section>
+
+<section class="page-grid page-grid--sidebar">
+    <div class="panel">
+        <div class="section-heading">
+            <div>
+                <p class="eyebrow">Find a Store</p>
+                <h2>Best pickup options for you</h2>
+            </div>
+            <p class="lede-small">Enter an address or ZIP code, or let your browser use your location for faster recommendations.</p>
+        </div>
+        <form
+            id="store-recommendation-form"
+            method="get"
+            class="form-grid"
+            hx-get="{% url 'stores:index' %}"
+            hx-target="#store-recommendations"
+            hx-push-url="true"
+            hx-indicator="#recommendation-indicator"
+            data-mapbox-token="{{ mapbox_public_token }}"
+        >
+            <label class="field">
+                <span>{{ recommendation_form.location_query.label }}</span>
+                {{ recommendation_form.location_query }}
+                {{ recommendation_form.location_query.errors }}
+            </label>
+            {{ recommendation_form.latitude }}
+            {{ recommendation_form.longitude }}
+            <label class="field">
+                <span>{{ recommendation_form.pickup_time_choice.label }}</span>
+                {{ recommendation_form.pickup_time_choice }}
+                {{ recommendation_form.pickup_time_choice.errors }}
+            </label>
+            {{ recommendation_form.non_field_errors }}
+            <p id="geo-status" class="muted">Use your location for faster nearby matches, or search manually by ZIP code or address.</p>
+            <div class="action-row">
+                <button class="button button--primary" type="submit">Show pickup options</button>
+                <button class="button button--ghost" type="button" id="geo-locate-btn">Use my location</button>
+            </div>
+            <p class="muted htmx-indicator" id="recommendation-indicator">Refreshing store recommendations…</p>
+        </form>
+    </div>
+
+    <div class="panel">
+        <div class="section-heading">
+            <div>
+                <p class="eyebrow">Recommended</p>
+                <h2>Best pickup options right now</h2>
+            </div>
+        </div>
+        <div id="store-recommendations">
+            {% include "stores/partials/recommendation_results.html" %}
+        </div>
+    </div>
+</section>
+
+<section class="panel">
+    <div class="section-heading">
+        <div>
+            <p class="eyebrow">All Locations</p>
+            <h2>Browse every active pickup location</h2>
+        </div>
+    </div>
+    <div class="card-grid">
+        {% for region in regions %}
+            <article class="role-card">
+                <p class="eyebrow">{{ region.name }}</p>
+                <h3>{{ region.hub_city }}, {{ region.hub_state_code }}</h3>
+                <ul class="mini-list">
+                    {% for store in region.stores.all|slice:":5" %}
+                        <li>
+                            {% if can_start_order %}
+                                <a href="{% url 'orders:menu' store.store_code %}">{{ store.name }}</a>
+                            {% else %}
+                                {{ store.name }}
+                            {% endif %}
+                        </li>
+                    {% endfor %}
+                </ul>
+                {% if region.stores.count > 5 %}
+                    <p class="muted">{{ region.stores.count|add:"-5" }} more stores in this region.</p>
+                {% endif %}
+            </article>
+        {% endfor %}
+    </div>
+</section>
+{% endblock %}

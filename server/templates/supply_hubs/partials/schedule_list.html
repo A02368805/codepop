@@ -1,0 +1,35 @@
+{% if schedule_error %}
+    <div class="flash flash--error">{{ schedule_error }}</div>
+{% endif %}
+
+{% if schedule_rows %}
+    <div class="surface-list">
+        {% for row in schedule_rows %}
+            <article class="list-card">
+                <div class="list-card__main">
+                    <h3>{{ row.schedule.store.name }} · {{ row.schedule.inventory_item.name }}</h3>
+                    <p>{{ row.schedule.recommended_quantity }} every {{ row.schedule.recommended_frequency_days }} day{{ row.schedule.recommended_frequency_days|pluralize }}</p>
+                    <p class="muted">{{ row.explanation }}</p>
+                </div>
+                <div class="list-card__actions">
+                    {% if row.schedule.status == "draft" %}
+                        <form
+                            method="post"
+                            hx-post="{% url 'supply_hubs:approve-schedule' row.schedule.id %}"
+                            hx-target="#schedule-list"
+                            hx-swap="innerHTML"
+                            hx-include="#supply-filters"
+                        >
+                            {% csrf_token %}
+                            <button class="button button--ghost" type="submit">Approve</button>
+                        </form>
+                    {% else %}
+                        <span class="pill">Approved</span>
+                    {% endif %}
+                </div>
+            </article>
+        {% endfor %}
+    </div>
+{% else %}
+    <div class="empty-state"><p>No draft schedules in scope.</p></div>
+{% endif %}

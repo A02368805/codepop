@@ -1,0 +1,28 @@
+<div class="section-heading">
+    <div>
+        {% if request.user.is_authenticated and request.user.role == "account_user" %}
+            <p class="eyebrow">Account Snapshot</p>
+        {% else %}
+            <p class="eyebrow">Live Summary</p>
+        {% endif %}
+        <h2>{{ dashboard.title }}</h2>
+    </div>
+    <button
+        class="button button--ghost"
+        type="button"
+        hx-get="{{ dashboard.refresh_url }}"
+        hx-target="#dashboard-metrics"
+        hx-swap="innerHTML"
+    >
+        Refresh
+    </button>
+</div>
+
+<div class="metric-grid">
+    {% for metric in dashboard.metrics %}
+        <article class="metric metric--{{ metric.tone }}">
+            <p>{{ metric.label }}</p>
+            <strong>{{ metric.value }}</strong>
+        </article>
+    {% endfor %}
+</div>

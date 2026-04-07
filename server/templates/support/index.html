@@ -1,0 +1,37 @@
+{% extends "base/base.html" %}
+
+{% block title %}Customer Support | FloatStack{% endblock %}
+
+{% block content %}
+<section class="hero hero--dashboard">
+    <div>
+        <p class="eyebrow">Support Chat</p>
+        <h1>Need help with an order?</h1>
+        <p class="lede">Ask about pickup timing, order updates, guest lookup, refunds, or account help. We will guide you through the next step.</p>
+        <div class="cta-row">
+            <form
+                method="post"
+                hx-post="{% url 'support:start' %}"
+                hx-target="#support-workspace"
+                hx-swap="innerHTML"
+            >
+                {% csrf_token %}
+                <button class="button button--ghost" type="submit">Start new chat</button>
+            </form>
+            <a class="button button--ghost" href="{% url 'orders:guest-lookup' %}">Track guest order</a>
+        </div>
+    </div>
+    <div class="hero-card">
+        <p class="eyebrow">Tips</p>
+        <ul class="mini-list">
+            <li>Share your order code for the fastest status help.</li>
+            <li>Ask follow-up questions in the same chat thread.</li>
+            <li>Submit escalation if you still need team follow-up.</li>
+        </ul>
+    </div>
+</section>
+
+<div id="support-workspace">
+    {% include "support/partials/workspace.html" %}
+</div>
+{% endblock %}

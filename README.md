@@ -1,260 +1,315 @@
-# Setup Instructions for CodePop
+# FloatStack
 
-Follow these instructions to set up the CodePop project on your machine.
+FloatStack is a Django-first, web-first implementation of the rewritten beverage-operations architecture. The active product uses server-rendered templates, HTMX partials, strict server-side RBAC, PostgreSQL-ready configuration, and background jobs for imports, notifications, sync processing, and recommendation refreshes.
 
-## Backend Setup
+The rewritten design documents remain the source of truth:
 
-1. **Install Dependencies**
-   - Navigate to the base directory of your project and run the following command to create the virtual enviroment for the backend
-      ```bash
-      python -m venv codepop_virtual_enviroment  
-      ``` 
-   - This will create a folder in the root directory titled codepop_virtual_enviroment
-   - This command activates the virtual enviroment(Note this must be run in either git bash or in a bash shell, i.e. mac terminal):
-     ```bash
-     #WINDOWS command using git bash
-     source codepop_virtual_enviroment/Scripts/activate
-     #Mac and Linux version
-     source codepop_virtual_enviroment/bin/activate
-     ```
-    - run the following command once the virtual enviroment has been activated to install dependencies
-      ```bash
-      python -m pip install -r requirements.txt
-      ```
-   - Run the following command to confirm you have the proper dependencies installed 
-      ```bash
-      python -m pip list
-      ```
-   - your output should look like the following
-      ```bash
-      Package             Version
-      ------------------- -----------
-      asgiref             3.8.1
-      certifi             2024.8.30
-      charset-normalizer  3.4.0
-      colorama            0.4.6
-      Django              5.1.2
-      django-cors-headers 4.4.0
-      djangorestframework 3.15.2
-      filelock            3.16.1
-      fsspec              2024.10.0
-      huggingface-hub     0.26.2
-      idna                3.10
-      Jinja2              3.1.4
-      joblib              1.4.2
-      MarkupSafe          3.0.2
-      mpmath              1.3.0
-      networkx            3.4.2
-      numpy               2.1.2
-      packaging           24.2
-      pandas              2.2.3
-      pip                 22.2.1
-      psycopg2            2.9.9
-      python-dateutil     2.9.0.post0
-      pytz                2024.2
-      PyYAML              6.0.2
-      regex               2024.11.6
-      requests            2.32.3
-      safetensors         0.4.5
-      scikit-learn        1.5.2
-      scipy               1.14.1
-      sentencepiece       0.2.0
-      setuptools          63.2.0
-      six                 1.16.0
-      sqlparse            0.5.1
-      stripe              11.2.0
-      sympy               1.13.1
-      threadpoolctl       3.5.0
-      tokenizers          0.20.3
-      torch               2.5.1
-      tqdm                4.67.0
-      transformers        4.46.2
-      typing_extensions   4.12.2
-      tzdata              2024.2
-      urllib3             2.2.3
-      ```
-    - Virtual Enviroment FAQs
+- `Docs/CodePop_High_Level_Design_Rewritten.md`
+- `Docs/CodePop_Low_Level_Design_Rewritten.md`
+- `Docs/RequirementsDoc_Rewritten.md`
 
-      - to deactivate the virtual enviroment run the following command
-        ```bash
-        deactivate
-        ```
-      - if you need to add a package to the virtual enviroment simply use the following command
-        ```bash
-        python -m pip install <name of package>
-        ```
-      - then update the requirements.txt file by doing the following (while you are in the root directory of this project)
-        ```bash
-        python -m pip freeze > requirements.txt
-        ```
-      - also please update what the expected output for the python -m pip list when you add new packages
+The old Expo/mobile starter is archived under `legacy/` and is no longer the primary architecture.
 
-      - git ignores the virtual enviroment directory but not the requirements.txt file. This is because the requirements.txt will be used by all developers to ensure proper dependancies are installed. So be sure to push your requirements.txt file when you make changes
-2. **Download and Install PostgreSQL**
-   - Download PostgreSQL from the following link:
-     [PostgreSQL Downloads](https://www.enterprisedb.com/downloads/postgres-postgresql-downloads)
+## Architecture Summary
 
-   - Refer to the installation guide for PostgreSQL:
-     [PostgreSQL Installation Guide](https://www.enterprisedb.com/docs/supported-open-source/postgresql/installing/windows/)
+- Django 5 modular monolith under `server/apps/`
+- HTMX-driven server-rendered UI, not a SPA
+- Session authentication with a custom user model
+- Server-enforced role and scope boundaries for `account_user`, `manager`, `admin`, `logistics_manager`, `repair_staff`, and `super_admin`
+- PostgreSQL as the primary runtime target with SQLite fallback for quick local development
+- Celery + Redis for queued imports, outbox sync processing, notification dispatch hooks, and recommendation refreshes
+- Stripe-ready payment boundary with a robust `mock` demo mode
+- In-app notifications, analytics summaries, audit logs, and outbox sync visibility
 
-   - **Important:** When installing PostgreSQL, use the following credentials (this will make it easier to pull from the repository):
-     - **Username:** `postgres`
-     - **Password:** `password`
+## Repo Layout
 
-3. **Sign in to PostgreSQL**
-   - After installation, sign in to PostgreSQL as your user by running:
-     ```bash
-     psql -U postgres
-     ```
-
-4. **Create the Database**
-   - The first time you run the app, you will need to create the database using the following command (do not change the database name):
-     ```sql
-     CREATE DATABASE codepop_database;
-     ```
-
-5. **Run Migrations, Populate Database and Start the Server**
-   - Navigate to the codepop_backend directory that contains the manage.py file
-   - Run the following script, this will clean the database and populate it with data to be used 
-     ```bash
-     ./clean_database.sh
-     ```
-   - Run the following command to start the server:
-     ```bash
-     python manage.py runserver <YOUR IP ADDRESS:8000>
-     ```
-   - **Note:** Each time you run the server, you will need to provide your IP address. This is necessary for the Android emulator to access the backend. you can find your ip address by using the ipconfig command in the terminal
-
-## Frontend Setup
-
-1. **Install Node.js**
-   - Download and install Node.js from the official website:
-     [Node.js Downloads](https://nodejs.org/en)
-
-2. **Install Android Studio**
-   - Download and install Android Studio, then set up a virtual Android device:
-     [Android Studio Downloads](https://developer.android.com/studio)
-
-3. **Start the React Native App**
-   - Navigate to the `codepop` directory and edit the base URL in `ip_address.js` to match your IP address and port.
-   - Install dependancies by running the following command:
-      ```bash
-      npm install
-      ```
-   - Run the following command to start the app:
-     ```bash
-     npm run android
-     ```
-
-You should now see a terminal displaying logs from the backend and an Android emulator with the app running!
-
-## After Installation
-Once everything has been installed you should be able to run the code using the following commands
-- In the backend directory (codepop_backend) run the following:
-    ```bash
-    python manage.py migrate
-
-    python manage.py runserver <YOUR IP ADDRESS:8000>
-    ```
-- Start an android emulator in android studio
-
-- In the front end directory (codepop) run the following: 
-    ```bash
-    npm install
-
-    npm run android
-    ```
-## Troubleshooting
-If you encounter any issues while setting up or running the application, feel free to reach out to Wesley for help!
-
-### Pulling Down Changes To The Backend
-The backend database can get into a not so happy state when you pull new changes down from the repo where it doesn't see migrations to be made and as of such won't create needed tables in the database.
-
-This can be solved as follows.
-
-1. Navagate to the codepop_backend directory that contains the manage.py file
-2. run the following command 
-```bash
-./clean_database.sh
-```
-3. WARNING THIS WILL CLEAR ALL THE DATA OUT OF YOUR DATABASE, if you have data that you don't want to lost don't run this command. 
-4. It should also be noted that this will not leave you with a blank database, it will populate it with our basic starting values.
-## Running Backend Tests
-
-To run the backend tests for the project, follow these steps:
-
-1. **Navigate to the Backend Directory**
-
-Open your terminal or command prompt and navigate to the `codepop_backend` directory:
-
-```bash
-cd codepop_backend
+```text
+server/
+├── apps/
+│   ├── analytics/
+│   ├── imports/
+│   ├── inventory/
+│   ├── maintenance/
+│   ├── notifications/
+│   ├── orders/
+│   ├── payments/
+│   ├── stores/
+│   ├── supply_hubs/
+│   ├── sync/
+│   └── users/
+├── config/
+│   ├── settings/
+│   ├── urls.py
+│   └── celery.py
+├── seed/
+├── static/
+├── templates/
+└── tests/
+Docs/
 ```
 
-2. **Make Migrations**
+## Quick Start With Docker
 
-Before running the tests, you need to ensure that all database migrations are up-to-date. Run the following command:
-
-```bash
-python manage.py makemigrations
-```
-
-This command will create new migration files based on the changes in your models.
-
-3. **Apply Migrations**
-
-Next, apply the migrations to the database by running:
-```bash
-python manage.py migrate
-```
-This command will apply all unapplied migrations to your database, ensuring it's in sync with your models.
-
-4. **Run Tests**
-
-Finally, you can run your tests using the following command:
+1. Copy the environment template.
 
 ```bash
-python manage.py test
+cp .env.example .env
 ```
-This command will discover and run all tests defined in your project. It will provide output indicating which tests passed and which failed.
 
-## Basic Data Populated Into The Database
-These are the values that will appear in the database when you run the clean_database.sh file
+2. Start the web app, PostgreSQL, Redis, Celery worker, and Celery beat.
 
-### Users
-| Username | Password | Email               | First Name | Last Name | Role  |
-|----------|----------|---------------------|------------|-----------|-----  |
-| super    | password | supertest@test.com  | Lemonjello | Smith     |Super  |
-| staff    | password | stafftest@test.com  |            |           |manager|
-| test     | password | test@test.com       | Orangejello| Smith     |User   |
-| test2    | password | test@testing.com    | Bob        | Bobsford  |User   |
+```bash
+docker compose up --build
+```
 
+3. Seed the demo dataset.
 
-### Drinks
+```bash
+docker compose exec web python manage.py bootstrap_demo_data --reset
+```
 
-| Name                   | Syrups Used                                    | Soda Used  | Add-Ins                 | Price | User Created | Rating |
-|------------------------|------------------------------------------------|------------|-------------------------|-------|--------------|--------|
-| Coke Float              | Vanilla                                        | Coke       | Cream                   | 5.99  | False        | N/A    |
-| Seasonal Depression     | Cinnamon, Chocolate, Pumpkin Spice, Cucumber   | Rootbeer   | Candy Sprinkles          | 4.99  | False        | 0.0    |
-| I've Heard It Both Ways | Pineapple, Bubble Gum, Cotton Candy            | Dr. Pepper | Lime Wedge              | 2.50  | False        | N/A    |
-| Fall Girlie             | Pumpkin Spice, Salted Caramel                  | Dr. Pepper | Whip, Candy Sprinkles    | 2.50  | False        | N/A    |
-| Red Rizz                | Peach, Cranberry                              | Big Red    | Peach Puree             | 2.50  | False        | N/A    |
-| #Lemons                 | Huckleberry                                   | Lemonade   | None                    | 2.50  | False        | N/A    |
+4. Open the product.
 
-### Preferences
+```text
+http://127.0.0.1:8000/
+```
 
-| User       | Preferences                 |
-|------------|-----------------------------|
-| user1      | mango, strawberry, mtn. dew |
-| user2      | peach, pumpkin_spice, dr. pepper |
-| super_user | pear, cherry, cupcake, rootbeer |
+## Local Setup Without Docker
 
-### Inventory
-The inventory is populated with all of the Syrups, Soda's, add ins and physical items described in the low level design doc
+The local fallback uses SQLite unless `DATABASE_URL` is set. That is fine for demo work and template iteration. PostgreSQL remains the intended target for shared environments and Docker runs.
 
-Each one of them has been given a random quatity between 50 and 100 that is currently left in the inventory 
+```bash
+python3.12 -m venv .venv
+source .venv/bin/activate
+pip install -r requirements.txt
+cp .env.example .env
+pre-commit install
+cd server
+../.venv/bin/python manage.py migrate
+../.venv/bin/python manage.py bootstrap_demo_data --reset
+../.venv/bin/python manage.py runserver 127.0.0.1:8000
+```
 
-They have also been given a random empty threshold between 1 and 10
+Or run the setup script which handles everything except starting the server:
 
-This randomization is subject to change as we go further but for testing purposes it's good enough for right now. 
+```bash
+./setup.sh
+```
 
+Local dev defaults to `CELERY_TASK_ALWAYS_EAGER=True`, so imports, notifications, and recommendation refreshes run inline unless you explicitly switch to worker-backed execution.
+
+## Background Jobs
+
+When you want real async behavior locally, set `CELERY_TASK_ALWAYS_EAGER=False` and run Redis, a worker, and beat:
+
+```bash
+redis-server
+cd server
+../.venv/bin/celery -A config worker -l info
+../.venv/bin/celery -A config beat -l info
+```
+
+Background tasks currently cover:
+
+- CSV import processing
+- outbox sync processing and retries
+- notification dispatch hooks
+- account recommendation refreshes after preference updates and orders
+
+## Environment Variables
+
+Core variables:
+
+- `DJANGO_SETTINGS_MODULE`
+- `SECRET_KEY`
+- `DEBUG`
+- `TIME_ZONE`
+- `ALLOWED_HOSTS`
+- `CSRF_TRUSTED_ORIGINS`
+- `DATABASE_URL`
+
+Background job variables:
+
+- `CELERY_BROKER_URL`
+- `CELERY_RESULT_BACKEND`
+- `CELERY_TASK_ALWAYS_EAGER`
+- `CELERY_TASK_TIME_LIMIT`
+
+Seed/demo variables:
+
+- `SEED_USER_PASSWORD`
+
+Payment variables:
+
+- `PAYMENT_MODE` with `mock` or `stripe`
+- `PAYMENT_CHECKOUT_FLOW` with `hosted` or `elements`
+- `STRIPE_SECRET_KEY`
+- `STRIPE_PUBLISHABLE_KEY`
+- `STRIPE_WEBHOOK_SECRET`
+
+AI provider variables:
+
+- `AI_RECOMMENDATION_PROVIDER` with `deterministic`, `mock-external`, or `anthropic`
+- `ANTHROPIC_API_KEY`
+- `ANTHROPIC_MODEL`
+- `ANTHROPIC_API_BASE_URL`
+- `AI_PROVIDER_TIMEOUT_SECONDS`
+- `AI_PROVIDER_MAX_RETRIES`
+
+Location and notification hook variables:
+
+- `MAPBOX_PUBLIC_TOKEN`
+- `FCM_SERVER_KEY`
+- `WEB_PUSH_PUBLIC_KEY`
+- `WEB_PUSH_PRIVATE_KEY`
+
+## Payment Modes
+
+- `PAYMENT_MODE=mock` is the safest default for demos and local setup. Server-side pricing still runs, but checkout completes immediately without an external processor.
+- `PAYMENT_MODE=stripe` enables the Stripe checkout boundary and webhook route. Add real Stripe credentials before using it.
+- `PAYMENT_CHECKOUT_FLOW=hosted` uses Stripe-hosted checkout redirect.
+- `PAYMENT_CHECKOUT_FLOW=elements` keeps card entry inside the app with Stripe Elements + PaymentIntents.
+- Client-submitted totals are never trusted. Order pricing is recalculated on the server before payment records are written.
+
+### Keys-Last Activation Checklist
+
+1. Keep defaults during development: `PAYMENT_MODE=mock`, `AI_RECOMMENDATION_PROVIDER=deterministic`.
+2. Set Stripe test credentials and webhook secret.
+3. Switch `PAYMENT_MODE=stripe` and choose `PAYMENT_CHECKOUT_FLOW=elements` (or `hosted`).
+4. Set Anthropic settings and switch `AI_RECOMMENDATION_PROVIDER=anthropic`.
+5. Run focused tests, then perform one checkout smoke test and one recommendation smoke test.
+6. Run `python manage.py prelive_integrations_check` to validate launch configuration.
+
+## Seed Data And Demo Credentials
+
+`python manage.py bootstrap_demo_data --reset` creates the full demo dataset, including 7 documented regions, 7 hubs, 38 stores, account users, store staff, regional logistics users, repair staff, seeded imports, transfers, maintenance events, notifications, sync events, and demo orders.
+
+All seeded users use `SEED_USER_PASSWORD`, which defaults to:
+
+```text
+FloatStack123!
+```
+
+Useful demo logins:
+
+- Customer: `account.casey@floatstack.local`
+- Customer: `account.river@floatstack.local`
+- Manager: `manager.c001@floatstack.local`
+- Admin: `admin.c001@floatstack.local`
+- Logistics manager: `logistics.c@floatstack.local`
+- Repair staff: `repair.north@floatstack.local`
+- Super admin: `superadmin@floatstack.local`
+
+Seeded guest lookup example:
+
+- Order code: `FS-M5K9TD`
+- Pickup combo: `624`
+- Guest lookup code: `GST-DEMO-001`
+
+## Sample Demo Walkthroughs
+
+### 1. Guest Order
+
+1. Open `/stores/`.
+2. Pick a store or use the geolocation-assisted recommendation form.
+3. Add a drink to the cart.
+4. Check out as a guest.
+5. Re-open the order through `/orders/guest-lookup/`.
+
+### 2. Account User Order
+
+1. Sign in as `account.casey@floatstack.local`.
+2. Visit recommendations, favorites, or preferences.
+3. Place an order from any store.
+4. View status and order history from the customer workspace.
+
+### 3. Manager Workflow
+
+1. Sign in as `manager.c001@floatstack.local`.
+2. Open the manager dashboard.
+3. Move queued orders forward.
+4. Review revenue and inventory.
+5. Adjust a scoped inventory row with HTMX.
+
+### 4. Logistics Workflow
+
+1. Sign in as `logistics.c@floatstack.local`.
+2. Open Supply Hubs, Imports, Sync, and Analytics.
+3. Upload a supply usage CSV.
+4. Approve AI-generated supply schedule drafts.
+5. Review pending transfers and outbox visibility.
+
+### 5. Repair Workflow
+
+1. Sign in as `repair.north@floatstack.local`.
+2. Open Maintenance and Imports.
+3. Review urgent machine assignments.
+4. Upload a maintenance CSV and inspect the resulting queue.
+
+### 6. Super Admin Oversight
+
+1. Sign in as `superadmin@floatstack.local`.
+2. Open the system-wide dashboard.
+3. Review analytics, scoped user oversight, audit visibility, sync health, and operations comparisons.
+
+## Commands
+
+Run migrations:
+
+```bash
+cd server
+../.venv/bin/python manage.py migrate
+```
+
+Seed demo data:
+
+```bash
+cd server
+../.venv/bin/python manage.py bootstrap_demo_data --reset
+```
+
+Run tests:
+
+```bash
+cd server
+../.venv/bin/python manage.py test
+```
+
+Run Django checks:
+
+```bash
+cd server
+../.venv/bin/python manage.py check
+```
+
+Run integrations readiness check:
+
+```bash
+cd server
+../.venv/bin/python manage.py prelive_integrations_check --allow-warnings
+```
+
+Run the dev server:
+
+```bash
+cd server
+../.venv/bin/python manage.py runserver 127.0.0.1:8000
+```
+
+## Docs
+
+Implementation notes and migration details live in:
+
+- `Docs/migration-plan.md`
+- `Docs/demo-readiness.md`
+- `STATUS.md`
+
+Duplicate lowercase copies exist under `docs/` for compatibility with the original repo layout.
+
+## Known Limitations
+
+- Stripe support is production-shaped, but this repo still defaults to `mock` mode because no live keys are committed.
+- Web push and FCM are exposed as hooks, not as a full subscription/device-management system.
+- Geolocation uses browser coordinates with server-side distance heuristics. Real map-provider features can be layered in later via `MAPBOX_PUBLIC_TOKEN`.
+- The sync pipeline is intentionally internal and observable, but it does not yet push to external downstream systems.
+- Demo analytics are useful and seeded, but they are not a BI replacement.

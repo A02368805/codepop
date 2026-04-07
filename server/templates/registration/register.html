@@ -1,0 +1,60 @@
+{% extends "base/base.html" %}
+
+{% block title %}Create Account | FloatStack{% endblock %}
+
+{% block content %}
+<section class="auth-shell">
+    <div class="auth-card">
+        <p class="eyebrow">Customer Account</p>
+        <h1>Create your account</h1>
+        <p class="lede-small">Save favorites, personalize recommendations, and keep your order history in one place.</p>
+        <form method="post" class="auth-form">
+            {% csrf_token %}
+            {{ form.non_field_errors }}
+            <label>
+                {{ form.first_name.label }}
+                {{ form.first_name }}
+                {{ form.first_name.errors }}
+            </label>
+            <label>
+                {{ form.last_name.label }}
+                {{ form.last_name }}
+                {{ form.last_name.errors }}
+            </label>
+            <label>
+                {{ form.email.label }}
+                {{ form.email }}
+                {{ form.email.errors }}
+            </label>
+            <label>
+                {{ form.preferred_store.label }}
+                {{ form.preferred_store }}
+                {{ form.preferred_store.errors }}
+            </label>
+            <label>
+                {{ form.password1.label }}
+                {{ form.password1 }}
+                {% if form.password1.help_text %}
+                    <div class="muted">{{ form.password1.help_text|safe }}</div>
+                {% endif %}
+                {{ form.password1.errors }}
+            </label>
+            <label>
+                {{ form.password2.label }}
+                {{ form.password2 }}
+                {{ form.password2.errors }}
+            </label>
+            <section class="panel-stack" id="password-gates" aria-live="polite">
+                <p class="eyebrow">Requirements</p>
+                <ul class="mini-list">
+                    <li data-password-gate="length">[ ] At least 8 characters</li>
+                    <li data-password-gate="alnum">[ ] Includes at least one letter and one number</li>
+                    <li data-password-gate="match">[ ] Password and re-entered password match</li>
+                </ul>
+            </section>
+            <button class="button button--primary" type="submit">Create account</button>
+        </form>
+        <p class="muted">Already have an account? <a href="{% url 'login' %}">Sign in</a>.</p>
+    </div>
+</section>
+{% endblock %}

@@ -1,0 +1,120 @@
+{% extends "base/base.html" %}
+
+{% block title %}Manager Dashboard | FloatStack{% endblock %}
+
+{% block content %}
+<section class="hero hero--dashboard">
+    <div>
+        <p class="eyebrow">Manager Dashboard</p>
+        <h1>{{ managed_store.name|default:dashboard.title }}</h1>
+        <p class="lede">{{ dashboard.intro }}</p>
+        <div class="cta-row">
+            <a class="button button--primary" href="{% url 'orders:index' %}">Open order queue</a>
+            <a class="button button--ghost" href="{% url 'inventory:index' %}">Inventory workspace</a>
+        </div>
+    </div>
+    <div class="hero-card" id="dashboard-metrics" hx-get="{{ dashboard.refresh_url }}" hx-trigger="load, every 30s" hx-swap="innerHTML">
+        {% include "partials/dashboard_metrics.html" %}
+    </div>
+</section>
+
+<section class="page-grid page-grid--sidebar">
+    <div class="panel">
+        <div class="section-heading">
+            <div>
+                <p class="eyebrow">Order Queue</p>
+                <h2>Orders awaiting store action</h2>
+            </div>
+        </div>
+        <div id="manager-queue">
+            {% include "orders/partials/manager_queue_table.html" with orders=queue_preview %}
+        </div>
+    </div>
+    <div class="panel">
+        <p class="eyebrow">Revenue Summary</p>
+        <dl class="summary-list">
+            <div><dt>Gross</dt><dd>${{ gross_revenue }}</dd></div>
+            <div><dt>Net</dt><dd>${{ net_revenue }}</dd></div>
+        </dl>
+        <p class="eyebrow">Machine Summary</p>
+        <ul class="mini-list">
+            {% for row in machine_summary %}
+                <li>{{ row.current_status|title }}: {{ row.count }}</li>
+            {% empty %}
+                <li>No machine records in scope.</li>
+            {% endfor %}
+        </ul>
+    </div>
+</section>
+
+<section class="panel">
+    <div class="section-heading">
+        <div>
+            <p class="eyebrow">Low Stock Alerts</p>
+            <h2>Items to watch today</h2>
+        </div>
+        <a href="{% url 'inventory:index' %}">Open inventory details</a>
+    </div>
+    <div class="surface-list">
+        {% for alert in low_stock_alerts %}
+            <article class="list-card">
+                <div class="list-card__main">
+                    <h3>{{ alert.inventory_item.name }}</h3>
+                    <p class="muted">{{ alert.store.name }} · {{ alert.get_severity_display }}</p>
+                </div>
+            </article>
+        {% empty %}
+            <div class="empty-state"><p>No open low-stock alerts.</p></div>
+        {% endfor %}
+    </div>
+</section>
+
+<section class="page-grid page-grid--sidebar">
+    <div class="panel">
+        <div class="section-heading">
+            <div>
+                <p class="eyebrow">Inventory Overview</p>
+                <h2>Store health snapshot</h2>
+            </div>
+        </div>
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>Store</th>
+                    <th>Tracked</th>
+                    <th>Below Threshold</th>
+                    <th>Total On Hand</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for row in inventory_health_rows %}
+                    <tr>
+                        <td>{{ row.store__name }}</td>
+                        <td>{{ row.tracked_items }}</td>
+                        <td>{{ row.below_threshold }}</td>
+                        <td>{{ row.on_hand_total|default:"0" }}</td>
+                    </tr>
+                {% empty %}
+                    <tr><td colspan="4">No inventory data available.</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    <div class="panel">
+        <div class="section-heading">
+            <div>
+                <p class="eyebrow">Unread Notifications</p>
+                <h2>Operational updates for this manager</h2>
+            </div>
+            <a href="{% url 'notifications:index' %}">Open notifications</a>
+        </div>
+        <ul class="mini-list">
+            {% for notification in notifications %}
+                <li>{{ notification.title }} · {{ notification.created_at|date:"M j, g:i A" }}</li>
+            {% empty %}
+                <li>No unread manager notifications.</li>
+            {% endfor %}
+        </ul>
+    </div>
+</section>
+{% endblock %}

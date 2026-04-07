@@ -1,0 +1,17 @@
+{% extends "base/base.html" %}
+
+{% block title %}Server Error | FloatStack{% endblock %}
+
+{% block content %}
+<section class="auth-shell">
+    <div class="auth-card">
+        <p class="eyebrow">500</p>
+        <h1>{{ error_title }}</h1>
+        <p class="lede-small">{{ error_message }}</p>
+        <div class="cta-row">
+            <a class="button button--primary" href="{% url 'home' %}">Return home</a>
+            <a class="button button--ghost" href="{% url 'dashboard' %}">Open dashboard</a>
+        </div>
+    </div>
+</section>
+{% endblock %}

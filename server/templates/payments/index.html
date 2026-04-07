@@ -1,0 +1,82 @@
+{% extends "base/base.html" %}
+
+{% block title %}Payments | FloatStack{% endblock %}
+
+{% block content %}
+<section class="panel">
+    <div class="section-heading">
+        <div>
+            <p class="eyebrow">Payments</p>
+            <h1>Transaction and revenue view</h1>
+            <p class="muted">
+                {% if payment_mode_is_mock %}
+                    Demo payment mode is active. Checkout completes without a live processor.
+                {% else %}
+                    Stripe mode is active{% if not stripe_ready %}, but credentials are incomplete{% endif %}.
+                {% endif %}
+            </p>
+        </div>
+        <form method="get" class="filter-bar">
+            <select name="region">
+                <option value="">All regions</option>
+                {% for region in region_options %}
+                    <option value="{{ region.id }}" {% if selected_region and selected_region.id == region.id %}selected{% endif %}>{{ region.name }}</option>
+                {% endfor %}
+            </select>
+            <select name="store">
+                <option value="">All stores</option>
+                {% for store in store_options %}
+                    <option value="{{ store.id }}" {% if selected_store and selected_store.id == store.id %}selected{% endif %}>{{ store.name }}</option>
+                {% endfor %}
+            </select>
+            <input type="date" name="date_from" value="{{ date_from }}">
+            <input type="date" name="date_to" value="{{ date_to }}">
+            <input type="search" name="q" value="{{ search }}" placeholder="Search order code">
+            <button class="button button--ghost" type="submit">Search</button>
+        </form>
+    </div>
+    <div class="metric-grid">
+        <article class="metric">
+            <p>Gross Revenue</p>
+            <strong>${{ gross_revenue }}</strong>
+        </article>
+        <article class="metric metric--info">
+            <p>Net Revenue</p>
+            <strong>${{ net_revenue }}</strong>
+        </article>
+    </div>
+</section>
+
+<section class="panel">
+    <table class="data-table">
+        <thead>
+            <tr>
+                <th>Order</th>
+                <th>Store</th>
+                <th>Provider</th>
+                <th>Status</th>
+                <th>Captured</th>
+                <th>Refunded</th>
+                <th>Failure</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for transaction in transactions %}
+                <tr>
+                    <td><a href="{% url 'orders:detail' transaction.order.public_order_code %}">{{ transaction.order.public_order_code }}</a></td>
+                    <td>{{ transaction.store.name }}</td>
+                    <td>{{ transaction.get_provider_display }}</td>
+                    <td>{{ transaction.get_status_display }}</td>
+                    <td>${{ transaction.amount_captured }}</td>
+                    <td>${{ transaction.amount_refunded }}</td>
+                    <td>{{ transaction.failure_reason|default:"-" }}</td>
+                </tr>
+            {% empty %}
+                <tr>
+                    <td colspan="7">No transactions in scope.</td>
+                </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</section>
+{% endblock %}

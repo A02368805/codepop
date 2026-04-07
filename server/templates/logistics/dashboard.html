@@ -1,0 +1,356 @@
+{% extends "base/base.html" %}
+
+{% block title %}Logistics Dashboard | FloatStack{% endblock %}
+
+{% block content %}
+<section class="hero hero--dashboard">
+    <div>
+        <p class="eyebrow">Regional Logistics</p>
+        <h1>{{ dashboard.title }}</h1>
+        <p class="lede">{{ dashboard.intro }}</p>
+        <div class="cta-row">
+            <a class="button button--primary" href="{% url 'supply_hubs:index' %}">Open logistics workspace</a>
+            <a class="button button--ghost" href="{% url 'supply_hubs:index' %}">Place supplier orders</a>
+            <a class="button button--ghost" href="{% url 'imports:index' %}">Open supply imports</a>
+            <a class="button button--ghost" href="{% url 'inventory:index' %}">Inspect store inventory</a>
+        </div>
+    </div>
+    <div class="hero-card" id="dashboard-metrics" hx-get="{{ dashboard.refresh_url }}" hx-trigger="load, every 30s" hx-swap="innerHTML">
+        {% include "partials/dashboard_metrics.html" %}
+    </div>
+</section>
+
+<section class="panel">
+    <div class="section-heading">
+        <div>
+            <p class="eyebrow">Operational Scope</p>
+            <h2>Region, store, and date filters</h2>
+        </div>
+        <p class="lede-small">Filter by region, store, and date.</p>
+    </div>
+    <form method="get" class="filter-bar">
+        <select name="region">
+            <option value="">All visible regions</option>
+            {% for region in region_options %}
+                <option value="{{ region.id }}" {% if selected_region and selected_region.id == region.id %}selected{% endif %}>{{ region.name }}</option>
+            {% endfor %}
+        </select>
+        <select name="store">
+            <option value="">All visible stores</option>
+            {% for store in store_options %}
+                <option value="{{ store.id }}" {% if selected_store and selected_store.id == store.id %}selected{% endif %}>{{ store.name }}</option>
+            {% endfor %}
+        </select>
+        <select name="window">
+            <option value="week" {% if window == "week" %}selected{% endif %}>Week</option>
+            <option value="month" {% if window == "month" %}selected{% endif %}>Month</option>
+            <option value="custom" {% if window == "custom" %}selected{% endif %}>Custom</option>
+        </select>
+        <input type="date" name="date_from" value="{{ date_from }}">
+        <input type="date" name="date_to" value="{{ date_to }}">
+        <button class="button button--ghost" type="submit">Apply filters</button>
+    </form>
+</section>
+
+<section class="metric-grid">
+    <article class="metric">
+        <p>Critical Alerts</p>
+        <strong>{{ critical_alert_count }}</strong>
+    </article>
+    <article class="metric metric--info">
+        <p>Pending Transfers</p>
+        <strong>{{ pending_transfers|length }}</strong>
+    </article>
+    <article class="metric">
+        <p>Draft Schedules</p>
+        <strong>{{ draft_schedules|length }}</strong>
+    </article>
+    <article class="metric metric--warning">
+        <p>Supplier Orders</p>
+        <strong>{{ supplier_orders|length }}</strong>
+    </article>
+</section>
+
+<section class="page-grid page-grid--sidebar">
+    <div class="panel">
+        <div class="section-heading">
+            <div>
+                <p class="eyebrow">Smart Transfer Recommendations</p>
+                <h2>Actionable next moves</h2>
+            </div>
+            <a href="{% url 'supply_hubs:index' %}">Open transfer queue</a>
+        </div>
+        <div class="surface-list">
+            {% for recommendation in transfer_recommendations %}
+                <article class="list-card">
+                    <div class="list-card__main">
+                        <div class="inline-cluster">
+                            <span class="pill">{{ recommendation.source_type }}</span>
+                            <span class="pill pill--soft">{{ recommendation.quantity }}</span>
+                        </div>
+                        <h3>{{ recommendation.destination_store.name }} · {{ recommendation.inventory_item.name }}</h3>
+                        <p class="muted">Suggested source: {{ recommendation.source_label }}</p>
+                        <p>{{ recommendation.explanation }}</p>
+                    </div>
+                </article>
+            {% empty %}
+                <div class="empty-state">
+                    <p>No urgent transfer suggestions are waiting right now.</p>
+                </div>
+            {% endfor %}
+        </div>
+    </div>
+
+    <div class="panel">
+        <div class="section-heading">
+            <div>
+                <p class="eyebrow">Critical Stockouts</p>
+                <h2>Open alerts needing attention</h2>
+            </div>
+            <a href="{% url 'inventory:index' %}">Open inventory</a>
+        </div>
+        <div class="surface-list">
+            {% for alert in low_stock_alerts %}
+                <article class="list-card">
+                    <div class="list-card__main">
+                        <div class="inline-cluster">
+                            <span class="pill {% if alert.severity == 'critical' %}pill--critical{% else %}pill--warning{% endif %}">{{ alert.get_severity_display }}</span>
+                            <span class="pill pill--soft">{{ alert.store.region.name }}</span>
+                        </div>
+                        <h3>{{ alert.store.name }}</h3>
+                        <p class="muted">{{ alert.inventory_item.name }}</p>
+                    </div>
+                </article>
+            {% empty %}
+                <div class="empty-state">
+                    <p>No low-stock alerts are open in this filtered scope.</p>
+                </div>
+            {% endfor %}
+        </div>
+    </div>
+</section>
+
+<section class="page-grid page-grid--sidebar">
+    <div class="panel">
+        <div class="section-heading">
+            <div>
+                <p class="eyebrow">Store Health</p>
+                <h2>Inventory status by store</h2>
+            </div>
+            <a href="{% url 'inventory:index' %}">Grouped inventory view</a>
+        </div>
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>Store</th>
+                    <th>Tracked Items</th>
+                    <th>Below Threshold</th>
+                    <th>Total On Hand</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for row in inventory_health_rows %}
+                    <tr>
+                        <td>{{ row.store__name }}</td>
+                        <td>{{ row.tracked_items }}</td>
+                        <td>{{ row.below_threshold }}</td>
+                        <td>{{ row.on_hand_total|default:"0" }}</td>
+                    </tr>
+                {% empty %}
+                    <tr>
+                        <td colspan="4">No store inventory in this scope.</td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <div class="panel">
+        <div class="section-heading">
+            <div>
+                <p class="eyebrow">Hub Inventory</p>
+                <h2>Regional hub overview</h2>
+            </div>
+            <a href="{% url 'supply_hubs:index' %}">Open hub workspace</a>
+        </div>
+        <div class="surface-list">
+            {% for balance in hub_balances %}
+                <article class="list-card">
+                    <div class="list-card__main">
+                        <h3>{{ balance.hub.name }}</h3>
+                        <p class="muted">{{ balance.inventory_item.name }}</p>
+                    </div>
+                    <div class="list-card__actions">
+                        <span class="pill">On hand {{ balance.on_hand_quantity }}</span>
+                    </div>
+                </article>
+            {% empty %}
+                <div class="empty-state">
+                    <p>No hub balances are visible in this scope.</p>
+                </div>
+            {% endfor %}
+        </div>
+    </div>
+</section>
+
+<section class="page-grid page-grid--sidebar">
+    <div class="panel">
+        <div class="section-heading">
+            <div>
+                <p class="eyebrow">Pending Transfers</p>
+                <h2>Queue snapshot</h2>
+            </div>
+        </div>
+        <div class="surface-list">
+            {% for transfer in pending_transfers %}
+                <article class="list-card">
+                    <div class="list-card__main">
+                        <div class="inline-cluster">
+                            <span class="pill">{{ transfer.get_status_display }}</span>
+                            {% if transfer.is_ai_draft %}
+                                <span class="pill pill--soft">AI draft</span>
+                            {% endif %}
+                        </div>
+                        <h3>{{ transfer.destination_store.name }}</h3>
+                        <p class="muted">
+                            {% if transfer.source_store %}
+                                From {{ transfer.source_store.name }}
+                            {% elif transfer.source_hub %}
+                                From {{ transfer.source_hub.name }}
+                            {% else %}
+                                Source pending
+                            {% endif %}
+                        </p>
+                    </div>
+                </article>
+            {% empty %}
+                <div class="empty-state">
+                    <p>No transfers are waiting in this filtered window.</p>
+                </div>
+            {% endfor %}
+        </div>
+    </div>
+
+    <div class="panel">
+        <div class="section-heading">
+            <div>
+                <p class="eyebrow">Supplier Orders</p>
+                <h2>Ordered stock waiting on receipt</h2>
+            </div>
+            <a href="{% url 'supply_hubs:index' %}">Open supplier workflow</a>
+        </div>
+        <div class="surface-list">
+            {% for replenishment in supplier_orders %}
+                <article class="list-card">
+                    <div class="list-card__main">
+                        <h3>{{ replenishment.store.name }} · {{ replenishment.inventory_item.name }}</h3>
+                        <p class="muted">{{ replenishment.supplier.name }}</p>
+                    </div>
+                    <div class="list-card__actions">
+                        <span class="pill">{{ replenishment.quantity_requested }}</span>
+                    </div>
+                </article>
+            {% empty %}
+                <div class="empty-state">
+                    <p>No supplier orders are waiting in this scope.</p>
+                </div>
+            {% endfor %}
+        </div>
+    </div>
+</section>
+
+<section class="panel">
+    <div class="section-heading">
+        <div>
+            <p class="eyebrow">Supply Trends</p>
+            <h2>Usage by store</h2>
+        </div>
+    </div>
+    <div class="surface-list">
+        {% for row in usage_rows %}
+            <article class="list-card">
+                <div class="list-card__main">
+                    <h3>{{ row.store__name }}</h3>
+                    <p class="muted">Usage in selected window</p>
+                </div>
+                <div class="list-card__actions">
+                    <span class="pill">{{ row.total_used }}</span>
+                </div>
+            </article>
+        {% empty %}
+            <div class="empty-state">
+                <p>No supply usage records landed in this date window yet.</p>
+            </div>
+        {% endfor %}
+    </div>
+</section>
+
+<section class="page-grid page-grid--sidebar">
+    <div class="panel">
+        <div class="section-heading">
+            <div>
+                <p class="eyebrow">Supplier + Category Coverage</p>
+                <h2>Regional purchasing context</h2>
+            </div>
+        </div>
+        <div class="surface-list">
+            {% for supplier in suppliers %}
+                <article class="list-card">
+                    <div class="list-card__main">
+                        <h3>{{ supplier.name }}</h3>
+                        <p class="muted">{{ supplier.contact_name }} · {{ supplier.email }}</p>
+                    </div>
+                </article>
+            {% empty %}
+                <div class="empty-state">
+                    <p>No local suppliers are visible in this scope.</p>
+                </div>
+            {% endfor %}
+        </div>
+        <div class="metric-grid metric-grid--compact">
+            {% for row in inventory_category_rows %}
+                <article class="metric metric--info">
+                    <p>{{ row.inventory_item__category|title }}</p>
+                    <strong>{{ row.total_on_hand|default:"0" }}</strong>
+                </article>
+            {% endfor %}
+        </div>
+    </div>
+
+    <div class="panel">
+        <div class="section-heading">
+            <div>
+                <p class="eyebrow">Import + Draft Watch</p>
+                <h2>What changed recently</h2>
+            </div>
+        </div>
+        <div class="surface-list">
+            {% for job in recent_imports %}
+                <article class="list-card">
+                    <div class="list-card__main">
+                        <h3>{{ job.original_filename }}</h3>
+                        <p class="muted">{{ job.get_status_display }} · {{ job.created_at|date:"M j, g:i A" }}</p>
+                    </div>
+                </article>
+            {% empty %}
+                <div class="empty-state">
+                    <p>No supply imports have run yet.</p>
+                </div>
+            {% endfor %}
+
+            {% for schedule in draft_schedules %}
+                <article class="list-card">
+                    <div class="list-card__main">
+                        <h3>{{ schedule.store.name }} · {{ schedule.inventory_item.name }}</h3>
+                        <p class="muted">{{ schedule.recommended_quantity|floatformat:"-2" }} every {{ schedule.recommended_frequency_days }} day{{ schedule.recommended_frequency_days|pluralize }}</p>
+                    </div>
+                </article>
+            {% empty %}
+                <div class="empty-state">
+                    <p>No AI supply drafts are waiting right now.</p>
+                </div>
+            {% endfor %}
+        </div>
+    </div>
+</section>
+{% endblock %}

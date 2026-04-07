@@ -1,0 +1,328 @@
+{% extends "base/base.html" %}
+
+{% block title %}Analytics | FloatStack{% endblock %}
+
+{% block content %}
+<section class="panel">
+    <div class="section-heading">
+        <div>
+            <p class="eyebrow">Analytics</p>
+            <h1>Analytics summary</h1>
+        </div>
+    </div>
+    <form method="get" class="filter-bar">
+        <select name="region">
+            <option value="">All regions</option>
+            {% for region in region_options %}
+                <option value="{{ region.id }}" {% if selected_region and selected_region.id == region.id %}selected{% endif %}>{{ region.name }}</option>
+            {% endfor %}
+        </select>
+        <select name="store">
+            <option value="">All stores</option>
+            {% for store in store_options %}
+                <option value="{{ store.id }}" {% if selected_store and selected_store.id == store.id %}selected{% endif %}>{{ store.name }}</option>
+            {% endfor %}
+        </select>
+        <input type="date" name="date_from" value="{{ date_from }}">
+        <input type="date" name="date_to" value="{{ date_to }}">
+        <button class="button button--ghost" type="submit">Filter</button>
+    </form>
+    <div class="metric-grid">
+        <article class="metric">
+            <p>Stores In Scope</p>
+            <strong>{{ visible_stores.count }}</strong>
+        </article>
+        <article class="metric">
+            <p>Regions In Scope</p>
+            <strong>{{ visible_regions.count }}</strong>
+        </article>
+        <article class="metric metric--warning">
+            <p>Open Alerts</p>
+            <strong>{{ open_alerts }}</strong>
+        </article>
+        <article class="metric metric--info">
+            <p>Machine Issues</p>
+            <strong>{{ machine_issues }}</strong>
+        </article>
+    </div>
+</section>
+
+<section class="page-grid page-grid--sidebar">
+    <div class="panel">
+        <p class="eyebrow">Revenue</p>
+        <dl class="summary-list">
+            <div><dt>Gross</dt><dd>${{ gross_revenue|floatformat:2 }}</dd></div>
+            <div><dt>Net</dt><dd>${{ net_revenue|floatformat:2 }}</dd></div>
+        </dl>
+        <p class="muted">Window: {{ date_from }} to {{ date_to }}</p>
+    </div>
+    <div class="panel">
+        <p class="eyebrow">Region Comparison</p>
+        <ul class="mini-list">
+            {% for region in region_rows %}
+                <li>{{ region.name }} · {{ region.store_count }} stores · {{ region.hub_count }} hubs</li>
+            {% endfor %}
+        </ul>
+    </div>
+</section>
+
+<section class="page-grid page-grid--sidebar">
+    <div class="panel">
+        <div class="section-heading">
+            <div>
+                <p class="eyebrow">Daily Revenue</p>
+                <h2>Daily revenue</h2>
+            </div>
+        </div>
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>Date</th>
+                    <th>Entries</th>
+                    <th>Gross</th>
+                    <th>Net</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for row in daily_revenue_rows %}
+                    <tr>
+                        <td>{{ row.posted_at__date }}</td>
+                        <td>{{ row.row_count }}</td>
+                        <td>${{ row.gross }}</td>
+                        <td>${{ row.net }}</td>
+                    </tr>
+                {% empty %}
+                    <tr><td colspan="4">No daily revenue rows in this window.</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    <div class="panel">
+        <div class="section-heading">
+            <div>
+                <p class="eyebrow">Order-Backed Financial Rows</p>
+                <h2>Recent ledger entries</h2>
+            </div>
+        </div>
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>When</th>
+                    <th>Store</th>
+                    <th>Type</th>
+                    <th>Order</th>
+                    <th>Net</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for entry in revenue_ledger_rows %}
+                    <tr>
+                        <td>{{ entry.posted_at|date:"M j, g:i A" }}</td>
+                        <td>{{ entry.store.name }}</td>
+                        <td>{{ entry.get_entry_type_display }}</td>
+                        <td>{% if entry.order %}<a href="{% url 'orders:detail' entry.order.public_order_code %}">{{ entry.order.public_order_code }}</a>{% else %}-{% endif %}</td>
+                        <td>${{ entry.net_amount }}</td>
+                    </tr>
+                {% empty %}
+                    <tr><td colspan="5">No ledger entries are available.</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</section>
+
+<section class="page-grid page-grid--sidebar">
+    <div class="panel">
+        <div class="section-heading">
+            <div>
+                <p class="eyebrow">Revenue By Store</p>
+                <h2>Top stores</h2>
+            </div>
+        </div>
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>Store</th>
+                    <th>Gross</th>
+                    <th>Net</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for row in revenue_by_store %}
+                    <tr>
+                    <td>{{ row.store__name }}</td>
+                        <td>${{ row.gross }}</td>
+                        <td>${{ row.net }}</td>
+                    </tr>
+                {% empty %}
+                    <tr><td colspan="3">No revenue data yet.</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    <div class="panel">
+        <div class="section-heading">
+            <div>
+                <p class="eyebrow">Supply Usage Trends</p>
+                <h2>Recent trends</h2>
+            </div>
+        </div>
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>Item</th>
+                    <th>Total Used</th>
+                    <th>Stores</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for row in usage_trends %}
+                    <tr>
+                        <td>{{ row.inventory_item__name }}</td>
+                        <td>{{ row.total_used }}</td>
+                        <td>{{ row.store_count }}</td>
+                    </tr>
+                {% empty %}
+                    <tr><td colspan="3">No supply usage data yet.</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</section>
+
+<section class="page-grid page-grid--sidebar">
+    <div class="panel">
+        <div class="section-heading">
+            <div>
+                <p class="eyebrow">Maintenance Summary</p>
+                <h2>Machine and assignment status</h2>
+            </div>
+        </div>
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>Machine Status</th>
+                    <th>Count</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for row in machine_status_summary %}
+                    <tr>
+                        <td>{{ row.current_status|title }}</td>
+                        <td>{{ row.count }}</td>
+                    </tr>
+                {% empty %}
+                    <tr><td colspan="2">No machine summary rows.</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>Assignment Status</th>
+                    <th>Count</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for row in assignment_status_summary %}
+                    <tr>
+                        <td>{{ row.status|title }}</td>
+                        <td>{{ row.count }}</td>
+                    </tr>
+                {% empty %}
+                    <tr><td colspan="2">No assignment summary rows.</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    <div class="panel">
+        <div class="section-heading">
+            <div>
+                <p class="eyebrow">AI Supply Drafts</p>
+                <h2>Draft schedules</h2>
+            </div>
+        </div>
+        <div class="surface-list">
+            {% for schedule in ai_schedule_rows %}
+                <article class="list-card">
+                    <div class="list-card__main">
+                        <h3>{{ schedule.store.name }} · {{ schedule.inventory_item.name }}</h3>
+                        <p class="muted">{{ schedule.recommended_quantity|floatformat:"-2" }} every {{ schedule.recommended_frequency_days }} day{{ schedule.recommended_frequency_days|pluralize }}</p>
+                    </div>
+                    <div class="list-card__actions">
+                        <span class="pill {% if schedule.status == 'approved' %}pill--soft{% else %}pill--warning{% endif %}">
+                            {{ schedule.get_status_display }}
+                        </span>
+                    </div>
+                </article>
+            {% empty %}
+                <div class="empty-state"><p>No AI schedule rows in this scope.</p></div>
+            {% endfor %}
+        </div>
+    </div>
+</section>
+
+<section class="panel">
+    <div class="section-heading">
+        <div>
+            <p class="eyebrow">Machine Failure Trends</p>
+            <h2>Recent warning and outage events</h2>
+        </div>
+    </div>
+    <table class="data-table">
+        <thead>
+            <tr>
+                <th>Store</th>
+                <th>Status</th>
+                <th>Events</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for row in machine_failure_trends %}
+                <tr>
+                    <td>{{ row.machine__store__name }}</td>
+                    <td>{{ row.status|title }}</td>
+                    <td>{{ row.event_count }}</td>
+                </tr>
+            {% empty %}
+                <tr><td colspan="3">No recent machine failure trends.</td></tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</section>
+
+<section class="panel">
+    <div class="section-heading">
+        <div>
+            <p class="eyebrow">Audit Visibility</p>
+            <h2>Recent system events</h2>
+        </div>
+    </div>
+    <table class="data-table">
+        <thead>
+            <tr>
+                <th>Action</th>
+                <th>Actor</th>
+                <th>Store</th>
+                <th>Region</th>
+                <th>When</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for log in audit_logs %}
+                <tr>
+                    <td>{{ log.action }}</td>
+                    <td>{{ log.actor.email|default:"system" }}</td>
+                    <td>{{ log.store.name|default:"-" }}</td>
+                    <td>{{ log.region.name|default:"-" }}</td>
+                    <td>{{ log.created_at|date:"M j, g:i A" }}</td>
+                </tr>
+            {% empty %}
+                <tr>
+                    <td colspan="5">No audit events available.</td>
+                </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</section>
+{% endblock %}

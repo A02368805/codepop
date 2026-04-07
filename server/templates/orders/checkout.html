@@ -1,0 +1,104 @@
+{% extends "base/base.html" %}
+
+{% block title %}Checkout | FloatStack{% endblock %}
+
+{% block content %}
+<section class="hero hero--dashboard">
+    <div>
+        <p class="eyebrow">Checkout</p>
+        <h1>Confirm pickup details and place the order.</h1>
+        <p class="lede">You are one step away from pickup. Confirm your details, place your order, and we will handle the rest.</p>
+    </div>
+    <div class="hero-card">
+        <p class="eyebrow">Pickup Store</p>
+        {% if store %}
+            <h2>{{ store.name }}</h2>
+            <p class="muted">{{ store.full_address }}</p>
+        {% else %}
+            <p>No active store is attached to this cart.</p>
+        {% endif %}
+    </div>
+</section>
+
+{% if cart.items and store %}
+    <section class="page-grid page-grid--sidebar">
+        <div class="panel">
+            <form id="checkout-form" method="post" class="form-grid">
+                {% csrf_token %}
+                <div class="callout">
+                    <strong>Payment mode:</strong>
+                    {% if payment_mode_is_mock %}
+                        Demo checkout is active, so you can place this order without entering a real card.
+                    {% elif payment_checkout_flow == "elements" %}
+                        Secure card payment is available after you place this order.
+                    {% else %}
+                        You will be redirected to Stripe after you place this order.
+                    {% endif %}
+                </div>
+                {% if payment_mode != "stripe" %}
+                    <div class="flash flash--warning">
+                        Card entry is not available in this environment, but demo checkout still works.
+                    </div>
+                {% elif payment_checkout_flow != "elements" %}
+                    <div class="flash flash--warning">
+                        Card entry is not embedded on this page. You can still complete payment on the next step.
+                    </div>
+                {% elif not stripe_publishable_key %}
+                    <div class="flash flash--warning">
+                        Card entry is temporarily unavailable. You can continue and finish payment through the available flow.
+                    </div>
+                {% endif %}
+                <div class="callout">
+                    <strong>Pricing check:</strong> totals are confirmed again when you place your order.
+                </div>
+                <label class="field">
+                    <span>{{ form.pickup_time_choice.label }}</span>
+                    {{ form.pickup_time_choice }}
+                    {{ form.pickup_time_choice.errors }}
+                </label>
+                {% if not request.user.is_authenticated %}
+                    <label class="field">
+                        <span>{{ form.guest_name.label }}</span>
+                        {{ form.guest_name }}
+                        {{ form.guest_name.errors }}
+                    </label>
+                    <label class="field">
+                        <span>{{ form.guest_email.label }}</span>
+                        {{ form.guest_email }}
+                        {{ form.guest_email.errors }}
+                    </label>
+                    <label class="field">
+                        <span>{{ form.guest_phone_number.label }}</span>
+                        {{ form.guest_phone_number }}
+                        {{ form.guest_phone_number.errors }}
+                    </label>
+                {% endif %}
+                <div class="action-row">
+                    <button class="button button--primary" type="submit">Place order</button>
+                    <button
+                        class="button button--ghost"
+                        type="button"
+                        hx-post="{% url 'orders:checkout-validate' %}"
+                        hx-target="#checkout-summary"
+                        hx-swap="innerHTML"
+                        hx-include="#checkout-form"
+                    >
+                        Refresh summary
+                    </button>
+                </div>
+            </form>
+        </div>
+        <div class="panel" id="checkout-summary">
+            {% include "orders/partials/checkout_summary.html" %}
+        </div>
+    </section>
+{% else %}
+    <section class="panel">
+        <div class="empty-state">
+            <h2>Nothing to check out yet.</h2>
+            <p>Add at least one drink before you place your order.</p>
+            <a class="button button--primary" href="{% url 'stores:index' %}">Choose a store</a>
+        </div>
+    </section>
+{% endif %}
+{% endblock %}

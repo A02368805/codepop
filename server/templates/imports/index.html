@@ -1,0 +1,56 @@
+{% extends "base/base.html" %}
+
+{% block title %}Imports | FloatStack{% endblock %}
+
+{% block content %}
+<section class="page-grid page-grid--sidebar">
+    <div class="panel">
+        <div class="section-heading">
+            <div>
+                <p class="eyebrow">CSV Imports</p>
+                <h1>Upload operational data</h1>
+            </div>
+        </div>
+        {% if request.user.role == "logistics_manager" or request.user.role == "super_admin" %}
+            <form
+                method="post"
+                enctype="multipart/form-data"
+                class="form-grid"
+                hx-post="{% url 'imports:supply-usage' %}"
+                hx-target="#import-history"
+                hx-swap="innerHTML"
+                hx-indicator="#import-history-indicator"
+            >
+                {% csrf_token %}
+                <label class="field">
+                    <span>{{ supply_form.file.label }}</span>
+                    {{ supply_form.file }}
+                </label>
+                <button class="button button--primary" type="submit">Import supply usage CSV</button>
+            </form>
+        {% endif %}
+        {% if request.user.role == "repair_staff" or request.user.role == "super_admin" %}
+            <form
+                method="post"
+                enctype="multipart/form-data"
+                class="form-grid"
+                hx-post="{% url 'imports:repair-status' %}"
+                hx-target="#import-history"
+                hx-swap="innerHTML"
+                hx-indicator="#import-history-indicator"
+            >
+                {% csrf_token %}
+                <label class="field">
+                    <span>{{ repair_form.file.label }}</span>
+                    {{ repair_form.file }}
+                </label>
+                <button class="button button--primary" type="submit">Import maintenance CSV</button>
+            </form>
+        {% endif %}
+    </div>
+    <div class="panel" id="import-history" hx-get="{% url 'imports:history' %}" hx-trigger="every 8s" hx-swap="innerHTML" hx-indicator="#import-history-indicator">
+        <p class="muted htmx-indicator" id="import-history-indicator">Refreshing import status…</p>
+        {% include "imports/partials/history.html" %}
+    </div>
+</section>
+{% endblock %}

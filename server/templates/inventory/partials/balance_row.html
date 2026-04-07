@@ -1,0 +1,30 @@
+<tr id="balance-row-{{ balance.id }}">
+    <td>{{ balance.store.name }}</td>
+    <td>{{ balance.on_hand_quantity }}</td>
+    <td>{{ balance.reserved_quantity }}</td>
+    <td>{{ available }}</td>
+    <td>{{ balance.reorder_threshold }}</td>
+    <td>
+        <span class="pill {% if status == 'critical' %}pill--critical{% elif status == 'warning' %}pill--warning{% else %}pill--soft{% endif %}">
+            {{ status|title }}
+        </span>
+    </td>
+    <td>
+        {% if can_adjust %}
+            <form
+                method="post"
+                class="inline-cluster inventory-adjust-form"
+                hx-post="{% url 'inventory:adjust' balance.id %}"
+                hx-target="#balance-row-{{ balance.id }}"
+                hx-swap="outerHTML"
+            >
+                {% csrf_token %}
+                <input type="number" name="delta" step="0.01" value="1">
+                <input type="text" name="reason" placeholder="Adjustment note">
+                <button class="button button--ghost" type="submit">Apply</button>
+            </form>
+        {% else %}
+            <span class="muted">View only</span>
+        {% endif %}
+    </td>
+</tr>

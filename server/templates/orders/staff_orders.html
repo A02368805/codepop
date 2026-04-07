@@ -1,0 +1,40 @@
+{% extends "base/base.html" %}
+
+{% block title %}Order Queue | FloatStack{% endblock %}
+
+{% block content %}
+<section class="panel">
+    <div class="section-heading">
+        <div>
+            <p class="eyebrow">Manager Queue</p>
+            <h1>Active and scheduled orders</h1>
+        </div>
+        <form method="get" class="filter-bar" hx-get="{% url 'orders:index' %}" hx-target="#manager-queue" hx-push-url="true">
+            <select name="region">
+                <option value="">All regions</option>
+                {% for region in region_options %}
+                    <option value="{{ region.id }}" {% if selected_region and selected_region.id == region.id %}selected{% endif %}>{{ region.name }}</option>
+                {% endfor %}
+            </select>
+            <select name="store">
+                <option value="">All stores</option>
+                {% for store in store_options %}
+                    <option value="{{ store.id }}" {% if selected_store and selected_store.id == store.id %}selected{% endif %}>{{ store.name }}</option>
+                {% endfor %}
+            </select>
+            <select name="status">
+                <option value="">All active</option>
+                {% for choice in status_choices %}
+                    <option value="{{ choice }}" {% if status_filter == choice %}selected{% endif %}>{{ choice|title }}</option>
+                {% endfor %}
+            </select>
+            <input type="date" name="date_from" value="{{ date_from }}">
+            <input type="date" name="date_to" value="{{ date_to }}">
+            <button class="button button--ghost" type="submit">Filter</button>
+        </form>
+    </div>
+    <div id="manager-queue">
+        {% include "orders/partials/manager_queue_table.html" %}
+    </div>
+</section>
+{% endblock %}

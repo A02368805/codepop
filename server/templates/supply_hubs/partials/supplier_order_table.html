@@ -1,0 +1,56 @@
+{% if supplier_order_error %}
+    <div class="flash flash--error">{{ supplier_order_error }}</div>
+{% endif %}
+
+{% if supplier_orders %}
+    <div class="surface-list">
+        {% for replenishment in supplier_orders %}
+            <article class="list-card">
+                <div class="list-card__main">
+                    <div class="inline-cluster">
+                        <span class="pill">{{ replenishment.get_status_display }}</span>
+                        <span class="pill pill--soft">{{ replenishment.quantity_requested }} units</span>
+                    </div>
+                    <h3>{{ replenishment.store.name }} · {{ replenishment.inventory_item.name }}</h3>
+                    <p class="muted">{{ replenishment.supplier.name }}</p>
+                    {% if replenishment.expected_delivery_date %}
+                        <p>Expected {{ replenishment.expected_delivery_date|date:"M j, Y" }}</p>
+                    {% endif %}
+                    {% if replenishment.notes %}
+                        <p class="muted">{{ replenishment.notes }}</p>
+                    {% endif %}
+                </div>
+                <div class="list-card__actions">
+                    {% if replenishment.status == "ordered" %}
+                        <form
+                            method="post"
+                            hx-post="{% url 'supply_hubs:receive-supplier-order' replenishment.id %}"
+                            hx-target="#supplier-order-table"
+                            hx-swap="innerHTML"
+                            hx-include="#supply-filters"
+                        >
+                            {% csrf_token %}
+                            <button class="button button--ghost" type="submit">Receive</button>
+                        </form>
+                        <form
+                            method="post"
+                            hx-post="{% url 'supply_hubs:cancel-supplier-order' replenishment.id %}"
+                            hx-target="#supplier-order-table"
+                            hx-swap="innerHTML"
+                            hx-include="#supply-filters"
+                        >
+                            {% csrf_token %}
+                            <button class="button button--ghost" type="submit">Cancel</button>
+                        </form>
+                    {% elif replenishment.status == "received" %}
+                        <span class="muted">Received {{ replenishment.received_at|date:"M j, g:i A" }}</span>
+                    {% else %}
+                        <span class="muted">{{ replenishment.get_status_display }}</span>
+                    {% endif %}
+                </div>
+            </article>
+        {% endfor %}
+    </div>
+{% else %}
+    <div class="empty-state"><p>No supplier orders are in scope.</p></div>
+{% endif %}

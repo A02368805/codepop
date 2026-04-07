@@ -1,9 +1,21 @@
 # Ignore Python cache and compiled files
 **/__pycache__/
 *.pyc
+.DS_Store
 
 codepop_virtual_enviroment
+.venv
+.env
+server/db.sqlite3
+server/dev.sqlite3
+server/staticfiles
+server/media
+server/celerybeat-schedule*
 
 .idea
 node_modules
-.DS_Store
+
+# Coverage
+.coverage
+.coverage.*
+htmlcov/

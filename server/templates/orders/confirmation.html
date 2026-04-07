@@ -1,0 +1,81 @@
+{% extends "base/base.html" %}
+
+{% block title %}Order Confirmed | FloatStack{% endblock %}
+
+{% block content %}
+<section class="hero hero--dashboard">
+    <div>
+        <p class="eyebrow">Order Confirmed</p>
+        <h1>You are all set.</h1>
+        <p class="lede">Your order is in and we are getting it ready for pickup.</p>
+        <p><span class="pill">Order {{ order.public_order_code }}</span></p>
+        <div class="cta-row">
+            <a class="button button--primary" href="{% url 'orders:detail' order.public_order_code %}">Track this order</a>
+            <a class="button button--ghost" href="{% url 'stores:index' %}">Order another drink</a>
+        </div>
+    </div>
+    <div class="hero-card">
+        <p class="eyebrow">Pickup Details</p>
+        <dl class="summary-list">
+            <div><dt>Status</dt><dd>{{ order.get_status_display }}</dd></div>
+            <div><dt>Store</dt><dd>{{ order.store.name }}</dd></div>
+            <div><dt>Total</dt><dd>${{ order.total_amount|floatformat:2 }}</dd></div>
+            <div><dt>Pickup Combo</dt><dd>{{ order.locker_code }}</dd></div>
+            {% if order.pickup_time_requested %}
+                <div><dt>Requested Pickup</dt><dd>{{ order.pickup_time_requested|date:"M j, g:i A" }}</dd></div>
+            {% endif %}
+            {% if order.status == "ready" and order.locker_number %}
+                <div><dt>Locker</dt><dd>{{ order.locker_number }}</dd></div>
+            {% endif %}
+        </dl>
+        <p class="muted">Use this 3-digit pickup combo for locker access and quick order lookup.</p>
+        {% if order.order_type == "guest" and order.guest_contact %}
+            <p class="muted">Backup guest lookup code: <strong>{{ order.guest_contact.lookup_code }}</strong></p>
+        {% endif %}
+    </div>
+</section>
+
+<section class="panel">
+    <div class="section-heading">
+        <div>
+            <p class="eyebrow">Pickup Map</p>
+            <h2>{{ order.store.name }}</h2>
+            <p
+                class="muted"
+                data-pickup-distance
+                data-store-latitude="{{ order.store.latitude }}"
+                data-store-longitude="{{ order.store.longitude }}"
+            >
+                Turn on location to see how far away this store is.
+            </p>
+            <button
+                class="button button--ghost"
+                type="button"
+                data-pickup-distance-enable
+                hidden
+            >
+                Use my location
+            </button>
+        </div>
+        <div class="action-row">
+            <a class="button button--ghost" href="{{ order.store.google_maps_url }}" target="_blank" rel="noreferrer">Open in Google Maps</a>
+            <a class="button button--ghost" href="{{ order.store.apple_maps_url }}" target="_blank" rel="noreferrer">Open in Apple Maps</a>
+        </div>
+    </div>
+    {% if order.store.pickup_map_embed_url %}
+        <div class="map-card">
+            <iframe
+                src="{{ order.store.pickup_map_embed_url }}"
+                title="Map for {{ order.store.name }}"
+                loading="lazy"
+                referrerpolicy="no-referrer-when-downgrade"
+                allowfullscreen
+            ></iframe>
+        </div>
+    {% else %}
+        <div class="map-card map-card--fallback">
+            <p>{{ order.store.full_address }}</p>
+        </div>
+    {% endif %}
+</section>
+{% endblock %}

@@ -1,0 +1,48 @@
+{% if grouped_balances %}
+    <div class="inventory-group-list">
+        {% for group in grouped_balances %}
+            <details class="inventory-group" {% if forloop.first %}open{% endif %}>
+                <summary class="inventory-group__summary">
+                    <div>
+                        <p class="eyebrow">{{ group.inventory_item.get_category_display }}</p>
+                        <h3>{{ group.inventory_item.name }}</h3>
+                    </div>
+                    <div class="inventory-group__stats">
+                        <span class="pill pill--soft">{{ group.stores|length }} store{{ group.stores|length|pluralize }}</span>
+                        <span class="pill">On hand {{ group.total_on_hand }}</span>
+                        {% if group.critical_store_count %}
+                            <span class="pill">{{ group.critical_store_count }} critical</span>
+                        {% endif %}
+                    </div>
+                </summary>
+                <div class="inventory-group__content">
+                    <table class="data-table data-table--nested">
+                        <thead>
+                            <tr>
+                                <th>Store</th>
+                                <th>On Hand</th>
+                                <th>Reserved</th>
+                                <th>Available</th>
+                                <th>Threshold</th>
+                                <th>Status</th>
+                                <th>Adjust</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for store_row in group.stores %}
+                                {% with balance=store_row.balance available=store_row.available can_adjust=store_row.can_adjust status=store_row.status %}
+                                    {% include "inventory/partials/balance_row.html" %}
+                                {% endwith %}
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </details>
+        {% endfor %}
+    </div>
+{% else %}
+    <div class="empty-state">
+        <h3>No balances matched that filter.</h3>
+        <p>Try clearing the search or widening the selected region or store scope.</p>
+    </div>
+{% endif %}

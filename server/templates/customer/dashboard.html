@@ -1,0 +1,101 @@
+{% extends "base/base.html" %}
+
+{% block title %}Customer Dashboard | FloatStack{% endblock %}
+
+{% block content %}
+<section class="hero hero--dashboard">
+    <div>
+        <p class="eyebrow">Account Home</p>
+        <h1>{{ dashboard.title }}</h1>
+        <p class="lede">{{ dashboard.intro }}</p>
+        <div class="cta-row">
+            {% if order_store %}
+                <a class="button button--primary" href="{% url 'orders:menu' order_store.store_code %}?open_ai=1#menu-ai-panel">Open AI builder</a>
+                <a class="button button--ghost" href="{% url 'orders:menu' order_store.store_code %}">Open manual builder</a>
+                <a class="button button--ghost" href="{% url 'stores:index' %}">Change store</a>
+            {% else %}
+                <a class="button button--primary" href="{% url 'stores:index' %}">Choose store to build</a>
+            {% endif %}
+        </div>
+        <div class="cta-row">
+            <a class="button button--ghost" href="{% url 'orders:history' %}">View orders</a>
+            <a class="button button--ghost" href="{% url 'orders:favorites' %}">Open favorites</a>
+        </div>
+    </div>
+    <div class="hero-card" id="dashboard-metrics" hx-get="{{ dashboard.refresh_url }}" hx-trigger="load, every 30s" hx-swap="innerHTML">
+        {% include "partials/dashboard_metrics.html" %}
+    </div>
+</section>
+
+<section class="page-grid page-grid--sidebar">
+    <div class="panel">
+        <div class="section-heading">
+            <div>
+                <p class="eyebrow">Recent Orders</p>
+                <h2>Track current and past pickups</h2>
+            </div>
+        </div>
+        <div class="surface-list">
+            {% for order in recent_orders %}
+                <article class="list-card">
+                    <div class="list-card__main">
+                        <h3><a href="{% url 'orders:detail' order.public_order_code %}">{{ order.public_order_code }}</a></h3>
+                        <p class="muted">{{ order.store.name }}</p>
+                        <p>{{ order.get_status_display }} · ${{ order.total_amount|floatformat:2 }}</p>
+                    </div>
+                </article>
+            {% empty %}
+                <div class="empty-state">
+                    <p>No orders yet. Your recent pickups will appear here.</p>
+                </div>
+            {% endfor %}
+        </div>
+    </div>
+    <div class="panel">
+        <p class="eyebrow">Taste Profile</p>
+        <ul class="mini-list">
+            {% for preference in taste_preferences %}
+                <li>{{ preference.get_preference_type_display }}: {{ preference.ingredient_name }}</li>
+            {% empty %}
+                <li>No preferences saved yet.</li>
+            {% endfor %}
+        </ul>
+        <div class="action-row">
+            <a class="button button--ghost" href="{% url 'account-preferences' %}">Edit taste profile</a>
+            <a class="button button--ghost" href="{% url 'orders:favorites' %}">Open favorites</a>
+        </div>
+    </div>
+</section>
+
+<section class="panel">
+    <div class="section-heading">
+        <div>
+            <p class="eyebrow">For You</p>
+            <h2>Suggested drinks</h2>
+        </div>
+        <a class="button button--ghost" href="{% url 'orders:recommendations' %}">See all suggestions</a>
+    </div>
+    <div class="card-grid">
+        {% for recommendation in recommended_drinks %}
+            <article class="menu-card">
+                {% if order_store and recommendation.slug %}
+                    <h3><a href="{% url 'orders:customize' order_store.store_code recommendation.slug %}">{{ recommendation.name }}</a></h3>
+                {% else %}
+                    <h3>{{ recommendation.name }}</h3>
+                {% endif %}
+                <p>{{ recommendation.description }}</p>
+                <p class="muted">{{ recommendation.explanation }}</p>
+                {% if order_store and recommendation.slug %}
+                    <a class="button button--ghost" href="{% url 'orders:customize' order_store.store_code recommendation.slug %}">Create this drink</a>
+                {% else %}
+                    <a class="button button--ghost" href="{% url 'stores:index' %}">Choose a store to order</a>
+                {% endif %}
+            </article>
+        {% empty %}
+            <div class="empty-state">
+                <p>Order a few drinks to unlock personalized suggestions.</p>
+            </div>
+        {% endfor %}
+    </div>
+</section>
+{% endblock %}

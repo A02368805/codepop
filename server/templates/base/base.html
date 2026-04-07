@@ -1,0 +1,95 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>{% block title %}FloatStack{% endblock %}</title>
+    <meta name="description" content="FloatStack is a polished soda ordering and operations platform for customers and regional teams.">
+    <link rel="icon" type="image/png" href="{% static 'images/floatstack-favicon.png' %}">
+    <link rel="stylesheet" href="{% static 'css/app.css' %}">
+    <script src="https://unpkg.com/htmx.org@1.9.12" defer></script>
+    <script src="{% static 'js/app.js' %}" defer></script>
+</head>
+<body>
+    <div class="page-shell">
+        <header class="topbar">
+            {% if brandmark.is_clickable %}
+                <a class="brandmark" href="{{ brandmark.url }}">
+                    <img class="brandmark__logo" src="{% static 'images/floatstack-logo.png' %}" alt="FloatStack">
+                    <span class="brandmark__wordmark">
+                        <span class="brandmark__text">FloatStack</span>
+                        <span class="brandmark__subtext">
+                            {% if not request.user.is_authenticated or request.user.role == "account_user" %}
+                                Custom Soda Ordering
+                            {% else %}
+                                Ordering + Operations
+                            {% endif %}
+                        </span>
+                    </span>
+                </a>
+            {% else %}
+                <div class="brandmark brandmark--static" aria-label="FloatStack">
+                    <img class="brandmark__logo" src="{% static 'images/floatstack-logo.png' %}" alt="FloatStack">
+                    <span class="brandmark__wordmark">
+                        <span class="brandmark__text">FloatStack</span>
+                        <span class="brandmark__subtext">Ordering + Operations</span>
+                    </span>
+                </div>
+            {% endif %}
+            <nav class="topnav" aria-label="Primary">
+                {% for item in navigation_items %}
+                    {% if item.method == "post" %}
+                        <form action="{{ item.url }}" method="post" class="inline-form">
+                            {% csrf_token %}
+                            <button type="submit" class="nav-button">{{ item.label }}</button>
+                        </form>
+                    {% else %}
+                        <a href="{{ item.url }}" class="topnav__link">
+                            {% if item.icon == "notification" %}
+                                <span class="nav-icon" aria-hidden="true">
+                                    <svg viewBox="0 0 24 24" focusable="false">
+                                        <path d="M12 3a5 5 0 0 0-5 5v2.9c0 .8-.3 1.6-.8 2.2L4.7 15h14.6l-1.5-1.9a3.5 3.5 0 0 1-.8-2.2V8a5 5 0 0 0-5-5Zm0 18a2.4 2.4 0 0 0 2.2-1.4h-4.4A2.4 2.4 0 0 0 12 21Z"></path>
+                                    </svg>
+                                </span>
+                            {% elif item.icon == "sync" %}
+                                <span class="nav-icon" aria-hidden="true">
+                                    <svg viewBox="0 0 24 24" focusable="false">
+                                        <path d="M12 4a8 8 0 0 1 7.5 5.2h-2.4l3.4 3.7 3.4-3.7h-2A10.5 10.5 0 0 0 3 10h2.2A8 8 0 0 1 12 4Zm8.8 10A8.8 8.8 0 0 1 12 21a8 8 0 0 1-7.5-5.2h2.4l-3.4-3.7-3.4 3.7h2A10.5 10.5 0 0 0 12 23a11 11 0 0 0 10.8-9Z"></path>
+                                    </svg>
+                                </span>
+                            {% endif %}
+                            <span>{{ item.label }}</span>
+                            {% if item.badge_id %}
+                                <span id="{{ item.badge_id|default:'nav-badge' }}" class="nav-badge">{% if item.badge %}{{ item.badge }}{% endif %}</span>
+                            {% endif %}
+                        </a>
+                    {% endif %}
+                {% endfor %}
+            </nav>
+        </header>
+
+        {% if messages %}
+            <section class="flash-stack" aria-label="Messages">
+                {% for message in messages %}
+                    <div class="flash flash--{{ message.tags|default:'info' }}">{{ message }}</div>
+                {% endfor %}
+            </section>
+        {% endif %}
+
+        <main class="content">
+            {% block content %}{% endblock %}
+        </main>
+
+        <footer class="footer">
+            {% if not request.user.is_authenticated or request.user.role == "account_user" %}
+                <p>Build your drink, customize every detail, and pick up fast.</p>
+                <p class="muted">Need help? Use support chat or guest lookup anytime.</p>
+            {% else %}
+                <p>FloatStack keeps customer ordering and operational workflows in one responsive web product.</p>
+                <p class="muted">Role-based dashboards with server-enforced permissions.</p>
+            {% endif %}
+        </footer>
+    </div>
+</body>
+</html>

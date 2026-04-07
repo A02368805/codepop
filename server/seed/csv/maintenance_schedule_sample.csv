@@ -1,0 +1,4 @@
+store_address,machine_type_code,machine_operational_from_date,machine_status,status_date
+123 Main St Logan UT,MIXER_A,2025-07-01,warning,2026-03-15
+456 Canyon Rd North Logan UT,CARBONATOR_X,2025-08-15,error,2026-03-16
+112 Riverwoods Pkwy Providence UT,FREEZER_SOFTSERVE,2025-09-01,schedule-service,2026-03-17
