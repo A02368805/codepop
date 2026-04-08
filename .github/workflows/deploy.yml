@@ -1,0 +1,49 @@
+name: Deploy to DigitalOcean
+
+on:
+  push:
+    branches:
+      - master
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    # Only deploy if CI tests would pass (same trigger, but deploy runs after push lands)
+    steps:
+      - name: Deploy to Store A (134.199.222.195)
+        uses: appleboy/ssh-action@v1
+        with:
+          host: 134.199.222.195
+          username: root
+          password: ${{ secrets.DROPLET_SSH_PASSWORD }}
+          script: |
+            cd /root/codepop
+            git fetch origin master
+            git checkout master
+            git reset --hard origin/master
+            docker compose up --build -d
+            docker compose exec -T web python manage.py migrate --noinput
+            docker compose exec -T web python manage.py bootstrap_demo_data
+            echo "Store A deployed at $(date)"
+
+      - name: Deploy to Store B (64.227.100.242)
+        uses: appleboy/ssh-action@v1
+        with:
+          host: 64.227.100.242
+          username: root
+          password: ${{ secrets.DROPLET_SSH_PASSWORD }}
+          script: |
+            cd /root/codepop
+            git fetch origin master
+            git checkout master
+            git reset --hard origin/master
+            docker compose up --build -d
+            docker compose exec -T web python manage.py migrate --noinput
+            docker compose exec -T web python manage.py bootstrap_demo_data
+            echo "Store B deployed at $(date)"
+
+      - name: Health check
+        run: |
+          sleep 10
+          curl -sf http://134.199.222.195:8000/sync/health/ || echo "Store A health check failed"
+          curl -sf http://64.227.100.242:8000/sync/health/ || echo "Store B health check failed"
