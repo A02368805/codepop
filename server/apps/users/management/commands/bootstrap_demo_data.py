@@ -529,6 +529,10 @@ class Command(BaseCommand):
         "store-a": ("A", "A001"),
         "store-b": ("B", "B001"),
         "store-c": ("C", "C001"),
+        "store-d": ("D", "D001"),
+        "store-e": ("E", "E001"),
+        "store-f": ("F", "F001"),
+        "store-g": ("G", "G001"),
     }
 
     def add_arguments(self, parser):
@@ -561,44 +565,49 @@ class Command(BaseCommand):
 
         # Check if running in distributed mode (STORE_ID set)
         store_id = os.getenv("STORE_ID", "").lower()
-        region_code, store_code = None, None
+        home_region_code, home_store_code = None, None
         if store_id in self.STORE_ID_MAPPING:
-            region_code, store_code = self.STORE_ID_MAPPING[store_id]
+            home_region_code, home_store_code = self.STORE_ID_MAPPING[store_id]
             self.stdout.write(
-                f"Seeding data for {store_id} (region={region_code}, store={store_code})"
+                f"Distributed mode: home store {store_id} "
+                f"(region={home_region_code}, store={home_store_code}). "
+                f"Seeding full store registry for cross-store awareness."
             )
 
-        regions = self._seed_regions(region_code=region_code)
-        stores = self._seed_stores(regions, store_code=store_code)
+        # Always seed ALL regions and ALL stores so every node has a
+        # complete registry and can route customers / look up peers.
+        regions = self._seed_regions()
+        stores = self._seed_stores(regions)
         hubs = self._seed_hubs(regions)
         inventory_items = self._seed_inventory_catalog()
-        users = self._seed_users(password=password, regions=regions, stores=stores)
+        users = self._seed_users(
+            password=password,
+            regions=regions,
+            stores=stores,
+            home_region_code=home_region_code,
+        )
         self._seed_balances(stores=stores, hubs=hubs, inventory_items=inventory_items)
 
-        # Only seed full demo data in non-distributed mode
-        if not region_code:
-            self._seed_suppliers(
-                stores=stores,
-                regions=regions,
-                inventory_items=inventory_items,
-                users=users,
-            )
-            machine_types = self._seed_machine_types()
-            machines = self._seed_machines(stores=stores, machine_types=machine_types)
-            self._seed_maintenance_policies(
-                regions=regions, machine_types=machine_types
-            )
-            self._seed_orders(stores=stores, users=users)
-            self._seed_customer_preferences(users=users)
-            self._seed_transfers(
-                stores=stores, hubs=hubs, inventory_items=inventory_items, users=users
-            )
+        self._seed_suppliers(
+            stores=stores,
+            regions=regions,
+            inventory_items=inventory_items,
+            users=users,
+        )
+        machine_types = self._seed_machine_types()
+        machines = self._seed_machines(stores=stores, machine_types=machine_types)
+        self._seed_maintenance_policies(regions=regions, machine_types=machine_types)
+        self._seed_orders(stores=stores, users=users)
+        self._seed_customer_preferences(users=users)
+        self._seed_transfers(
+            stores=stores, hubs=hubs, inventory_items=inventory_items, users=users
+        )
 
-            if not options["skip_imports"]:
-                self._run_sample_imports(users=users)
-                self._seed_repair_work(users=users)
+        if not options["skip_imports"]:
+            self._run_sample_imports(users=users)
+            self._seed_repair_work(users=users)
 
-            self._seed_notifications(users=users)
+        self._seed_notifications(users=users)
         self.stdout.write(
             self.style.SUCCESS(
                 "Demo data bootstrapped: "
@@ -606,6 +615,7 @@ class Command(BaseCommand):
                 f"{Store.objects.count()} stores, "
                 f"{SupplyHub.objects.count()} hubs, "
                 f"{User.objects.count()} users."
+                + (f" Home store: {home_store_code}." if home_store_code else "")
             )
         )
 
@@ -640,12 +650,9 @@ class Command(BaseCommand):
         Store.objects.all().delete()
         Region.objects.all().delete()
 
-    def _seed_regions(self, region_code=None):
+    def _seed_regions(self):
         regions = {}
-        # If region_code specified, only seed that region (distributed mode)
-        codes_to_seed = [region_code] if region_code else REGION_DEFINITIONS.keys()
-
-        for code in codes_to_seed:
+        for code in REGION_DEFINITIONS.keys():
             if code not in REGION_DEFINITIONS:
                 continue
             definition = REGION_DEFINITIONS[code]
@@ -663,10 +670,9 @@ class Command(BaseCommand):
             regions[code] = region
         return regions
 
-    def _seed_stores(self, regions, store_code=None):
+    def _seed_stores(self, regions):
         stores = {}
         for region_code, rows in STORE_DEFINITIONS.items():
-            # Skip regions not in our loaded regions (distributed mode filter)
             if region_code not in regions:
                 continue
 
@@ -680,10 +686,6 @@ class Command(BaseCommand):
                 latitude,
                 longitude,
             ) in rows:
-                # If store_code specified, only seed that store (distributed mode)
-                if store_code and code != store_code:
-                    continue
-
                 store, _ = Store.objects.update_or_create(
                     store_code=code,
                     defaults={
@@ -749,7 +751,7 @@ class Command(BaseCommand):
             inventory_items[sku] = item
         return inventory_items
 
-    def _seed_users(self, *, password, regions, stores):
+    def _seed_users(self, *, password, regions, stores, home_region_code=None):
         users = {}
 
         def upsert_user(
@@ -844,20 +846,22 @@ class Command(BaseCommand):
                 preferred_store=preferred_store,
             )
 
-        # In distributed mode (region_code set), also create account users per store
-        # for testing cross-store federated login
-        if region_code and stores:
-            # Get the first (and only) store in this seeding
-            store = next(iter(stores.values()))
+        # Create an account user for each primary store so every node has
+        # roaming customers that can test cross-store federated login
+        for sc in PRIMARY_STORE_CODES:
+            if sc not in stores:
+                continue
+            store = stores[sc]
             account_email = f"account.{store.store_code.lower()}@floatstack.local"
-            upsert_user(
-                account_email,
-                role=User.Role.ACCOUNT_USER,
-                first_name=store.name.split()[0],
-                last_name="Customer",
-                default_region=store.region,
-                preferred_store=store,
-            )
+            if account_email not in users:
+                upsert_user(
+                    account_email,
+                    role=User.Role.ACCOUNT_USER,
+                    first_name=store.name.split()[0],
+                    last_name="Customer",
+                    default_region=store.region,
+                    preferred_store=store,
+                )
 
         repair_people = {
             "repair.north@floatstack.local": ("Cache", "North"),
