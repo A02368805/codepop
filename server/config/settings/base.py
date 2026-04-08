@@ -181,7 +181,21 @@ STORE_ID = os.getenv("STORE_ID", "")
 SYNC_API_SECRET = os.getenv("SYNC_API_SECRET", "")
 SYNC_PUSH_ENABLED = env_bool("SYNC_PUSH_ENABLED", False)
 
+# Map STORE_ID -> home store code for quick lookup (matches bootstrap STORE_ID_MAPPING)
+_STORE_ID_TO_CODE = {
+    "store-a": "A001",
+    "store-b": "B001",
+    "store-c": "C001",
+    "store-d": "D001",
+    "store-e": "E001",
+    "store-f": "F001",
+    "store-g": "G001",
+}
+HOME_STORE_CODE = _STORE_ID_TO_CODE.get(STORE_ID.lower(), "")
+
 # Parse PEER_STORES from env: "store-b=http://web_b:8000,store-c=http://web_c:8000"
+# Each peer is another node this instance can push sync events to and proxy
+# cross-store requests through (e.g. ordering from a remote store, federated login).
 _peer_raw = os.getenv("PEER_STORES", "")
 PEER_STORES: dict[str, str] = {}
 if _peer_raw:
@@ -189,3 +203,11 @@ if _peer_raw:
         if "=" in entry:
             node_id, url = entry.split("=", 1)
             PEER_STORES[node_id.strip()] = url.strip()
+
+# Build a reverse lookup: store_code -> peer URL for cross-store routing.
+# This lets any view resolve a store code to its peer endpoint.
+PEER_STORE_URLS: dict[str, str] = {}
+for _node_id, _url in PEER_STORES.items():
+    _code = _STORE_ID_TO_CODE.get(_node_id.lower(), "")
+    if _code:
+        PEER_STORE_URLS[_code] = _url

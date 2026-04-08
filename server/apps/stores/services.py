@@ -4,10 +4,25 @@ from dataclasses import dataclass
 from datetime import timedelta
 from decimal import Decimal
 
+from django.conf import settings
 from django.utils import timezone
 
 from .models import Store
 from .utils import haversine_miles
+
+
+def is_home_store(store: Store) -> bool:
+    """Return True if this store is the local node's home store."""
+    if not settings.HOME_STORE_CODE:
+        return True  # non-distributed mode: all stores are local
+    return store.store_code == settings.HOME_STORE_CODE
+
+
+def peer_url_for_store(store: Store) -> str | None:
+    """Return the peer URL for a remote store, or None if it's the home store."""
+    if is_home_store(store):
+        return None
+    return settings.PEER_STORE_URLS.get(store.store_code)
 
 
 @dataclass(frozen=True)
