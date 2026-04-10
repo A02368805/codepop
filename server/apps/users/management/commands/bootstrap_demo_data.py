@@ -514,11 +514,32 @@ MACHINE_TYPE_DEFINITIONS = [
 ]
 
 PRIMARY_STORE_CODES = ["A001", "B001", "C001", "D001", "E001", "F001", "G001", "C002"]
-REPAIR_ASSIGNMENTS = {
-    "repair.north": ["C001", "C002", "C003", "C004", "C005", "C006", "C007"],
-    "repair.metro": ["C008", "C009", "C010", "C011", "C012", "C013", "C014"],
-    "repair.south": ["C015", "C016", "C017", "C018", "C019", "C020"],
-}
+
+
+def get_repair_assignments(available_store_codes):
+    """
+    Dynamically distribute repair staff across available stores.
+    In distributed mode, repairs are assigned to all available stores.
+    In full-seeding mode, repairs are divided among 3 staff members.
+    """
+    if not available_store_codes:
+        return {}
+
+    sorted_stores = sorted(available_store_codes)
+    num_stores = len(sorted_stores)
+    num_staff = 3
+
+    # Distribute stores across 3 repair staff members
+    stores_per_staff = max(1, num_stores // num_staff)
+
+    assignments = {
+        "repair.north": sorted_stores[0 : 0 + stores_per_staff],
+        "repair.metro": sorted_stores[stores_per_staff : stores_per_staff * 2],
+        "repair.south": sorted_stores[stores_per_staff * 2 :],
+    }
+
+    # Remove empty assignments
+    return {k: v for k, v in assignments.items() if v}
 
 
 class Command(BaseCommand):
@@ -864,12 +885,17 @@ class Command(BaseCommand):
             "repair.metro@floatstack.local": ("Wasatch", "Metro"),
             "repair.south@floatstack.local": ("Utah", "South"),
         }
+
+        # Dynamically assign repair staff based on available stores
+        repair_assignments = get_repair_assignments(list(stores.keys()))
+
         for email, (first_name, last_name) in repair_people.items():
-            assigned_stores = REPAIR_ASSIGNMENTS.get(email.split("@")[0], [])
+            staff_key = email.split("@")[0]
+            assigned_stores = repair_assignments.get(staff_key, [])
             # Only create repair staff if they have assigned stores in this seeding
-            available_stores = [sc for sc in assigned_stores if sc in stores]
-            if not available_stores:
+            if not assigned_stores:
                 continue
+            available_stores = assigned_stores
 
             user = upsert_user(
                 email,
