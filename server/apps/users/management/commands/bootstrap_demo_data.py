@@ -596,6 +596,15 @@ class Command(BaseCommand):
         users = self._seed_users(password=password, regions=regions, stores=stores)
         self._seed_balances(stores=stores, hubs=hubs, inventory_items=inventory_items)
 
+        # Seed machines and maintenance policies in all modes (distributed and single)
+        machine_types = self._seed_machine_types()
+        machines = self._seed_machines(stores=stores, machine_types=machine_types)
+        self._seed_maintenance_policies(
+            regions=regions, machine_types=machine_types
+        )
+        # Seed repair work in all modes for testing
+        self._seed_repair_work(users=users)
+
         # Only seed full demo data in non-distributed mode
         if not region_code:
             self._seed_suppliers(
@@ -603,11 +612,6 @@ class Command(BaseCommand):
                 regions=regions,
                 inventory_items=inventory_items,
                 users=users,
-            )
-            machine_types = self._seed_machine_types()
-            machines = self._seed_machines(stores=stores, machine_types=machine_types)
-            self._seed_maintenance_policies(
-                regions=regions, machine_types=machine_types
             )
             self._seed_orders(stores=stores, users=users)
             self._seed_customer_preferences(users=users)
@@ -617,7 +621,6 @@ class Command(BaseCommand):
 
             if not options["skip_imports"]:
                 self._run_sample_imports(users=users)
-                self._seed_repair_work(users=users)
 
             self._seed_notifications(users=users)
         self.stdout.write(
@@ -1103,80 +1106,86 @@ class Command(BaseCommand):
         return machine_types
 
     def _seed_machines(self, *, stores, machine_types):
-        machine_specs = [
-            ("C001", "MIXER_A", date(2025, 7, 1)),
-            ("C002", "CARBONATOR_X", date(2025, 8, 15)),
-            ("C003", "FREEZER_SOFTSERVE", date(2025, 9, 1)),
-            ("C004", "MIXER_A", date(2025, 6, 20)),
-            ("C009", "CARBONATOR_X", date(2025, 5, 10)),
-            ("F001", "MIXER_A", date(2025, 6, 1)),
-            ("G001", "MIXER_A", date(2025, 6, 5)),
-        ]
+        # Create multiple machines per store in various statuses for testing
         machines = {}
-        for store_code, machine_type_code, operational_from_date in machine_specs:
-            # Skip if store or machine type not in this seeding
-            if store_code not in stores or machine_type_code not in machine_types:
-                continue
+        machine_type_codes = list(machine_types.keys())
+        base_date = date(2025, 6, 1)
+        # Distribute machines across different statuses (more urgent ones for testing)
+        statuses = [
+            Machine.Status.NORMAL,
+            Machine.Status.WARNING,
+            Machine.Status.WARNING,
+            Machine.Status.ERROR,
+            Machine.Status.ERROR,
+            Machine.Status.OUT_OF_ORDER,
+        ]
 
+        for idx, store_code in enumerate(sorted(stores.keys())):
             store = stores[store_code]
-            machine_uid = (
-                f"{store_code}-{machine_type_code}-{operational_from_date.isoformat()}"
-            )
-            machine, _ = Machine.objects.update_or_create(
-                machine_uid=machine_uid,
-                defaults={
-                    "store": store,
-                    "machine_type": machine_types[machine_type_code],
-                    "display_name": f"{store.name} {machine_type_code}",
-                    "operational_from_date": operational_from_date,
-                    "current_status": Machine.Status.NORMAL,
-                    "current_status_date": operational_from_date,
-                    "last_service_date": operational_from_date,
-                    "next_service_due_date": operational_from_date
-                    + timedelta(
-                        days=machine_types[
-                            machine_type_code
-                        ].default_service_interval_days
-                    ),
-                    "is_active": True,
-                },
-            )
-            if not machine.status_events.exists():
-                append_machine_status_event(
-                    machine,
-                    status=Machine.Status.NORMAL,
-                    status_date=operational_from_date,
+            # Create 6 machines per store (various statuses, mostly urgent)
+            for type_idx in range(6):
+                machine_type_code = machine_type_codes[
+                    (type_idx) % len(machine_type_codes)
+                ]
+                operational_from_date = base_date + timedelta(days=idx * 20 + type_idx * 5)
+                # Cycle through statuses so we have normal/warning/error/critical machines
+                status = statuses[type_idx % len(statuses)]
+                machine_uid = (
+                    f"{store_code}-{machine_type_code}-{operational_from_date.isoformat()}"
                 )
-            machines[machine_uid] = machine
+                machine, _ = Machine.objects.update_or_create(
+                    machine_uid=machine_uid,
+                    defaults={
+                        "store": store,
+                        "machine_type": machine_types[machine_type_code],
+                        "display_name": f"{store.name} {machine_type_code} #{type_idx+1}",
+                        "operational_from_date": operational_from_date,
+                        "current_status": status,
+                        "current_status_date": operational_from_date,
+                        "last_service_date": operational_from_date,
+                        "next_service_due_date": operational_from_date
+                        + timedelta(
+                            days=machine_types[
+                                machine_type_code
+                            ].default_service_interval_days
+                        ),
+                        "is_active": True,
+                    },
+                )
+                if not machine.status_events.exists():
+                    append_machine_status_event(
+                        machine,
+                        status=status,
+                        status_date=operational_from_date,
+                    )
+                machines[machine_uid] = machine
         return machines
 
     def _seed_maintenance_policies(self, *, regions, machine_types):
-        policy_rows = [
-            ("MIXER_A", "C", 30, 2, 7),
-            ("CARBONATOR_X", "C", 21, 1, 5),
-            ("FREEZER_SOFTSERVE", "C", 14, 1, 3),
-        ]
-        for (
-            machine_type_code,
-            region_code,
-            max_days,
-            warning_days,
-            schedule_days,
-        ) in policy_rows:
-            # Skip if region or machine type not in this seeding
-            if region_code not in regions or machine_type_code not in machine_types:
-                continue
+        # Define policies per machine type (apply to all regions)
+        policy_defaults = {
+            "MIXER_A": {"max_days": 30, "warning_days": 2, "schedule_days": 7},
+            "CARBONATOR_X": {"max_days": 21, "warning_days": 1, "schedule_days": 5},
+            "FREEZER_SOFTSERVE": {"max_days": 14, "warning_days": 1, "schedule_days": 3},
+        }
 
-            MaintenancePolicy.objects.update_or_create(
-                machine_type=machine_types[machine_type_code],
-                region=regions[region_code],
-                defaults={
-                    "max_days_between_service": max_days,
-                    "warning_shutdown_days": warning_days,
-                    "schedule_service_window_days": schedule_days,
-                    "is_active": True,
-                },
-            )
+        # Create policies for each region and machine type
+        for region_code, region in regions.items():
+            for machine_type_code, machine_type in machine_types.items():
+                if machine_type_code not in policy_defaults:
+                    continue
+
+                policy_config = policy_defaults[machine_type_code]
+                MaintenancePolicy.objects.update_or_create(
+                    machine_type=machine_type,
+                    region=region,
+                    defaults={
+                        "max_days_between_service": policy_config["max_days"],
+                        "warning_shutdown_days": policy_config["warning_days"],
+                        "schedule_service_window_days": policy_config["schedule_days"],
+                        "is_active": True,
+                    },
+                )
 
     def _seed_orders(self, *, stores, users):
         demo_order_rows = [
@@ -1522,39 +1531,110 @@ class Command(BaseCommand):
             )
 
     def _seed_repair_work(self, *, users):
-        warning_machine = Machine.objects.filter(
-            store__store_code="C001",
-            machine_type__code="MIXER_A",
-        ).first()
-        if warning_machine:
-            evaluate_warning_escalation(
-                warning_machine,
-                as_of_date=date(2026, 3, 18),
-                actor=users["repair.north@floatstack.local"],
-            )
-            if not warning_machine.repair_assignments.exists():
-                create_repair_assignment(
-                    warning_machine,
-                    assigned_to=users["repair.north@floatstack.local"],
-                    priority_score=Decimal("90.00"),
-                    scheduled_for=timezone.now() + timedelta(hours=2),
-                    created_by_system=True,
-                    notes="Escalated warning demo assignment.",
-                )
+        """
+        Create repair assignments in various statuses for testing.
+        Leaves some machines unassigned so users can practice claiming.
+        """
+        from apps.maintenance.services import (
+            acknowledge_repair_assignment,
+            start_repair_assignment,
+            block_repair_assignment,
+        )
 
-        error_machine = Machine.objects.filter(
-            store__store_code="C002",
-            machine_type__code="CARBONATOR_X",
-        ).first()
-        if error_machine and not error_machine.repair_assignments.exists():
-            create_repair_assignment(
-                error_machine,
-                assigned_to=users["repair.north@floatstack.local"],
-                priority_score=Decimal("75.00"),
-                scheduled_for=timezone.now() + timedelta(hours=4),
+        # Get any available repair staff user
+        repair_staff = users.get("repair.north@floatstack.local")
+        if not repair_staff:
+            return
+
+        # Get urgent machines (warning, error, out-of-order, schedule-service)
+        urgent_machines = Machine.objects.filter(
+            current_status__in=[
+                Machine.Status.WARNING,
+                Machine.Status.ERROR,
+                Machine.Status.OUT_OF_ORDER,
+                Machine.Status.SCHEDULE_SERVICE,
+            ]
+        ).order_by("store__name", "display_name")[:10]
+
+        if not urgent_machines:
+            return
+
+        # Create assignments in various statuses
+        now = timezone.now()
+        assignment_configs = [
+            {
+                "action": None,  # stays SCHEDULED
+                "note": "Scheduled for routine maintenance.",
+                "priority": Decimal("50.00"),
+                "offset_hours": 2,
+            },
+            {
+                "action": "acknowledge",
+                "note": "Technician acknowledged the assignment.",
+                "priority": Decimal("65.00"),
+                "offset_hours": 4,
+            },
+            {
+                "action": "start",
+                "note": "Currently working on this machine.",
+                "priority": Decimal("75.00"),
+                "offset_hours": 6,
+            },
+            {
+                "action": "block",
+                "note": "Waiting for replacement parts to arrive.",
+                "priority": Decimal("80.00"),
+                "offset_hours": 8,
+            },
+        ]
+
+        # Assign machines to different statuses (cycle through configs)
+        # Only assign first N; leave rest unassigned for users to claim
+        self.stdout.write(f"DEBUG: {len(urgent_machines)} urgent machines, {len(assignment_configs)} assignment configs")
+        assignment_count = 0
+        for idx, machine in enumerate(urgent_machines):
+            if machine.repair_assignments.exists():
+                continue  # Skip if already has assignment
+
+            # Leave some unassigned for testing/claiming (only assign first N)
+            if assignment_count >= len(assignment_configs):
+                self.stdout.write(f"DEBUG: Skipping {machine.display_name} (count={assignment_count})")
+                continue
+
+            self.stdout.write(f"DEBUG: Assigning {machine.display_name} (count={assignment_count})")
+
+            config = assignment_configs[assignment_count % len(assignment_configs)]
+            assignment_count += 1
+            assignment = create_repair_assignment(
+                machine,
+                assigned_to=repair_staff,
+                priority_score=config["priority"],
+                scheduled_for=now + timedelta(hours=config["offset_hours"]),
                 created_by_system=True,
-                notes="Imported error status demo assignment.",
+                notes=config["note"],
             )
+            # Transition to different statuses
+            if config["action"] == "acknowledge":
+                acknowledge_repair_assignment(
+                    assignment, actor=repair_staff, note=config["note"]
+                )
+            elif config["action"] == "start":
+                acknowledge_repair_assignment(
+                    assignment, actor=repair_staff, note="Acknowledged"
+                )
+                start_repair_assignment(
+                    assignment, actor=repair_staff, note=config["note"]
+                )
+            elif config["action"] == "block":
+                acknowledge_repair_assignment(
+                    assignment, actor=repair_staff, note="Acknowledged"
+                )
+                block_repair_assignment(
+                    assignment,
+                    actor=repair_staff,
+                    note=config["note"],
+                    follow_up_required=True,
+                )
 
     def _seed_notifications(self, *, users):
         notification_rows = [
