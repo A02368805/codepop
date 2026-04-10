@@ -599,9 +599,7 @@ class Command(BaseCommand):
         # Seed machines and maintenance policies in all modes (distributed and single)
         machine_types = self._seed_machine_types()
         machines = self._seed_machines(stores=stores, machine_types=machine_types)
-        self._seed_maintenance_policies(
-            regions=regions, machine_types=machine_types
-        )
+        self._seed_maintenance_policies(regions=regions, machine_types=machine_types)
         # Seed repair work in all modes for testing
         self._seed_repair_work(users=users)
 
@@ -1127,12 +1125,12 @@ class Command(BaseCommand):
                 machine_type_code = machine_type_codes[
                     (type_idx) % len(machine_type_codes)
                 ]
-                operational_from_date = base_date + timedelta(days=idx * 20 + type_idx * 5)
+                operational_from_date = base_date + timedelta(
+                    days=idx * 20 + type_idx * 5
+                )
                 # Cycle through statuses so we have normal/warning/error/critical machines
                 status = statuses[type_idx % len(statuses)]
-                machine_uid = (
-                    f"{store_code}-{machine_type_code}-{operational_from_date.isoformat()}"
-                )
+                machine_uid = f"{store_code}-{machine_type_code}-{operational_from_date.isoformat()}"
                 machine, _ = Machine.objects.update_or_create(
                     machine_uid=machine_uid,
                     defaults={
@@ -1166,7 +1164,11 @@ class Command(BaseCommand):
         policy_defaults = {
             "MIXER_A": {"max_days": 30, "warning_days": 2, "schedule_days": 7},
             "CARBONATOR_X": {"max_days": 21, "warning_days": 1, "schedule_days": 5},
-            "FREEZER_SOFTSERVE": {"max_days": 14, "warning_days": 1, "schedule_days": 3},
+            "FREEZER_SOFTSERVE": {
+                "max_days": 14,
+                "warning_days": 1,
+                "schedule_days": 3,
+            },
         }
 
         # Create policies for each region and machine type
@@ -1537,8 +1539,8 @@ class Command(BaseCommand):
         """
         from apps.maintenance.services import (
             acknowledge_repair_assignment,
-            start_repair_assignment,
             block_repair_assignment,
+            start_repair_assignment,
         )
 
         # Get any available repair staff user
@@ -1590,7 +1592,9 @@ class Command(BaseCommand):
 
         # Assign machines to different statuses (cycle through configs)
         # Only assign first N; leave rest unassigned for users to claim
-        self.stdout.write(f"DEBUG: {len(urgent_machines)} urgent machines, {len(assignment_configs)} assignment configs")
+        self.stdout.write(
+            f"DEBUG: {len(urgent_machines)} urgent machines, {len(assignment_configs)} assignment configs"
+        )
         assignment_count = 0
         for idx, machine in enumerate(urgent_machines):
             if machine.repair_assignments.exists():
@@ -1598,10 +1602,14 @@ class Command(BaseCommand):
 
             # Leave some unassigned for testing/claiming (only assign first N)
             if assignment_count >= len(assignment_configs):
-                self.stdout.write(f"DEBUG: Skipping {machine.display_name} (count={assignment_count})")
+                self.stdout.write(
+                    f"DEBUG: Skipping {machine.display_name} (count={assignment_count})"
+                )
                 continue
 
-            self.stdout.write(f"DEBUG: Assigning {machine.display_name} (count={assignment_count})")
+            self.stdout.write(
+                f"DEBUG: Assigning {machine.display_name} (count={assignment_count})"
+            )
 
             config = assignment_configs[assignment_count % len(assignment_configs)]
             assignment_count += 1
