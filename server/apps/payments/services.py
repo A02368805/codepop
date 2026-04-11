@@ -18,6 +18,7 @@ from .gateway import (
     create_stripe_payment_intent,
     get_checkout_flow,
     get_payment_mode,
+    refund_stripe_payment,
     retrieve_checkout_session,
     retrieve_stripe_payment_intent,
 )
@@ -30,6 +31,47 @@ class PaymentServiceError(ServiceError):
 
 class PaymentGatewayError(PaymentServiceError):
     pass
+
+
+def _ensure_sale_revenue_entry(*, order, payment):
+    captured_amount = Decimal(str(payment.amount_captured or order.total_amount))
+    RevenueLedgerEntry.objects.get_or_create(
+        store=order.store,
+        order=order,
+        entry_type=RevenueLedgerEntry.EntryType.SALE,
+        defaults={
+            "gross_amount": captured_amount,
+            "net_amount": captured_amount,
+            "notes": "Backfilled sale entry during refund processing.",
+        },
+    )
+
+
+def _ensure_remote_refund_succeeded(*, order, payment, refund_amount):
+    if (
+        get_payment_mode() != PaymentMode.STRIPE
+        or payment.provider != PaymentTransaction.Provider.STRIPE
+    ):
+        return
+    payment_intent_id = (payment.stripe_payment_intent_id or "").strip()
+    if not payment_intent_id:
+        raise PaymentGatewayError("Missing Stripe payment intent for refund.")
+    try:
+        refund = refund_stripe_payment(
+            payment_intent_id=payment_intent_id,
+            amount=refund_amount,
+            metadata={"order_code": order.public_order_code},
+        )
+    except Exception as exc:
+        raise PaymentGatewayError(
+            "Sorry, there was a problem processing the refund. Please try again later."
+        ) from exc
+
+    status = str(getattr(refund, "status", "") or "").lower()
+    if status != "succeeded":
+        raise PaymentGatewayError(
+            "Sorry, there was a problem processing the refund. Please try again later."
+        )
 
 
 def create_payment_intent_for_order(order, *, actor=None):
@@ -374,7 +416,11 @@ def finalize_stripe_payment_intent(*, order_code, payment_intent_id, actor=None)
 @transaction.atomic
 def record_refund(order, *, actor=None, amount=None, notes=""):
     ensure_refund_allowed(order, actor=actor)
-    payment = order.payment_transaction
+    payment = getattr(order, "payment_transaction", None)
+    if not payment:
+        raise PaymentGatewayError(
+            "Unable to process refund because no payment transaction was found."
+        )
     if order.status in {
         Order.Status.QUEUED,
         Order.Status.PREPARING,
@@ -385,6 +431,12 @@ def record_refund(order, *, actor=None, amount=None, notes=""):
         reverse_order_inventory(order)
     refund_amount = Decimal(
         str(amount or payment.amount_captured or order.total_amount)
+    )
+    _ensure_sale_revenue_entry(order=order, payment=payment)
+    _ensure_remote_refund_succeeded(
+        order=order,
+        payment=payment,
+        refund_amount=refund_amount,
     )
     transition_order_status(
         order, Order.Status.REFUND_PENDING, actor=actor, reason=notes

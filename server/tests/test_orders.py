@@ -11,8 +11,10 @@ from apps.orders.services import (
     ensure_refund_allowed,
     transition_order_status,
 )
+from apps.payments.gateway import PaymentMode
 from apps.payments.models import PaymentTransaction, RevenueLedgerEntry
 from apps.payments.services import (
+    PaymentGatewayError,
     record_payment_pending,
     record_payment_success,
     record_refund,
@@ -157,6 +159,100 @@ class OrderWorkflowTests(TestCase):
                 order=order, entry_type=RevenueLedgerEntry.EntryType.REFUND
             ).count(),
             1,
+        )
+
+    @patch("apps.payments.services.get_payment_mode", return_value=PaymentMode.STRIPE)
+    @patch("apps.payments.services.refund_stripe_payment")
+    def test_refund_backfills_missing_sale_revenue_entry(
+        self, mock_refund, _mock_payment_mode
+    ):
+        mock_refund.return_value = type("Refund", (), {"status": "succeeded"})()
+
+        order = self._create_order()
+        record_payment_pending(order, payment_intent_id="pi_test_003a")
+        record_payment_success(
+            order, payment_intent_id="pi_test_003a", actor=self.customer
+        )
+        RevenueLedgerEntry.objects.filter(
+            order=order,
+            entry_type=RevenueLedgerEntry.EntryType.SALE,
+        ).delete()
+
+        record_refund(order, actor=self.customer, notes="Customer canceled order.")
+
+        self.assertEqual(
+            RevenueLedgerEntry.objects.filter(
+                order=order,
+                entry_type=RevenueLedgerEntry.EntryType.SALE,
+            ).count(),
+            1,
+        )
+        self.assertEqual(
+            RevenueLedgerEntry.objects.filter(
+                order=order,
+                entry_type=RevenueLedgerEntry.EntryType.REFUND,
+            ).count(),
+            1,
+        )
+
+    @patch("apps.payments.services.get_payment_mode", return_value=PaymentMode.STRIPE)
+    @patch(
+        "apps.payments.services.refund_stripe_payment",
+        side_effect=RuntimeError("stripe unavailable"),
+    )
+    def test_failed_stripe_refund_does_not_mark_order_as_refunded(
+        self, _mock_refund, _mock_payment_mode
+    ):
+        order = self._create_order()
+        record_payment_pending(order, payment_intent_id="pi_test_003b")
+        record_payment_success(
+            order, payment_intent_id="pi_test_003b", actor=self.customer
+        )
+
+        with self.assertRaises(PaymentGatewayError):
+            record_refund(order, actor=self.customer, notes="Customer canceled order.")
+
+        order.refresh_from_db()
+        payment = order.payment_transaction
+        self.assertEqual(order.status, Order.Status.PAID)
+        self.assertEqual(order.refund_status, Order.RefundStatus.NONE)
+        self.assertEqual(payment.status, PaymentTransaction.Status.SUCCEEDED)
+        self.assertEqual(payment.amount_refunded, Decimal("0.00"))
+        self.assertEqual(
+            RevenueLedgerEntry.objects.filter(
+                order=order,
+                entry_type=RevenueLedgerEntry.EntryType.REFUND,
+            ).count(),
+            0,
+        )
+
+    @patch("apps.payments.services.get_payment_mode", return_value=PaymentMode.STRIPE)
+    @patch("apps.payments.services.refund_stripe_payment")
+    def test_non_succeeded_stripe_refund_status_does_not_mark_refunded(
+        self, mock_refund, _mock_payment_mode
+    ):
+        mock_refund.return_value = type("Refund", (), {"status": ""})()
+        order = self._create_order()
+        record_payment_pending(order, payment_intent_id="pi_test_003c")
+        record_payment_success(
+            order, payment_intent_id="pi_test_003c", actor=self.customer
+        )
+
+        with self.assertRaises(PaymentGatewayError):
+            record_refund(order, actor=self.customer, notes="Customer canceled order.")
+
+        order.refresh_from_db()
+        payment = order.payment_transaction
+        self.assertEqual(order.status, Order.Status.PAID)
+        self.assertEqual(order.refund_status, Order.RefundStatus.NONE)
+        self.assertEqual(payment.status, PaymentTransaction.Status.SUCCEEDED)
+        self.assertEqual(payment.amount_refunded, Decimal("0.00"))
+        self.assertEqual(
+            RevenueLedgerEntry.objects.filter(
+                order=order,
+                entry_type=RevenueLedgerEntry.EntryType.REFUND,
+            ).count(),
+            0,
         )
 
     def test_queue_transition_blocks_when_inventory_is_insufficient(self):
@@ -321,6 +417,12 @@ class MenuAiAssistantViewTests(TestCase):
         response = self.client.get(reverse("orders:menu", args=[self.store.store_code]))
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, "AI Drink Prompt")
+        self.assertContains(
+            response,
+            'id="menu-ai-result" class="menu-ai-result"',
+            html=False,
+        )
+        self.assertNotContains(response, "menu-ai-result--compact")
 
     @patch("apps.orders.assistant._call_anthropic_menu_ai")
     def test_menu_ai_prompt_returns_menu_matches(self, mock_call):
@@ -329,18 +431,6 @@ class MenuAiAssistantViewTests(TestCase):
             "prompt": "I want something fruity and refreshing",
             "answer": "Start with Sprite or Lemon-Lime for a bright, refreshing build.",
             "quick_prompts": ["I want a creamy float"],
-            "drink": {
-                "name": "Citrus Sprite Twist",
-                "recipe_key": "sprite",
-                "size_snapshot": "medium",
-                "base_price_snapshot": "2.95",
-                "description": "A bright, refreshing drink built from the catalog.",
-                "customizations_json": {
-                    "schema_version": 1,
-                    "menu_key": "sprite",
-                    "recipe": {"name": "Citrus Sprite Twist"},
-                },
-            },
             "can_save": True,
             "menu_matches": [
                 {
@@ -364,6 +454,50 @@ class MenuAiAssistantViewTests(TestCase):
         self.assertContains(response, "Start with Sprite or Lemon-Lime")
         self.assertContains(response, "Customize")
         mock_call.assert_called_once()
+
+    @patch("apps.orders.assistant._call_anthropic_menu_ai")
+    def test_menu_ai_hides_redundant_match_list_when_generated_drink_exists(
+        self, mock_call
+    ):
+        mock_call.return_value = {
+            "title": "FloatStack Menu AI",
+            "prompt": "I want something fruity and refreshing",
+            "answer": "Start with Sprite or Lemon-Lime for a bright, refreshing build.",
+            "quick_prompts": ["I want a creamy float"],
+            "drink": {
+                "name": "Citrus Sprite Twist",
+                "recipe_key": "berry-burst",
+                "size_snapshot": "medium",
+                "base_price_snapshot": "2.95",
+                "description": "A bright, refreshing drink built from the catalog.",
+                "customizations_json": {
+                    "schema_version": 1,
+                    "menu_key": "berry-burst",
+                    "recipe": {"name": "Citrus Sprite Twist"},
+                },
+            },
+            "can_save": True,
+            "menu_matches": [
+                {
+                    "slug": "sprite",
+                    "name": "Sprite",
+                    "description": "Bright and bubbly",
+                    "reason": "Great bright citrus base.",
+                }
+            ],
+            "uses_ai": True,
+        }
+
+        self.client.force_login(self.customer)
+        response = self.client.post(
+            reverse("orders:menu-ai", args=[self.store.store_code]),
+            {"prompt": "I want something fruity and refreshing"},
+            HTTP_HX_REQUEST="true",
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Suggested Custom Drink")
+        self.assertNotContains(response, "menu-ai-match-list")
 
     @patch("apps.orders.assistant._call_anthropic_menu_ai")
     def test_menu_ai_generated_drink_can_be_saved_to_favorites(self, mock_call):

@@ -2,7 +2,7 @@ from datetime import timedelta
 from decimal import Decimal
 
 from apps.imports.models import ImportJob
-from apps.inventory.models import LocalSupplier, SupplierReplenishment
+from apps.inventory.models import InventoryItem, LocalSupplier, SupplierReplenishment
 from apps.inventory.services import get_store_balance, request_transfer
 from apps.notifications.models import Notification
 from apps.orders.cart import SESSION_CART_KEY
@@ -16,7 +16,7 @@ from apps.sync.models import AuditLog
 from apps.users.models import FavoriteDrink, TastePreference
 from apps.users.services import save_preference_profile
 from django.core.files.uploadedfile import SimpleUploadedFile
-from django.test import Client, TestCase
+from django.test import Client, TestCase, override_settings
 from django.urls import reverse
 from django.utils import timezone
 
@@ -81,6 +81,22 @@ class CustomerOrderingViewTests(TestCase):
 
     def _future_pickup_value(self):
         return pickup_time_choices(now=timezone.now())[1][0]
+
+    @override_settings(STORE_ID="store-c")
+    def test_topbar_shows_current_store_and_region_in_distributed_mode(self):
+        self.client.force_login(self.customer)
+        response = self.client.get(reverse("orders:menu", args=[self.store.store_code]))
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Current Node")
+        self.assertContains(response, f"{self.store.name} ({self.store.store_code})")
+        self.assertContains(response, f"Region {self.region.code}: {self.region.name}")
+
+    @override_settings(STORE_ID="")
+    def test_topbar_hides_distributed_indicator_when_node_unconfigured(self):
+        self.client.force_login(self.customer)
+        response = self.client.get(reverse("orders:menu", args=[self.store.store_code]))
+        self.assertEqual(response.status_code, 200)
+        self.assertNotContains(response, "Current Node")
 
     def test_account_user_can_complete_checkout_and_save_favorite(self):
         self.client.force_login(self.customer)
@@ -593,6 +609,45 @@ class DashboardAndHtmxViewTests(TestCase):
         self.assertEqual(balance.on_hand_quantity, Decimal("11.00"))
         self.assertContains(response, "11.00")
 
+    def test_inventory_adjust_step_size_matches_item_unit_expectation(self):
+        self.client.force_login(self.manager)
+        liquid_item = InventoryItem.objects.create(
+            sku="SYRUP-VOLUME-TEST",
+            name="Volume Syrup Test",
+            category=InventoryItem.Category.SYRUP,
+            unit_of_measure="oz",
+            default_low_stock_threshold=Decimal("5.00"),
+        )
+        syrup_balance = get_store_balance(self.store_c1, liquid_item)
+        syrup_balance.on_hand_quantity = Decimal("10.00")
+        syrup_balance.reorder_threshold = Decimal("5.00")
+        syrup_balance.save()
+        cup_balance = get_store_balance(self.store_c1, self.cup_item)
+
+        syrup_response = self.client.post(
+            reverse("inventory:adjust", args=[syrup_balance.id]),
+            {"delta": "0.50", "reason": "syrup calibration"},
+            HTTP_HX_REQUEST="true",
+        )
+        self.assertEqual(syrup_response.status_code, 200)
+        self.assertContains(
+            syrup_response,
+            'name="delta" step="0.01" value="1"',
+            html=False,
+        )
+
+        cup_response = self.client.post(
+            reverse("inventory:adjust", args=[cup_balance.id]),
+            {"delta": "1", "reason": "cup count correction"},
+            HTTP_HX_REQUEST="true",
+        )
+        self.assertEqual(cup_response.status_code, 200)
+        self.assertContains(
+            cup_response,
+            'name="delta" step="1" value="1"',
+            html=False,
+        )
+
     def test_inventory_filter_narrows_to_selected_store(self):
         second_balance = get_store_balance(self.store_c2, self.inventory_item)
         second_balance.on_hand_quantity = Decimal("3.00")
@@ -621,6 +676,24 @@ class DashboardAndHtmxViewTests(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertEqual(self.queue_order.status, Order.Status.PREPARING)
         self.assertContains(response, "Preparing")
+
+    def test_manager_queue_rows_are_clickable_beyond_order_code(self):
+        self.client.force_login(self.manager)
+        response = self.client.get(reverse("orders:index"))
+        detail_url = reverse("orders:detail", args=[self.queue_order.public_order_code])
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(
+            response,
+            f'class="queue-row-link" href="{detail_url}"',
+            count=4,
+            html=False,
+        )
+        self.assertContains(
+            response,
+            f'class="queue-row-link queue-row-link--code" href="{detail_url}"',
+            count=1,
+            html=False,
+        )
 
     def test_transfer_approval_htmx_updates_transfer_panel(self):
         self.client.force_login(self.logistics)

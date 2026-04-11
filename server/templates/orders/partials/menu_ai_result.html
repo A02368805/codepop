@@ -62,7 +62,7 @@
             </div>
         {% endif %}
 
-        {% if menu_ai_result.menu_matches %}
+        {% if menu_ai_result.menu_matches and not menu_ai_result.drink %}
             <div class="surface-list menu-ai-match-list">
                 {% for match in menu_ai_result.menu_matches %}
                     <article class="list-card">

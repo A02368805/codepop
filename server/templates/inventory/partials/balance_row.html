@@ -19,7 +19,7 @@
                 hx-swap="outerHTML"
             >
                 {% csrf_token %}
-                <input type="number" name="delta" step="0.01" value="1">
+                <input type="number" name="delta" step="{{ adjustment_step|default:'0.01' }}" value="1">
                 <input type="text" name="reason" placeholder="Adjustment note">
                 <button class="button button--ghost" type="submit">Apply</button>
             </form>
