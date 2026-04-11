@@ -2,7 +2,7 @@ from datetime import timedelta
 from decimal import Decimal
 
 from apps.imports.models import ImportJob
-from apps.inventory.models import LocalSupplier, SupplierReplenishment
+from apps.inventory.models import InventoryItem, LocalSupplier, SupplierReplenishment
 from apps.inventory.services import get_store_balance, request_transfer
 from apps.notifications.models import Notification
 from apps.orders.cart import SESSION_CART_KEY
@@ -608,6 +608,45 @@ class DashboardAndHtmxViewTests(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertEqual(balance.on_hand_quantity, Decimal("11.00"))
         self.assertContains(response, "11.00")
+
+    def test_inventory_adjust_step_size_matches_item_unit_expectation(self):
+        self.client.force_login(self.manager)
+        liquid_item = InventoryItem.objects.create(
+            sku="SYRUP-VOLUME-TEST",
+            name="Volume Syrup Test",
+            category=InventoryItem.Category.SYRUP,
+            unit_of_measure="oz",
+            default_low_stock_threshold=Decimal("5.00"),
+        )
+        syrup_balance = get_store_balance(self.store_c1, liquid_item)
+        syrup_balance.on_hand_quantity = Decimal("10.00")
+        syrup_balance.reorder_threshold = Decimal("5.00")
+        syrup_balance.save()
+        cup_balance = get_store_balance(self.store_c1, self.cup_item)
+
+        syrup_response = self.client.post(
+            reverse("inventory:adjust", args=[syrup_balance.id]),
+            {"delta": "0.50", "reason": "syrup calibration"},
+            HTTP_HX_REQUEST="true",
+        )
+        self.assertEqual(syrup_response.status_code, 200)
+        self.assertContains(
+            syrup_response,
+            'name="delta" step="0.01" value="1"',
+            html=False,
+        )
+
+        cup_response = self.client.post(
+            reverse("inventory:adjust", args=[cup_balance.id]),
+            {"delta": "1", "reason": "cup count correction"},
+            HTTP_HX_REQUEST="true",
+        )
+        self.assertEqual(cup_response.status_code, 200)
+        self.assertContains(
+            cup_response,
+            'name="delta" step="1" value="1"',
+            html=False,
+        )
 
     def test_inventory_filter_narrows_to_selected_store(self):
         second_balance = get_store_balance(self.store_c2, self.inventory_item)
