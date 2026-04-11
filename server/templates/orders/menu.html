@@ -35,7 +35,7 @@
                         <button class="button button--primary" type="submit">Generate drink ideas</button>
                     </div>
                 </form>
-                <div id="menu-ai-result" class="menu-ai-result menu-ai-result--compact" aria-live="polite">
+                <div id="menu-ai-result" class="menu-ai-result" aria-live="polite">
                     {% if menu_ai_result %}
                         {% include "orders/partials/menu_ai_result.html" with menu_ai_oob=False menu_ai_hero_cards=hero_recommendation_cards %}
                     {% endif %}

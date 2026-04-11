@@ -321,6 +321,12 @@ class MenuAiAssistantViewTests(TestCase):
         response = self.client.get(reverse("orders:menu", args=[self.store.store_code]))
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, "AI Drink Prompt")
+        self.assertContains(
+            response,
+            'id="menu-ai-result" class="menu-ai-result"',
+            html=False,
+        )
+        self.assertNotContains(response, "menu-ai-result--compact")
 
     @patch("apps.orders.assistant._call_anthropic_menu_ai")
     def test_menu_ai_prompt_returns_menu_matches(self, mock_call):
