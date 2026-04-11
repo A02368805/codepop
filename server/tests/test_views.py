@@ -638,6 +638,24 @@ class DashboardAndHtmxViewTests(TestCase):
         self.assertEqual(self.queue_order.status, Order.Status.PREPARING)
         self.assertContains(response, "Preparing")
 
+    def test_manager_queue_rows_are_clickable_beyond_order_code(self):
+        self.client.force_login(self.manager)
+        response = self.client.get(reverse("orders:index"))
+        detail_url = reverse("orders:detail", args=[self.queue_order.public_order_code])
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(
+            response,
+            f'class="queue-row-link" href="{detail_url}"',
+            count=4,
+            html=False,
+        )
+        self.assertContains(
+            response,
+            f'class="queue-row-link queue-row-link--code" href="{detail_url}"',
+            count=1,
+            html=False,
+        )
+
     def test_transfer_approval_htmx_updates_transfer_panel(self):
         self.client.force_login(self.logistics)
         response = self.client.post(
