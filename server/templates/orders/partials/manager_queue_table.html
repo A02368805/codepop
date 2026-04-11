@@ -12,12 +12,13 @@
         </thead>
         <tbody>
             {% for order in orders %}
+                {% url 'orders:detail' order.public_order_code as order_detail_url %}
                 <tr>
-                    <td><a href="{% url 'orders:detail' order.public_order_code %}">{{ order.public_order_code }}</a></td>
-                    <td>{{ order.store.name }}</td>
-                    <td>{{ order.get_status_display }}</td>
-                    <td>{{ order.pickup_time_requested|date:"M j, g:i A"|default:"ASAP" }}</td>
-                    <td>${{ order.total_amount }}</td>
+                    <td><a class="queue-row-link queue-row-link--code" href="{{ order_detail_url }}">{{ order.public_order_code }}</a></td>
+                    <td><a class="queue-row-link" href="{{ order_detail_url }}">{{ order.store.name }}</a></td>
+                    <td><a class="queue-row-link" href="{{ order_detail_url }}">{{ order.get_status_display }}</a></td>
+                    <td><a class="queue-row-link" href="{{ order_detail_url }}">{{ order.pickup_time_requested|date:"M j, g:i A"|default:"ASAP" }}</a></td>
+                    <td><a class="queue-row-link" href="{{ order_detail_url }}">${{ order.total_amount }}</a></td>
                     <td>
                         <div class="inline-cluster">
                             {% if order.status == "queued" %}

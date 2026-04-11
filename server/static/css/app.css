@@ -810,6 +810,20 @@ h3 {
     background: var(--surface-soft);
 }
 
+.queue-row-link {
+    display: block;
+    color: inherit;
+    text-decoration: none;
+}
+
+.queue-row-link:hover {
+    text-decoration: none;
+}
+
+.queue-row-link--code {
+    font-weight: 700;
+}
+
 .data-table form {
     margin: 0;
 }
