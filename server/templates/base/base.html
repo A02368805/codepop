@@ -14,29 +14,44 @@
 <body>
     <div class="page-shell">
         <header class="topbar">
-            {% if brandmark.is_clickable %}
-                <a class="brandmark" href="{{ brandmark.url }}">
-                    <img class="brandmark__logo" src="{% static 'images/floatstack-logo.png' %}" alt="FloatStack">
-                    <span class="brandmark__wordmark">
-                        <span class="brandmark__text">FloatStack</span>
-                        <span class="brandmark__subtext">
-                            {% if not request.user.is_authenticated or request.user.role == "account_user" %}
-                                Custom Soda Ordering
-                            {% else %}
-                                Ordering + Operations
-                            {% endif %}
+            <div class="topbar__identity">
+                {% if brandmark.is_clickable %}
+                    <a class="brandmark" href="{{ brandmark.url }}">
+                        <img class="brandmark__logo" src="{% static 'images/floatstack-logo.png' %}" alt="FloatStack">
+                        <span class="brandmark__wordmark">
+                            <span class="brandmark__text">FloatStack</span>
+                            <span class="brandmark__subtext">
+                                {% if not request.user.is_authenticated or request.user.role == "account_user" %}
+                                    Custom Soda Ordering
+                                {% else %}
+                                    Ordering + Operations
+                                {% endif %}
+                            </span>
                         </span>
-                    </span>
-                </a>
-            {% else %}
-                <div class="brandmark brandmark--static" aria-label="FloatStack">
-                    <img class="brandmark__logo" src="{% static 'images/floatstack-logo.png' %}" alt="FloatStack">
-                    <span class="brandmark__wordmark">
-                        <span class="brandmark__text">FloatStack</span>
-                        <span class="brandmark__subtext">Ordering + Operations</span>
-                    </span>
-                </div>
-            {% endif %}
+                    </a>
+                {% else %}
+                    <div class="brandmark brandmark--static" aria-label="FloatStack">
+                        <img class="brandmark__logo" src="{% static 'images/floatstack-logo.png' %}" alt="FloatStack">
+                        <span class="brandmark__wordmark">
+                            <span class="brandmark__text">FloatStack</span>
+                            <span class="brandmark__subtext">Ordering + Operations</span>
+                        </span>
+                    </div>
+                {% endif %}
+                {% if active_node_context %}
+                    <div class="node-indicator" aria-label="Current distributed node">
+                        <p class="node-indicator__label">Current Node</p>
+                        {% if active_node_context.store_name and active_node_context.store_code %}
+                            <p class="node-indicator__value">{{ active_node_context.store_name }} ({{ active_node_context.store_code }})</p>
+                        {% elif active_node_context.node_id %}
+                            <p class="node-indicator__value">{{ active_node_context.node_id|upper }}</p>
+                        {% endif %}
+                        {% if active_node_context.region_code %}
+                            <p class="node-indicator__meta">Region {{ active_node_context.region_code }}{% if active_node_context.region_name %}: {{ active_node_context.region_name }}{% endif %}</p>
+                        {% endif %}
+                    </div>
+                {% endif %}
+            </div>
             <nav class="topnav" aria-label="Primary">
                 {% for item in navigation_items %}
                     {% if item.method == "post" %}
