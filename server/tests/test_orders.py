@@ -431,18 +431,6 @@ class MenuAiAssistantViewTests(TestCase):
             "prompt": "I want something fruity and refreshing",
             "answer": "Start with Sprite or Lemon-Lime for a bright, refreshing build.",
             "quick_prompts": ["I want a creamy float"],
-            "drink": {
-                "name": "Citrus Sprite Twist",
-                "recipe_key": "sprite",
-                "size_snapshot": "medium",
-                "base_price_snapshot": "2.95",
-                "description": "A bright, refreshing drink built from the catalog.",
-                "customizations_json": {
-                    "schema_version": 1,
-                    "menu_key": "sprite",
-                    "recipe": {"name": "Citrus Sprite Twist"},
-                },
-            },
             "can_save": True,
             "menu_matches": [
                 {
@@ -466,6 +454,50 @@ class MenuAiAssistantViewTests(TestCase):
         self.assertContains(response, "Start with Sprite or Lemon-Lime")
         self.assertContains(response, "Customize")
         mock_call.assert_called_once()
+
+    @patch("apps.orders.assistant._call_anthropic_menu_ai")
+    def test_menu_ai_hides_redundant_match_list_when_generated_drink_exists(
+        self, mock_call
+    ):
+        mock_call.return_value = {
+            "title": "FloatStack Menu AI",
+            "prompt": "I want something fruity and refreshing",
+            "answer": "Start with Sprite or Lemon-Lime for a bright, refreshing build.",
+            "quick_prompts": ["I want a creamy float"],
+            "drink": {
+                "name": "Citrus Sprite Twist",
+                "recipe_key": "berry-burst",
+                "size_snapshot": "medium",
+                "base_price_snapshot": "2.95",
+                "description": "A bright, refreshing drink built from the catalog.",
+                "customizations_json": {
+                    "schema_version": 1,
+                    "menu_key": "berry-burst",
+                    "recipe": {"name": "Citrus Sprite Twist"},
+                },
+            },
+            "can_save": True,
+            "menu_matches": [
+                {
+                    "slug": "sprite",
+                    "name": "Sprite",
+                    "description": "Bright and bubbly",
+                    "reason": "Great bright citrus base.",
+                }
+            ],
+            "uses_ai": True,
+        }
+
+        self.client.force_login(self.customer)
+        response = self.client.post(
+            reverse("orders:menu-ai", args=[self.store.store_code]),
+            {"prompt": "I want something fruity and refreshing"},
+            HTTP_HX_REQUEST="true",
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Suggested Custom Drink")
+        self.assertNotContains(response, "menu-ai-match-list")
 
     @patch("apps.orders.assistant._call_anthropic_menu_ai")
     def test_menu_ai_generated_drink_can_be_saved_to_favorites(self, mock_call):
