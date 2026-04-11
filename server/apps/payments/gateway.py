@@ -124,6 +124,16 @@ def retrieve_checkout_session(session_id):
     return _client().checkout.Session.retrieve(session_id)
 
 
+def refund_stripe_payment(*, payment_intent_id, amount=None, metadata=None):
+    params = {
+        "payment_intent": payment_intent_id,
+        "metadata": metadata or {},
+    }
+    if amount is not None:
+        params["amount"] = int(amount * 100)
+    return _client().Refund.create(**params)
+
+
 def construct_webhook_event(*, payload, signature):
     return _client().Webhook.construct_event(
         payload=payload,
