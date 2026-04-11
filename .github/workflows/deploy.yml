@@ -1,14 +1,19 @@
 name: Deploy to DigitalOcean
 
 on:
-  push:
+  workflow_run:
+    workflows:
+      - CI
+    types:
+      - completed
     branches:
       - master
+  workflow_dispatch:
 
 jobs:
   deploy:
+    if: ${{ github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success' }}
     runs-on: ubuntu-latest
-    # Only deploy if CI tests would pass (same trigger, but deploy runs after push lands)
     steps:
       - name: Deploy to Store A (134.199.222.195)
         uses: appleboy/ssh-action@v1
