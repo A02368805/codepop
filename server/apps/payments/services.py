@@ -68,7 +68,7 @@ def _ensure_remote_refund_succeeded(*, order, payment, refund_amount):
         ) from exc
 
     status = str(getattr(refund, "status", "") or "").lower()
-    if status and status not in {"succeeded"}:
+    if status != "succeeded":
         raise PaymentGatewayError(
             "Sorry, there was a problem processing the refund. Please try again later."
         )
