@@ -16,7 +16,7 @@ from apps.sync.models import AuditLog
 from apps.users.models import FavoriteDrink, TastePreference
 from apps.users.services import save_preference_profile
 from django.core.files.uploadedfile import SimpleUploadedFile
-from django.test import Client, TestCase
+from django.test import Client, TestCase, override_settings
 from django.urls import reverse
 from django.utils import timezone
 
@@ -81,6 +81,22 @@ class CustomerOrderingViewTests(TestCase):
 
     def _future_pickup_value(self):
         return pickup_time_choices(now=timezone.now())[1][0]
+
+    @override_settings(STORE_ID="store-c")
+    def test_topbar_shows_current_store_and_region_in_distributed_mode(self):
+        self.client.force_login(self.customer)
+        response = self.client.get(reverse("orders:menu", args=[self.store.store_code]))
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Current Node")
+        self.assertContains(response, f"{self.store.name} ({self.store.store_code})")
+        self.assertContains(response, f"Region {self.region.code}: {self.region.name}")
+
+    @override_settings(STORE_ID="")
+    def test_topbar_hides_distributed_indicator_when_node_unconfigured(self):
+        self.client.force_login(self.customer)
+        response = self.client.get(reverse("orders:menu", args=[self.store.store_code]))
+        self.assertEqual(response.status_code, 200)
+        self.assertNotContains(response, "Current Node")
 
     def test_account_user_can_complete_checkout_and_save_favorite(self):
         self.client.force_login(self.customer)
