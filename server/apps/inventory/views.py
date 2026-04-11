@@ -15,7 +15,7 @@ from django.views.generic import TemplateView
 
 from .forms import InventoryAdjustmentForm
 from .models import RestockAlert, StoreInventoryBalance
-from .selectors import group_balances_by_item
+from .selectors import adjustment_step_for_item, group_balances_by_item
 from .services import adjust_store_inventory
 
 
@@ -113,6 +113,7 @@ class InventoryAdjustView(LoginRequiredMixin, View):
                 "available": available,
                 "status": status,
                 "can_adjust": True,
+                "adjustment_step": adjustment_step_for_item(balance.inventory_item),
                 "adjustment_form": InventoryAdjustmentForm(),
             },
             request=request,

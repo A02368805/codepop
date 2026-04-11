@@ -7,7 +7,26 @@ from apps.supply_hubs.models import HubInventoryBalance
 from apps.users.permissions import user_can_manage_store, user_has_global_access
 from django.db.models import Count, F, Q, Sum
 
-from .models import RestockAlert, StoreInventoryBalance
+from .models import InventoryItem, RestockAlert, StoreInventoryBalance
+
+WHOLE_NUMBER_UOM_VALUES = {"each", "unit", "count", "item"}
+WHOLE_NUMBER_CATEGORIES = {
+    InventoryItem.Category.CUPS,
+    InventoryItem.Category.LIDS,
+    InventoryItem.Category.EQUIPMENT,
+    InventoryItem.Category.PACKAGING,
+}
+
+
+def adjustment_step_for_item(inventory_item):
+    if not inventory_item:
+        return "0.01"
+    unit_of_measure = (inventory_item.unit_of_measure or "").strip().lower()
+    if unit_of_measure in WHOLE_NUMBER_UOM_VALUES:
+        return "1"
+    if inventory_item.category in WHOLE_NUMBER_CATEGORIES:
+        return "1"
+    return "0.01"
 
 
 def group_balances_by_item(*, user, balances):
@@ -36,6 +55,7 @@ def group_balances_by_item(*, user, balances):
                 "balance": balance,
                 "available": available,
                 "status": status,
+                "adjustment_step": adjustment_step_for_item(balance.inventory_item),
                 "can_adjust": user_has_global_access(user)
                 or user_can_manage_store(user, balance.store),
             }
