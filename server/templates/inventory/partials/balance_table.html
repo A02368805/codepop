@@ -30,7 +30,7 @@
                         </thead>
                         <tbody>
                             {% for store_row in group.stores %}
-                                {% with balance=store_row.balance available=store_row.available can_adjust=store_row.can_adjust status=store_row.status %}
+                                {% with balance=store_row.balance available=store_row.available can_adjust=store_row.can_adjust status=store_row.status adjustment_step=store_row.adjustment_step %}
                                     {% include "inventory/partials/balance_row.html" %}
                                 {% endwith %}
                             {% endfor %}
