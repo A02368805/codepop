@@ -11,8 +11,10 @@ from apps.orders.services import (
     ensure_refund_allowed,
     transition_order_status,
 )
+from apps.payments.gateway import PaymentMode
 from apps.payments.models import PaymentTransaction, RevenueLedgerEntry
 from apps.payments.services import (
+    PaymentGatewayError,
     record_payment_pending,
     record_payment_success,
     record_refund,
@@ -157,6 +159,71 @@ class OrderWorkflowTests(TestCase):
                 order=order, entry_type=RevenueLedgerEntry.EntryType.REFUND
             ).count(),
             1,
+        )
+
+    @patch("apps.payments.services.get_payment_mode", return_value=PaymentMode.STRIPE)
+    @patch("apps.payments.services.refund_stripe_payment")
+    def test_refund_backfills_missing_sale_revenue_entry(
+        self, mock_refund, _mock_payment_mode
+    ):
+        mock_refund.return_value = type("Refund", (), {"status": "succeeded"})()
+
+        order = self._create_order()
+        record_payment_pending(order, payment_intent_id="pi_test_003a")
+        record_payment_success(
+            order, payment_intent_id="pi_test_003a", actor=self.customer
+        )
+        RevenueLedgerEntry.objects.filter(
+            order=order,
+            entry_type=RevenueLedgerEntry.EntryType.SALE,
+        ).delete()
+
+        record_refund(order, actor=self.customer, notes="Customer canceled order.")
+
+        self.assertEqual(
+            RevenueLedgerEntry.objects.filter(
+                order=order,
+                entry_type=RevenueLedgerEntry.EntryType.SALE,
+            ).count(),
+            1,
+        )
+        self.assertEqual(
+            RevenueLedgerEntry.objects.filter(
+                order=order,
+                entry_type=RevenueLedgerEntry.EntryType.REFUND,
+            ).count(),
+            1,
+        )
+
+    @patch("apps.payments.services.get_payment_mode", return_value=PaymentMode.STRIPE)
+    @patch(
+        "apps.payments.services.refund_stripe_payment",
+        side_effect=RuntimeError("stripe unavailable"),
+    )
+    def test_failed_stripe_refund_does_not_mark_order_as_refunded(
+        self, _mock_refund, _mock_payment_mode
+    ):
+        order = self._create_order()
+        record_payment_pending(order, payment_intent_id="pi_test_003b")
+        record_payment_success(
+            order, payment_intent_id="pi_test_003b", actor=self.customer
+        )
+
+        with self.assertRaises(PaymentGatewayError):
+            record_refund(order, actor=self.customer, notes="Customer canceled order.")
+
+        order.refresh_from_db()
+        payment = order.payment_transaction
+        self.assertEqual(order.status, Order.Status.PAID)
+        self.assertEqual(order.refund_status, Order.RefundStatus.NONE)
+        self.assertEqual(payment.status, PaymentTransaction.Status.SUCCEEDED)
+        self.assertEqual(payment.amount_refunded, Decimal("0.00"))
+        self.assertEqual(
+            RevenueLedgerEntry.objects.filter(
+                order=order,
+                entry_type=RevenueLedgerEntry.EntryType.REFUND,
+            ).count(),
+            0,
         )
 
     def test_queue_transition_blocks_when_inventory_is_insufficient(self):

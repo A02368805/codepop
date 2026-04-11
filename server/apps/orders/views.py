@@ -1186,9 +1186,13 @@ class OrderCancelView(View):
             if not allowed:
                 messages.error(request, reason)
                 return redirect("orders:detail", order_code=order.public_order_code)
-            record_refund(
-                order, actor=actor, notes="Canceled from the order status page."
-            )
+            try:
+                record_refund(
+                    order, actor=actor, notes="Canceled from the order status page."
+                )
+            except PaymentGatewayError as exc:
+                messages.error(request, str(exc))
+                return redirect("orders:detail", order_code=order.public_order_code)
             messages.success(
                 request, "Your order was canceled and the refund flow has started."
             )
