@@ -765,6 +765,36 @@ class DashboardAndHtmxViewTests(TestCase):
             html=False,
         )
 
+    def test_super_admin_nav_persists_dashboard_link_across_workspaces(self):
+        self.client.force_login(self.super_admin)
+        dashboard_url = reverse("super-admin-dashboard")
+        workspace_routes = [
+            reverse("analytics:index"),
+            reverse("admin-users"),
+            reverse("imports:index"),
+        ]
+
+        for route in workspace_routes:
+            with self.subTest(route=route):
+                response = self.client.get(route)
+                self.assertEqual(response.status_code, 200)
+                self.assertContains(response, dashboard_url)
+                self.assertContains(response, "Dashboard")
+                self.assertContains(
+                    response, 'class="topnav topnav--dense"', html=False
+                )
+                self.assertContains(response, 'id="topnav-mobile-toggle"', html=False)
+                self.assertContains(response, 'class="topnav-toggle"', html=False)
+
+    def test_manager_nav_does_not_render_super_admin_dashboard_link(self):
+        self.client.force_login(self.manager)
+        response = self.client.get(reverse("orders:index"))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, reverse("manager-dashboard"))
+        self.assertNotContains(response, reverse("super-admin-dashboard"))
+        self.assertNotContains(response, 'class="topnav topnav--dense"', html=False)
+
     def test_transfer_approval_htmx_updates_transfer_panel(self):
         self.client.force_login(self.logistics)
         response = self.client.post(
