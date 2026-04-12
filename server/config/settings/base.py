@@ -211,3 +211,46 @@ for _node_id, _url in PEER_STORES.items():
     _code = _STORE_ID_TO_CODE.get(_node_id.lower(), "")
     if _code:
         PEER_STORE_URLS[_code] = _url
+
+# Emit distributed-system visibility logs by default when node mode is active.
+DISTRIBUTED_LOG_LEVEL = os.getenv(
+    "DISTRIBUTED_LOG_LEVEL", "INFO" if STORE_ID else "WARNING"
+).upper()
+
+LOGGING = {
+    "version": 1,
+    "disable_existing_loggers": False,
+    "formatters": {
+        "standard": {
+            "format": "%(asctime)s [%(levelname)s] %(name)s: %(message)s",
+        }
+    },
+    "handlers": {
+        "console": {
+            "class": "logging.StreamHandler",
+            "formatter": "standard",
+        }
+    },
+    "loggers": {
+        "distributed": {
+            "handlers": ["console"],
+            "level": DISTRIBUTED_LOG_LEVEL,
+            "propagate": False,
+        },
+        "distributed.sync": {
+            "handlers": ["console"],
+            "level": DISTRIBUTED_LOG_LEVEL,
+            "propagate": False,
+        },
+        "distributed.federation": {
+            "handlers": ["console"],
+            "level": DISTRIBUTED_LOG_LEVEL,
+            "propagate": False,
+        },
+        "distributed.health": {
+            "handlers": ["console"],
+            "level": DISTRIBUTED_LOG_LEVEL,
+            "propagate": False,
+        },
+    },
+}

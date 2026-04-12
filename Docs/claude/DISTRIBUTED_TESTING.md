@@ -60,17 +60,17 @@ After running `make multi-demo`, each store has these accounts (default password
 
 Account users can log in to **any store** — even if their account was created on a different store. The system uses **federated authentication**: if a user isn't found locally, other stores are asked to validate the credentials.
 
-**Example:**
-1. Store A has `account.a001@floatstack.local`
-2. Store B does NOT have this user locally
-3. You visit http://localhost:8002 and enter `account.a001@floatstack.local` + `FloatStack123!`
-4. Store B contacts Store A via `POST /federated-validate/` to validate
-5. Store A confirms the credentials are valid
-6. Store B creates a local user record and logs them in
+**Example (federation path):**
+1. Create a new account user on Store A only (not part of seeded demo users).
+2. Do not create that user on Store B.
+3. Visit http://localhost:8002 and log in with that Store A user.
+4. Store B contacts Store A via `POST /peer-validate/` to validate.
+5. Store A confirms credentials.
+6. Store B provisions a local account record and logs the user in.
 
 This enables order placement across stores while keeping each store's database independent (no shared DB needed).
 
-**Staff roles** (managers, admins, logistics managers) are **store-local only** — they cannot log in to other stores. This preserves data isolation and permissions per store.
+**Staff roles are not federated**. The peer validation endpoint only accepts `account_user` role, and store/region scoping is enforced through assignment-based permissions.
 
 ## Database Access
 
@@ -86,7 +86,7 @@ Each store has its own PostgreSQL database:
 ```bash
 make multi-demo
 ```
-Each store only seeds its own region and store (no fake cross-region data).
+Each node seeds a full registry (all regions, stores, hubs) plus demo users and operational data.
 
 ### View logs:
 ```bash
@@ -100,19 +100,15 @@ make multi-migrate
 
 ## Demo Data Structure
 
-In distributed mode, **each store instance seeds ONLY its own data**:
+In distributed mode, `bootstrap_demo_data --reset` seeds:
 
-- **Store A** → Region A (Chicago, IL) with Store A001
-- **Store B** → Region B (New Jersey / New York) with Store B001
-- **Store C** → Region C (Logan, UT) with Store C001
+- All 7 regions and the full multi-store registry
+- 7 supply hubs (one per region)
+- Scoped users across roles (super admin, logistics managers, store managers/admins, repair staff, account users)
+- Inventory balances, machine records, maintenance policies, and sample maintenance work
+- Sample transfers, orders, notifications, and CSV-driven import data
 
-Users are created per-store:
-- 1 Logistics Manager (scoped to region)
-- 1 Super Admin
-- 1 Store Manager
-- 1 Store Admin
-
-No orders, transfers, machines, or inter-store dependencies are seeded in distributed mode — the focus is on testing sync infrastructure, not demo workflows.
+This supports both sync transport testing and role/dashboard workflow testing in the same dataset.
 
 ## How Distributed Sync Works
 

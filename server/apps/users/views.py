@@ -1,3 +1,4 @@
+import logging
 from datetime import timedelta
 
 from apps.analytics.recommendations import recommend_drinks_for_user
@@ -143,6 +144,8 @@ HOME_FEATURED_SLUGS = [
     "root-beer-cocoa-float",
     "dew-lime-launch",
 ]
+
+distributed_logger = logging.getLogger("distributed.federation")
 
 
 def _parse_date(value):
@@ -1096,6 +1099,12 @@ class PeerValidateView(View):
         except (json.JSONDecodeError, ValueError):
             return JsonResponse({"error": "invalid json"}, status=400)
 
+        distributed_logger.info(
+            "DISTRIBUTED: Received peer login-validation request from '%s' for %s.",
+            origin_node_id,
+            email or "<blank-email>",
+        )
+
         # Authenticate the user locally
         user = authenticate(request, username=email, password=password)
 
@@ -1105,6 +1114,11 @@ class PeerValidateView(View):
             return JsonResponse({"valid": False}, status=200)
 
         # Valid account user — return their data
+        distributed_logger.info(
+            "DISTRIBUTED: Returning federated account validation success for %s to '%s'.",
+            user.email,
+            origin_node_id,
+        )
         return JsonResponse(
             {
                 "valid": True,

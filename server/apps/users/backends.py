@@ -53,7 +53,7 @@ class PeerStoreAuthBackend:
 
         import requests
 
-        logger = logging.getLogger("peer_auth")
+        logger = logging.getLogger("distributed.federation")
 
         # Only run if distributed mode is enabled
         if (
@@ -85,7 +85,12 @@ class PeerStoreAuthBackend:
         # Try each peer store to validate the user
         for peer_node_id, peer_url in settings.PEER_STORES.items():
             try:
-                logger.info("Querying peer %s at %s", peer_node_id, peer_url)
+                logger.info(
+                    "DISTRIBUTED: Reaching another store's data for account login "
+                    "validation via peer '%s' at %s.",
+                    peer_node_id,
+                    peer_url,
+                )
                 resp = requests.post(
                     f"{peer_url}/peer-validate/",
                     json={"email": username, "password": password},
