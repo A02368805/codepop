@@ -10,6 +10,7 @@ from .views import (
     CheckoutValidateView,
     CheckoutView,
     CustomizeDrinkView,
+    CustomizeSwitchStoreView,
     FavoriteAddToCartView,
     FavoriteListView,
     FavoriteRemoveView,
@@ -48,6 +49,11 @@ urlpatterns = [
         "menu/<str:store_code>/<slug:drink_slug>/",
         CustomizeDrinkView.as_view(),
         name="customize",
+    ),
+    path(
+        "menu/<str:store_code>/<slug:drink_slug>/switch-store/",
+        CustomizeSwitchStoreView.as_view(),
+        name="customize-switch-store",
     ),
     path(
         "menu/<str:store_code>/<slug:drink_slug>/assistant/",

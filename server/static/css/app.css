@@ -1846,6 +1846,16 @@ h3 {
     background: rgba(255, 255, 255, 0.72);
 }
 
+.builder-store-switch {
+    display: grid;
+    gap: 0.65rem;
+    margin-top: 0.95rem;
+}
+
+.builder-store-switch .button {
+    justify-self: start;
+}
+
 .cup-preview {
     position: relative;
     width: 220px;
