@@ -508,6 +508,28 @@ h3 {
     overflow-wrap: anywhere;
 }
 
+.analytics-summary-stack {
+    display: grid;
+    gap: 0.7rem;
+}
+
+.analytics-table-scroll,
+.analytics-list-scroll {
+    min-width: 0;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+}
+
+.analytics-table-scroll .data-table {
+    min-width: 640px;
+}
+
+@media (max-width: 640px) {
+    .analytics-table-scroll .data-table {
+        min-width: 0;
+    }
+}
+
 .form-grid--two {
     grid-template-columns: repeat(2, minmax(0, 1fr));
 }
@@ -2572,6 +2594,23 @@ details.ingredient-group[open] .ingredient-group__header::after {
 
     .builder-sidebar {
         position: static;
+    }
+
+    .analytics-scroll-window {
+        max-height: 72vh;
+        overflow-y: auto;
+        overflow-x: hidden;
+        overscroll-behavior: contain;
+    }
+
+    .analytics-scroll-window .analytics-table-scroll {
+        max-height: 52vh;
+        overflow-y: auto;
+    }
+
+    .analytics-scroll-window .analytics-list-scroll {
+        max-height: 46vh;
+        overflow-y: auto;
     }
 }
 

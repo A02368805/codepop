@@ -2,10 +2,10 @@ from datetime import date
 
 from apps.orders.models import Order
 from apps.orders.selectors import authorize_guest_order_access, user_can_view_order
-from apps.stores.selectors import scoped_region_store_options, stores_visible_to_user
-from apps.users.models import User
-from apps.users.permissions import RoleRequiredMixin
+from apps.stores.selectors import scoped_region_store_options
+from apps.users.permissions import RoleRequiredMixin, user_can_view_payments_workspace
 from django.contrib import messages
+from django.core.exceptions import PermissionDenied
 from django.db import IntegrityError, transaction
 from django.db.models import Sum
 from django.http import HttpResponse, HttpResponseBadRequest, JsonResponse
@@ -45,11 +45,13 @@ def _parse_date(value):
 
 class PaymentWorkspaceView(RoleRequiredMixin, TemplateView):
     template_name = "payments/index.html"
-    allowed_roles = (
-        User.Role.MANAGER,
-        User.Role.ADMIN,
-        User.Role.SUPER_ADMIN,
-    )
+
+    def dispatch(self, request, *args, **kwargs):
+        if not request.user.is_authenticated:
+            return super().dispatch(request, *args, **kwargs)
+        if not user_can_view_payments_workspace(request.user):
+            raise PermissionDenied("You do not have access to this workspace.")
+        return super().dispatch(request, *args, **kwargs)
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
