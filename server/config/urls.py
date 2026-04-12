@@ -8,6 +8,7 @@ handler500 = "config.error_views.server_error"
 
 urlpatterns = [
     path("", include("apps.users.urls")),
+    path("backend/inventory/", include("apps.inventory.api_urls")),
     path("admin/", admin.site.urls),
     path("stores/", include("apps.stores.urls")),
     path("orders/", include("apps.orders.urls")),

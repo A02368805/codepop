@@ -1,13 +1,21 @@
 from django.template.response import TemplateResponse
+from django.urls import reverse
 
 
 def permission_denied(request, exception=None):
+    is_authenticated = getattr(request.user, "is_authenticated", False)
+    role = getattr(request.user, "role", "")
+    return_home_url = reverse("home")
+    if is_authenticated and role != "account_user":
+        return_home_url = reverse("dashboard")
+
     return TemplateResponse(
         request,
         "errors/403.html",
         {
             "error_title": "That page is outside your current scope.",
-            "error_message": "FloatStack keeps dashboard and store access on the server. Sign in with the right account or return to a page inside your role.",
+            "return_home_url": return_home_url,
+            "show_sign_in": not is_authenticated,
         },
         status=403,
     )
