@@ -22,35 +22,11 @@
                     <td>
                         <div class="inline-cluster">
                             {% if order.status == "queued" %}
-                                <form
-                                    method="post"
-                                    hx-post="{% url 'orders:mark-preparing' order.id %}"
-                                    hx-target="#manager-queue"
-                                    hx-swap="innerHTML"
-                                >
-                                    {% csrf_token %}
-                                    <button class="button button--ghost" type="submit">Preparing</button>
-                                </form>
+                                {% include "orders/partials/queue_transition_form.html" with action_url_name="orders:mark-preparing" order_id=order.id button_label="Preparing" confirm_message="Mark order as preparing?" %}
                             {% elif order.status == "preparing" %}
-                                <form
-                                    method="post"
-                                    hx-post="{% url 'orders:mark-ready' order.id %}"
-                                    hx-target="#manager-queue"
-                                    hx-swap="innerHTML"
-                                >
-                                    {% csrf_token %}
-                                    <button class="button button--ghost" type="submit">Ready</button>
-                                </form>
+                                {% include "orders/partials/queue_transition_form.html" with action_url_name="orders:mark-ready" order_id=order.id button_label="Ready" confirm_message="Mark order as ready? This cannot be undone from the queue." %}
                             {% elif order.status == "ready" %}
-                                <form
-                                    method="post"
-                                    hx-post="{% url 'orders:mark-picked-up' order.id %}"
-                                    hx-target="#manager-queue"
-                                    hx-swap="innerHTML"
-                                >
-                                    {% csrf_token %}
-                                    <button class="button button--ghost" type="submit">Picked up</button>
-                                </form>
+                                {% include "orders/partials/queue_transition_form.html" with action_url_name="orders:mark-picked-up" order_id=order.id button_label="Picked up" confirm_message="Mark order as picked up? This completes the order." %}
                             {% else %}
                                 <span class="muted">No action</span>
                             {% endif %}

@@ -828,6 +828,17 @@ h3 {
     margin: 0;
 }
 
+.queue-action-form {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.queue-action-indicator {
+    margin: 0;
+    font-size: 0.85rem;
+}
+
 .data-table select,
 .data-table input {
     min-width: 0;
