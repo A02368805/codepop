@@ -890,6 +890,50 @@ class DashboardAndHtmxViewTests(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, "Scoped User Management")
 
+    def test_imports_workspace_renders_responsive_structure_and_role_scoped_actions(
+        self,
+    ):
+        scenarios = [
+            (self.logistics, True, False),
+            (self.repair, False, True),
+            (self.super_admin, True, True),
+        ]
+        for user, expects_supply, expects_repair in scenarios:
+            with self.subTest(role=user.role):
+                self.client.force_login(user)
+                response = self.client.get(reverse("imports:index"))
+
+                self.assertEqual(response.status_code, 200)
+                self.assertContains(
+                    response,
+                    'class="page-grid page-grid--sidebar imports-workspace"',
+                    html=False,
+                )
+                self.assertContains(response, 'class="imports-tabbar"', html=False)
+                self.assertContains(response, 'href="#import-history"', html=False)
+
+                if expects_supply:
+                    self.assertContains(
+                        response, 'href="#imports-supply-upload"', html=False
+                    )
+                    self.assertContains(response, "Import supply usage CSV")
+                else:
+                    self.assertNotContains(
+                        response, 'href="#imports-supply-upload"', html=False
+                    )
+                    self.assertNotContains(response, "Import supply usage CSV")
+
+                if expects_repair:
+                    self.assertContains(
+                        response, 'href="#imports-repair-upload"', html=False
+                    )
+                    self.assertContains(response, "Import maintenance CSV")
+                else:
+                    self.assertNotContains(
+                        response, 'href="#imports-repair-upload"', html=False
+                    )
+                    self.assertNotContains(response, "Import maintenance CSV")
+
     def test_supply_usage_import_htmx_renders_history_panel(self):
         self.client.force_login(self.logistics)
         upload = SimpleUploadedFile(
@@ -918,6 +962,7 @@ class DashboardAndHtmxViewTests(TestCase):
                 ImportJob.Status.SUCCEEDED,
             },
         )
+        self.assertContains(response, 'class="imports-history-table"', html=False)
         self.assertContains(response, "usage.csv")
 
     def test_analytics_workspace_surfaces_daily_and_ai_sections(self):

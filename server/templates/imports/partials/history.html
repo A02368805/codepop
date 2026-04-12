@@ -14,58 +14,60 @@
 </div>
 
 {% if jobs %}
-    <table class="data-table">
-        <thead>
-            <tr>
-                <th>File</th>
-                <th>Type</th>
-                <th>Status</th>
-                <th>Completed</th>
-                <th>Rows</th>
-                <th>Errors</th>
-            </tr>
-        </thead>
-        <tbody>
-            {% for job in jobs %}
+    <div class="imports-history-table">
+        <table class="data-table">
+            <thead>
                 <tr>
-                    <td>{{ job.original_filename }}</td>
-                    <td>{{ job.get_import_type_display }}</td>
-                    <td>
-                        {% if job.status == "failed" %}
-                            <span class="pill pill--critical">{{ job.get_status_display }}</span>
-                        {% elif job.status == "processing" %}
-                            <span class="pill pill--warning">{{ job.get_status_display }}</span>
-                        {% elif job.status == "succeeded" %}
-                            <span class="pill">{{ job.get_status_display }}</span>
-                        {% else %}
-                            <span class="pill pill--soft">{{ job.get_status_display }}</span>
-                        {% endif %}
-                    </td>
-                    <td>{{ job.completed_at|date:"M j, g:i A"|default:"-" }}</td>
-                    <td>{{ job.success_count }}/{{ job.row_count }}</td>
-                    <td>{{ job.error_count }}</td>
+                    <th>File</th>
+                    <th>Type</th>
+                    <th>Status</th>
+                    <th>Completed</th>
+                    <th>Rows</th>
+                    <th>Errors</th>
                 </tr>
-                {% if job.error_report_json %}
+            </thead>
+            <tbody>
+                {% for job in jobs %}
                     <tr>
-                        <td colspan="6">
-                            <details>
-                                <summary>View validation errors</summary>
-                                <ul class="mini-list">
-                                    {% for row_error in job.error_report_json|slice:":10" %}
-                                        <li>
-                                            Row {{ row_error.row|default:"-" }}
-                                            {% if row_error.field %} · {{ row_error.field }}{% endif %}
-                                            — {{ row_error.message|default:"Validation error" }}
-                                        </li>
-                                    {% endfor %}
-                                </ul>
-                            </details>
+                        <td>{{ job.original_filename }}</td>
+                        <td>{{ job.get_import_type_display }}</td>
+                        <td>
+                            {% if job.status == "failed" %}
+                                <span class="pill pill--critical">{{ job.get_status_display }}</span>
+                            {% elif job.status == "processing" %}
+                                <span class="pill pill--warning">{{ job.get_status_display }}</span>
+                            {% elif job.status == "succeeded" %}
+                                <span class="pill">{{ job.get_status_display }}</span>
+                            {% else %}
+                                <span class="pill pill--soft">{{ job.get_status_display }}</span>
+                            {% endif %}
                         </td>
+                        <td>{{ job.completed_at|date:"M j, g:i A"|default:"-" }}</td>
+                        <td>{{ job.success_count }}/{{ job.row_count }}</td>
+                        <td>{{ job.error_count }}</td>
                     </tr>
-                {% endif %}
-            {% endfor %}
-        </tbody>
-    </table>
+                    {% if job.error_report_json %}
+                        <tr>
+                            <td colspan="6">
+                                <details>
+                                    <summary>View validation errors</summary>
+                                    <ul class="mini-list">
+                                        {% for row_error in job.error_report_json|slice:":10" %}
+                                            <li>
+                                                Row {{ row_error.row|default:"-" }}
+                                                {% if row_error.field %} - {{ row_error.field }}{% endif %}
+                                                - {{ row_error.message|default:"Validation error" }}
+                                            </li>
+                                        {% endfor %}
+                                    </ul>
+                                </details>
+                            </td>
+                        </tr>
+                    {% endif %}
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
 {% else %}
     <div class="empty-state"><p>No imports yet.</p></div>
 {% endif %}
