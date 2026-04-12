@@ -1,6 +1,7 @@
 from pathlib import Path
 
 from django.test import SimpleTestCase
+from django.urls import Resolver404, resolve
 
 
 class ArchitectureGuardrailTests(SimpleTestCase):
@@ -34,3 +35,7 @@ class ArchitectureGuardrailTests(SimpleTestCase):
                 f"Found matches in: {legacy_import_matches}"
             ),
         )
+
+    def test_legacy_backend_auth_login_endpoint_is_not_registered(self):
+        with self.assertRaises(Resolver404):
+            resolve("/backend/auth/login/")
