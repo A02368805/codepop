@@ -49,6 +49,9 @@
                             >
                                 {% csrf_token %}
                                 <input type="hidden" name="status" value="{{ status_filter }}">
+                                {% if assignment_view %}
+                                    <input type="hidden" name="assignments" value="{{ assignment_view }}">
+                                {% endif %}
                                 <button class="button button--ghost" type="submit">
                                     {% if row.can_claim %}Claim{% else %}Auto-assign{% endif %}
                                 </button>

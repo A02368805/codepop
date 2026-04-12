@@ -144,6 +144,13 @@ def user_can_manage_store(user, store) -> bool:
     return UserStoreAssignment.objects.filter(user=user, store=store).exists()
 
 
+def user_can_view_payments_workspace(user) -> bool:
+    return bool(
+        getattr(user, "is_authenticated", False)
+        and user.role in {User.Role.MANAGER, User.Role.SUPER_ADMIN}
+    )
+
+
 def user_can_view_region(user, region) -> bool:
     return user_has_region_scope(user, region)
 

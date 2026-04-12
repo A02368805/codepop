@@ -716,6 +716,11 @@ class DashboardAndHtmxViewTests(TestCase):
             default_region=cls.region_c,
             is_superuser=True,
         )
+        cls.account_user = make_user(
+            email="account-views@test.local",
+            preferred_store=cls.store_c1,
+            default_region=cls.region_c,
+        )
 
         assign_store(cls.manager, cls.store_c1)
         assign_store(cls.admin, cls.store_c1)
@@ -1207,3 +1212,84 @@ class DashboardAndHtmxViewTests(TestCase):
         self.assertContains(response, "Order-Backed Financial Rows")
         self.assertContains(response, "Maintenance Summary")
         self.assertContains(response, "AI Supply Drafts")
+
+    def test_analytics_workspace_view_payments_button_visibility_matches_role_policy(
+        self,
+    ):
+        analytics_url = reverse("analytics:index")
+        payments_url = reverse("payments:index")
+        scenarios = [
+            (self.manager, True),
+            (self.super_admin, True),
+            (self.admin, False),
+            (self.logistics, False),
+        ]
+        for user, should_show in scenarios:
+            with self.subTest(role=user.role):
+                self.client.force_login(user)
+                response = self.client.get(analytics_url)
+                self.assertEqual(response.status_code, 200)
+                if should_show:
+                    self.assertContains(response, "View payments")
+                    self.assertContains(
+                        response,
+                        f'href="{payments_url}"',
+                        html=False,
+                    )
+                    self.assertContains(response, "Revenue snapshot")
+                else:
+                    self.assertNotContains(response, "View payments")
+
+    def test_analytics_workspace_renders_scroll_wrappers_for_dense_panels(self):
+        self.client.force_login(self.super_admin)
+        response = self.client.get(reverse("analytics:index"))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(
+            response, 'class="panel analytics-scroll-window"', html=False
+        )
+        self.assertContains(response, 'class="analytics-table-scroll"', html=False)
+        self.assertContains(response, "Audit Visibility")
+        self.assertContains(response, "Recent system events")
+
+    def test_payments_workspace_access_is_restricted_to_manager_and_super_admin(self):
+        payments_url = reverse("payments:index")
+
+        anonymous_response = self.client.get(payments_url)
+        self.assertEqual(anonymous_response.status_code, 302)
+        self.assertIn(reverse("login"), anonymous_response.headers["Location"])
+
+        for user in [self.manager, self.super_admin]:
+            with self.subTest(role=f"allowed-{user.role}"):
+                self.client.force_login(user)
+                response = self.client.get(payments_url)
+                self.assertEqual(response.status_code, 200)
+
+        for user in [self.admin, self.logistics, self.repair, self.account_user]:
+            with self.subTest(role=f"denied-{user.role}"):
+                self.client.force_login(user)
+                response = self.client.get(payments_url)
+                self.assertEqual(response.status_code, 403)
+
+    def test_payments_workspace_keeps_manager_store_scope(self):
+        record_payment_pending(
+            self.out_of_scope_order, payment_intent_id="pi_scope_test"
+        )
+        record_payment_success(
+            self.out_of_scope_order,
+            payment_intent_id="pi_scope_test",
+            actor=self.super_admin,
+        )
+
+        self.client.force_login(self.manager)
+        manager_response = self.client.get(reverse("payments:index"))
+        self.assertEqual(manager_response.status_code, 200)
+        self.assertContains(manager_response, self.queue_order.public_order_code)
+        self.assertNotContains(
+            manager_response, self.out_of_scope_order.public_order_code
+        )
+
+        self.client.force_login(self.super_admin)
+        super_response = self.client.get(reverse("payments:index"))
+        self.assertEqual(super_response.status_code, 200)
+        self.assertContains(super_response, self.out_of_scope_order.public_order_code)

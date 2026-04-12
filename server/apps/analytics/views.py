@@ -7,7 +7,7 @@ from apps.stores.models import Region
 from apps.stores.selectors import scoped_region_store_options
 from apps.sync.models import AuditLog
 from apps.users.models import User
-from apps.users.permissions import RoleRequiredMixin
+from apps.users.permissions import RoleRequiredMixin, user_can_view_payments_workspace
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.db.models import Count, Sum
 from django.http import HttpResponse
@@ -168,6 +168,9 @@ class AnalyticsWorkspaceView(RoleRequiredMixin, TemplateView):
                 ).annotate(
                     store_count=Count("stores"),
                     hub_count=Count("supply_hubs"),
+                ),
+                "can_view_payments_workspace": user_can_view_payments_workspace(
+                    self.request.user
                 ),
             }
         )

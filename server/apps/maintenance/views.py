@@ -1,3 +1,5 @@
+from urllib.parse import urlencode
+
 from apps.imports.models import ImportJob
 from apps.users.models import User
 from apps.users.permissions import RoleRequiredMixin, user_can_manage_machine
@@ -42,12 +44,27 @@ def _workspace_context(request):
     status_filter = (
         request.GET.get("status", "").strip() or request.POST.get("status", "").strip()
     )
+    assignments_view_raw = (
+        request.GET.get("assignments", "").strip()
+        or request.POST.get("assignments", "").strip()
+    )
+    assignments_view = "all" if assignments_view_raw == "all" else ""
+    show_all_assignments = assignments_view == "all"
+    assignment_preview_limit = 4
     assignments = build_assignment_cards(request.user)
+    assignment_display_items = (
+        assignments if show_all_assignments else assignments[:assignment_preview_limit]
+    )
     return {
         "machines": build_urgent_machine_rows(
             request.user, status_filter=status_filter
         ),
         "assignments": assignments,
+        "assignment_display_items": assignment_display_items,
+        "assignment_display_count": len(assignment_display_items),
+        "assignment_preview_limit": assignment_preview_limit,
+        "assignment_view": assignments_view,
+        "show_all_assignments": show_all_assignments,
         "route_groups": build_route_groups(assignments),
         "import_jobs": _visible_import_jobs_for_user(request.user),
         "status_filter": status_filter,
@@ -66,9 +83,17 @@ def _render_workspace_response(request):
 
 def _workspace_redirect(request):
     status_filter = request.POST.get("status", "").strip()
+    assignments_view = (
+        "all" if request.POST.get("assignments", "").strip() == "all" else ""
+    )
     url = reverse("maintenance:index")
+    query = {}
     if status_filter:
-        url = f"{url}?status={status_filter}"
+        query["status"] = status_filter
+    if assignments_view:
+        query["assignments"] = assignments_view
+    if query:
+        url = f"{url}?{urlencode(query)}"
     return redirect(url)
 
 
