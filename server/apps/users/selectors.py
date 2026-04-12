@@ -129,7 +129,10 @@ def build_brandmark(user) -> dict:
         return {"url": reverse("home"), "is_clickable": True}
     if user.role == User.Role.ACCOUNT_USER:
         return {"url": reverse("orders:recommendations"), "is_clickable": True}
-    return {"url": "", "is_clickable": False}
+    dashboard_route = ROLE_METADATA.get(user.role, {}).get("dashboard_route")
+    if dashboard_route:
+        return {"url": reverse(dashboard_route), "is_clickable": True}
+    return {"url": reverse("dashboard"), "is_clickable": True}
 
 
 def build_navigation(user) -> list[dict]:

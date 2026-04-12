@@ -52,7 +52,29 @@
                     </div>
                 {% endif %}
             </div>
-            <nav class="topnav" aria-label="Primary">
+            <input
+                type="checkbox"
+                id="topnav-mobile-toggle"
+                class="topnav-mobile-toggle-input"
+                aria-hidden="true"
+            >
+            <label
+                for="topnav-mobile-toggle"
+                class="topnav-toggle"
+                aria-label="Toggle navigation"
+                title="Navigation menu"
+            >
+                <span class="topnav-toggle-icon" aria-hidden="true">
+                    <span></span>
+                    <span></span>
+                    <span></span>
+                </span>
+            </label>
+            <nav
+                id="primary-topnav"
+                class="topnav{% if navigation_items|length > 8 %} topnav--dense{% endif %}"
+                aria-label="Primary"
+            >
                 {% for item in navigation_items %}
                     {% if item.method == "post" %}
                         <form action="{{ item.url }}" method="post" class="inline-form">
