@@ -666,6 +666,60 @@ class DashboardAndHtmxViewTests(TestCase):
             self.assertEqual(len(group["stores"]), 1)
             self.assertEqual(group["stores"][0]["balance"].store, self.store_c1)
 
+    def test_manager_queue_actions_render_confirm_prompts_and_valid_next_step_only(
+        self,
+    ):
+        self.client.force_login(self.manager)
+
+        queued_response = self.client.get(reverse("orders:index"))
+        preparing_url = reverse("orders:mark-preparing", args=[self.queue_order.id])
+        ready_url = reverse("orders:mark-ready", args=[self.queue_order.id])
+        picked_up_url = reverse("orders:mark-picked-up", args=[self.queue_order.id])
+
+        self.assertEqual(queued_response.status_code, 200)
+        self.assertContains(queued_response, preparing_url)
+        self.assertContains(
+            queued_response,
+            'hx-confirm="Mark order as preparing?"',
+            html=False,
+        )
+        self.assertContains(
+            queued_response,
+            "hx-disabled-elt=\"find button[type='submit']\"",
+            html=False,
+        )
+        self.assertContains(queued_response, "Updating...")
+        self.assertNotContains(queued_response, ready_url)
+        self.assertNotContains(queued_response, picked_up_url)
+
+        transition_order_status(
+            self.queue_order,
+            Order.Status.PREPARING,
+            actor=self.manager,
+        )
+        preparing_response = self.client.get(reverse("orders:index"))
+        self.assertContains(preparing_response, ready_url)
+        self.assertContains(
+            preparing_response,
+            "Mark order as ready? This cannot be undone from the queue.",
+        )
+        self.assertNotContains(preparing_response, preparing_url)
+        self.assertNotContains(preparing_response, picked_up_url)
+
+        transition_order_status(
+            self.queue_order,
+            Order.Status.READY,
+            actor=self.manager,
+        )
+        ready_response = self.client.get(reverse("orders:index"))
+        self.assertContains(ready_response, picked_up_url)
+        self.assertContains(
+            ready_response,
+            "Mark order as picked up? This completes the order.",
+        )
+        self.assertNotContains(ready_response, preparing_url)
+        self.assertNotContains(ready_response, ready_url)
+
     def test_order_transition_htmx_moves_queue_forward(self):
         self.client.force_login(self.manager)
         response = self.client.post(
@@ -676,6 +730,22 @@ class DashboardAndHtmxViewTests(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertEqual(self.queue_order.status, Order.Status.PREPARING)
         self.assertContains(response, "Preparing")
+        self.assertContains(response, '<table class="data-table">', html=False)
+        self.assertContains(
+            response,
+            reverse("orders:mark-ready", args=[self.queue_order.id]),
+        )
+
+    def test_admin_cannot_transition_order_status(self):
+        self.client.force_login(self.admin)
+        response = self.client.post(
+            reverse("orders:mark-preparing", args=[self.queue_order.id]),
+            HTTP_HX_REQUEST="true",
+        )
+
+        self.queue_order.refresh_from_db()
+        self.assertEqual(response.status_code, 403)
+        self.assertEqual(self.queue_order.status, Order.Status.QUEUED)
 
     def test_manager_queue_rows_are_clickable_beyond_order_code(self):
         self.client.force_login(self.manager)

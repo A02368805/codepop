@@ -1,0 +1,15 @@
+<form
+    method="post"
+    class="queue-action-form"
+    hx-post="{% url action_url_name order_id %}"
+    hx-target="#manager-queue"
+    hx-swap="innerHTML"
+    hx-confirm="{{ confirm_message }}"
+    hx-disabled-elt="find button[type='submit']"
+>
+    {% csrf_token %}
+    <button class="button button--ghost" type="submit">{{ button_label }}</button>
+    <span class="muted htmx-indicator queue-action-indicator" aria-live="polite">
+        Updating...
+    </span>
+</form>
