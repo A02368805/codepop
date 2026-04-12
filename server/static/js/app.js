@@ -7,6 +7,7 @@ document.addEventListener("DOMContentLoaded", () => {
     });
 
     initStoreRecommendation();
+    initCheckoutGuestValidation();
     initDrinkBuilder();
     initPreferenceProfile();
     initMenuAiAssistant();
@@ -28,6 +29,99 @@ function debounce(callback, wait = 240) {
         window.clearTimeout(timeoutId);
         timeoutId = window.setTimeout(() => callback(...args), wait);
     };
+}
+
+function initCheckoutGuestValidation() {
+    const checkoutForm = document.querySelector(
+        "#checkout-form[data-checkout-guest-validation='true']"
+    );
+    if (!checkoutForm) {
+        return;
+    }
+
+    const guestNameInput = checkoutForm.querySelector("input[name=guest_name]");
+    const guestEmailInput = checkoutForm.querySelector("input[name=guest_email]");
+    const guestPhoneInput = checkoutForm.querySelector("input[name=guest_phone_number]");
+
+    const validators = [
+        {
+            input: guestNameInput,
+            validate: (value) =>
+                value.trim().length > 0 ? "" : "Name is required.",
+        },
+        {
+            input: guestEmailInput,
+            validate: (value) => {
+                if (!value.trim()) {
+                    return "Enter a valid email address.";
+                }
+                const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+                return emailPattern.test(value.trim())
+                    ? ""
+                    : "Enter a valid email address.";
+            },
+        },
+        {
+            input: guestPhoneInput,
+            validate: (value) => {
+                if (!value.trim()) {
+                    return "";
+                }
+                const digitsOnly = value.replace(/\D/g, "");
+                return digitsOnly.length === 10
+                    ? ""
+                    : "Enter a valid 10-digit phone number.";
+            },
+        },
+    ];
+
+    const setFieldState = (input, errorMessage) => {
+        if (!input) {
+            return;
+        }
+        const field = input.closest(".field");
+        const errorElement = field?.querySelector(
+            `[data-checkout-error-for='${input.name}']`
+        );
+        const isValid = !errorMessage;
+
+        if (field) {
+            field.classList.toggle("field--invalid", !isValid);
+        }
+        input.setAttribute("aria-invalid", isValid ? "false" : "true");
+        input.setCustomValidity(errorMessage);
+
+        if (errorElement) {
+            errorElement.textContent = errorMessage;
+            errorElement.hidden = isValid;
+        }
+    };
+
+    const validateInput = ({ input, validate }) => {
+        if (!input) {
+            return true;
+        }
+        const errorMessage = validate(input.value);
+        setFieldState(input, errorMessage);
+        return !errorMessage;
+    };
+
+    validators.forEach((validator) => {
+        if (!validator.input) {
+            return;
+        }
+
+        validator.input.addEventListener("blur", () => {
+            validator.input.dataset.touched = "true";
+            validateInput(validator);
+        });
+
+        validator.input.addEventListener("input", () => {
+            if (validator.input.dataset.touched === "true") {
+                validateInput(validator);
+            }
+        });
+    });
 }
 
 function initStoreRecommendation() {

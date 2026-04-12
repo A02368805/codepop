@@ -1,78 +1,98 @@
-{% if messages %}
-    <section class="flash-stack" aria-label="Messages">
-        {% for message in messages %}
-            <div class="flash flash--{{ message.tags|default:'info' }}">{{ message }}</div>
-        {% endfor %}
-    </section>
-{% endif %}
+<div class="maintenance-workspace-stack">
+    {% if messages %}
+        <section class="flash-stack" aria-label="Messages">
+            {% for message in messages %}
+                <div class="flash flash--{{ message.tags|default:'info' }}">{{ message }}</div>
+            {% endfor %}
+        </section>
+    {% endif %}
 
-<section class="panel">
-    <div class="section-heading">
-        <div>
-            <p class="eyebrow">Maintenance Workspace</p>
-            <h1>Urgency queue, route batches, and repair execution</h1>
+    <section class="panel maintenance-panel maintenance-panel--hero">
+        <div class="section-heading">
+            <div>
+                <p class="eyebrow">Maintenance Workspace</p>
+                <h1>Urgency queue, route batches, and repair execution</h1>
+            </div>
+            <form
+                method="get"
+                class="filter-bar maintenance-filter-bar"
+                hx-get="{% url 'maintenance:index' %}"
+                hx-target="#maintenance-workspace"
+                hx-swap="innerHTML"
+                hx-push-url="true"
+            >
+                <select name="status">
+                    <option value="">All urgent states</option>
+                    <option value="warning" {% if status_filter == "warning" %}selected{% endif %}>Warning</option>
+                    <option value="error" {% if status_filter == "error" %}selected{% endif %}>Error</option>
+                    <option value="out-of-order" {% if status_filter == "out-of-order" %}selected{% endif %}>Out of order</option>
+                    <option value="schedule-service" {% if status_filter == "schedule-service" %}selected{% endif %}>Schedule service</option>
+                </select>
+                {% if show_all_assignments %}
+                    <input type="hidden" name="assignments" value="all">
+                {% endif %}
+                <button class="button button--ghost" type="submit">Filter</button>
+            </form>
         </div>
-        <form
-            method="get"
-            class="filter-bar"
-            hx-get="{% url 'maintenance:index' %}"
-            hx-target="#maintenance-workspace"
-            hx-swap="innerHTML"
-            hx-push-url="true"
-        >
-            <select name="status">
-                <option value="">All urgent states</option>
-                <option value="warning" {% if status_filter == "warning" %}selected{% endif %}>Warning</option>
-                <option value="error" {% if status_filter == "error" %}selected{% endif %}>Error</option>
-                <option value="out-of-order" {% if status_filter == "out-of-order" %}selected{% endif %}>Out of order</option>
-                <option value="schedule-service" {% if status_filter == "schedule-service" %}selected{% endif %}>Schedule service</option>
-            </select>
-            <button class="button button--ghost" type="submit">Filter</button>
-        </form>
-    </div>
-    <div class="badge-row">
-        <span class="pill">{{ machines|length }} urgent machine{{ machines|length|pluralize }}</span>
-        <span class="pill pill--soft">{{ assignments|length }} assignment{{ assignments|length|pluralize }}</span>
-        <span class="pill pill--soft">{{ route_groups|length }} route batch{{ route_groups|length|pluralize }}</span>
-    </div>
-    <div id="urgent-queue">
-        {% include "maintenance/partials/urgent_queue.html" %}
-    </div>
-</section>
+        <div class="badge-row maintenance-kpi-row">
+            <span class="pill">{{ machines|length }} urgent machine{{ machines|length|pluralize }}</span>
+            <span class="pill pill--soft">{{ assignments|length }} assignment{{ assignments|length|pluralize }}</span>
+            <span class="pill pill--soft">{{ route_groups|length }} route batch{{ route_groups|length|pluralize }}</span>
+        </div>
+        <div id="urgent-queue" class="maintenance-urgent-table">
+            {% include "maintenance/partials/urgent_queue.html" %}
+        </div>
+    </section>
 
-<section class="page-grid page-grid--sidebar">
-    <div class="panel">
+    <section class="panel maintenance-panel maintenance-panel--route">
         <div class="section-heading">
             <div>
                 <p class="eyebrow">Route-Aware Queue</p>
                 <h2>Grouped by city batches</h2>
+                <p class="muted">Clustered jobs by city and route key for cleaner dispatch planning.</p>
             </div>
         </div>
-        {% include "maintenance/partials/route_groups.html" %}
-    </div>
-    <div class="panel">
+        <div class="maintenance-route-groups">
+            {% include "maintenance/partials/route_groups.html" %}
+        </div>
+    </section>
+
+    <section class="panel maintenance-panel maintenance-panel--assignments" id="repair-assignments">
         <div class="section-heading">
             <div>
                 <p class="eyebrow">Repair Assignments</p>
                 <h2>{% if request.user.role == "repair_staff" %}My active and recent work{% else %}Team repair work{% endif %}</h2>
+                <p class="muted maintenance-assignment-summary">
+                    {% if show_all_assignments %}
+                        Showing all {{ assignments|length }} assignment{{ assignments|length|pluralize }}.
+                    {% else %}
+                        Showing {{ assignment_display_count }} of {{ assignments|length }} assignments.
+                    {% endif %}
+                </p>
             </div>
+            <a
+                class="button button--ghost maintenance-view-all-link"
+                href="{% url 'maintenance:index' %}{% if show_all_assignments %}{% if status_filter %}?status={{ status_filter }}{% endif %}{% else %}?assignments=all{% if status_filter %}&status={{ status_filter }}{% endif %}{% endif %}#repair-assignments"
+            >
+                {% if show_all_assignments %}Show preview{% else %}View all{% endif %}
+            </a>
         </div>
         {% include "maintenance/partials/assignment_cards.html" %}
-    </div>
-</section>
+    </section>
 
-<section class="panel">
-    <div class="section-heading">
-        <div>
-            <p class="eyebrow">Recent Maintenance Imports</p>
-            <h2>Import traceability and follow-up</h2>
+    <section class="panel maintenance-panel maintenance-panel--imports">
+        <div class="section-heading">
+            <div>
+                <p class="eyebrow">Recent Maintenance Imports</p>
+                <h2>Import traceability and follow-up</h2>
+            </div>
         </div>
-    </div>
-    <ul class="mini-list">
-        {% for job in import_jobs %}
-            <li>{{ job.original_filename }} · {{ job.get_status_display }}{% if job.uploaded_by %} · {{ job.uploaded_by.email }}{% endif %}</li>
-        {% empty %}
-            <li>No maintenance imports yet.</li>
-        {% endfor %}
-    </ul>
-</section>
+        <ul class="mini-list">
+            {% for job in import_jobs %}
+                <li>{{ job.original_filename }} · {{ job.get_status_display }}{% if job.uploaded_by %} · {{ job.uploaded_by.email }}{% endif %}</li>
+            {% empty %}
+                <li>No maintenance imports yet.</li>
+            {% endfor %}
+        </ul>
+    </section>
+</div>

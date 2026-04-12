@@ -23,7 +23,12 @@
 {% if cart.items and store %}
     <section class="page-grid page-grid--sidebar">
         <div class="panel">
-            <form id="checkout-form" method="post" class="form-grid">
+            <form
+                id="checkout-form"
+                method="post"
+                class="form-grid"
+                data-checkout-guest-validation="{% if not request.user.is_authenticated %}true{% else %}false{% endif %}"
+            >
                 {% csrf_token %}
                 <div class="callout">
                     <strong>Payment mode:</strong>
@@ -61,16 +66,37 @@
                         <span>{{ form.guest_name.label }}</span>
                         {{ form.guest_name }}
                         {{ form.guest_name.errors }}
+                        <p
+                            id="checkout-guest-name-error"
+                            class="field-error"
+                            data-checkout-error-for="guest_name"
+                            aria-live="polite"
+                            hidden
+                        ></p>
                     </label>
                     <label class="field">
                         <span>{{ form.guest_email.label }}</span>
                         {{ form.guest_email }}
                         {{ form.guest_email.errors }}
+                        <p
+                            id="checkout-guest-email-error"
+                            class="field-error"
+                            data-checkout-error-for="guest_email"
+                            aria-live="polite"
+                            hidden
+                        ></p>
                     </label>
                     <label class="field">
                         <span>{{ form.guest_phone_number.label }}</span>
                         {{ form.guest_phone_number }}
                         {{ form.guest_phone_number.errors }}
+                        <p
+                            id="checkout-guest-phone-error"
+                            class="field-error"
+                            data-checkout-error-for="guest_phone_number"
+                            aria-live="polite"
+                            hidden
+                        ></p>
                     </label>
                 {% endif %}
                 <div class="action-row">

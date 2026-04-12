@@ -1,5 +1,6 @@
 from datetime import timedelta
 from decimal import Decimal
+from unittest.mock import patch
 
 from apps.imports.models import ImportJob
 from apps.inventory.models import InventoryItem, LocalSupplier, SupplierReplenishment
@@ -82,6 +83,27 @@ class CustomerOrderingViewTests(TestCase):
     def _future_pickup_value(self):
         return pickup_time_choices(now=timezone.now())[1][0]
 
+    def _customization_payload(
+        self,
+        *,
+        size="medium",
+        soda="lemon-lime",
+        syrups=None,
+        add_ins=None,
+        ice_cream="",
+        quantity=1,
+        notes="",
+    ):
+        return {
+            "size": size,
+            "soda": soda,
+            "syrups": syrups or [],
+            "add_ins": add_ins or [],
+            "ice_cream": ice_cream,
+            "quantity": quantity,
+            "notes": notes,
+        }
+
     @override_settings(STORE_ID="store-c")
     def test_topbar_shows_current_store_and_region_in_distributed_mode(self):
         self.client.force_login(self.customer)
@@ -97,6 +119,150 @@ class CustomerOrderingViewTests(TestCase):
         response = self.client.get(reverse("orders:menu", args=[self.store.store_code]))
         self.assertEqual(response.status_code, 200)
         self.assertNotContains(response, "Current Node")
+
+    def test_customize_page_renders_change_store_control(self):
+        guest_client = Client()
+        response = guest_client.get(
+            reverse("orders:customize", args=[self.store.store_code, "berry-burst"])
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Change Store")
+        self.assertContains(response, 'name="target_store_code"', html=False)
+        self.assertContains(
+            response,
+            reverse(
+                "orders:customize-switch-store",
+                args=[self.store.store_code, "berry-burst"],
+            ),
+        )
+        self.assertContains(
+            response, f"{self.store_alt.name} ({self.store_alt.store_code})"
+        )
+
+    def test_switch_store_keeps_user_on_same_builder_and_preserves_selection(self):
+        guest_client = Client()
+        response = guest_client.post(
+            reverse(
+                "orders:customize-switch-store",
+                args=[self.store.store_code, "berry-burst"],
+            ),
+            {
+                "target_store_code": self.store_alt.store_code,
+                **self._customization_payload(
+                    size="large",
+                    soda="lemon-lime",
+                    syrups=["strawberry"],
+                    add_ins=["cream"],
+                    ice_cream="scoop-vanilla",
+                    quantity=3,
+                    notes="extra cherry",
+                ),
+            },
+        )
+
+        self.assertEqual(response.status_code, 302)
+        location = response.headers["Location"]
+        self.assertTrue(
+            location.startswith(
+                reverse(
+                    "orders:customize",
+                    args=[self.store_alt.store_code, "berry-burst"],
+                )
+            )
+        )
+        self.assertIn("size=large", location)
+        self.assertIn("syrups=strawberry", location)
+        self.assertIn("add_ins=cream", location)
+        self.assertIn("quantity=3", location)
+
+        follow_response = guest_client.get(location)
+        self.assertEqual(follow_response.status_code, 200)
+        self.assertContains(follow_response, self.store_alt.name)
+        self.assertContains(follow_response, 'value="3"', html=False)
+
+    def test_switch_store_resets_cart_when_existing_items_are_from_other_store(self):
+        guest_client = Client()
+        self._add_drink_to_cart(guest_client)
+
+        response = guest_client.post(
+            reverse(
+                "orders:customize-switch-store",
+                args=[self.store.store_code, "berry-burst"],
+            ),
+            {
+                "target_store_code": self.store_alt.store_code,
+                **self._customization_payload(),
+            },
+            follow=True,
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(
+            response,
+            "Your cart was reset because each order must stay tied to one store.",
+        )
+        cart = guest_client.session[SESSION_CART_KEY]
+        self.assertEqual(cart["store_code"], "")
+        self.assertEqual(cart["items"], [])
+
+    def test_add_to_cart_after_store_switch_uses_new_store_context(self):
+        guest_client = Client()
+        guest_client.post(
+            reverse(
+                "orders:customize-switch-store",
+                args=[self.store.store_code, "berry-burst"],
+            ),
+            {
+                "target_store_code": self.store_alt.store_code,
+                **self._customization_payload(
+                    size="small",
+                    quantity=2,
+                    notes="switch to Boise",
+                ),
+            },
+        )
+
+        response = guest_client.post(
+            reverse(
+                "orders:customize", args=[self.store_alt.store_code, "berry-burst"]
+            ),
+            self._customization_payload(
+                size="small",
+                quantity=2,
+                notes="switch to Boise",
+            ),
+            follow=True,
+        )
+
+        self.assertEqual(response.status_code, 200)
+        cart = guest_client.session[SESSION_CART_KEY]
+        self.assertEqual(cart["store_code"], self.store_alt.store_code)
+        self.assertEqual(
+            cart["items"][0]["store_code_snapshot"],
+            self.store_alt.store_code,
+        )
+
+    @patch("apps.orders.views._store_offers_menu_item", return_value=False)
+    def test_switch_store_redirects_to_target_menu_when_drink_unavailable(
+        self, _mock_store_offers_menu_item
+    ):
+        guest_client = Client()
+        response = guest_client.post(
+            reverse(
+                "orders:customize-switch-store",
+                args=[self.store.store_code, "berry-burst"],
+            ),
+            {"target_store_code": self.store_alt.store_code},
+            follow=True,
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(
+            response.request["PATH_INFO"],
+            reverse("orders:menu", args=[self.store_alt.store_code]),
+        )
+        self.assertContains(response, "That drink is not available at this store.")
 
     def test_account_user_can_complete_checkout_and_save_favorite(self):
         self.client.force_login(self.customer)
@@ -166,6 +332,52 @@ class CustomerOrderingViewTests(TestCase):
         self.assertEqual(
             Order.objects.filter(order_type=Order.OrderType.GUEST).count(), 1
         )
+
+    def test_guest_checkout_renders_client_validation_attributes_and_error_slots(self):
+        guest_client = Client()
+        self._add_drink_to_cart(guest_client)
+        response = guest_client.get(reverse("orders:checkout"))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(
+            response,
+            'data-checkout-guest-validation="true"',
+            html=False,
+        )
+        self.assertContains(response, 'name="guest_name"', html=False)
+        self.assertContains(response, 'data-checkout-validate="name"', html=False)
+        self.assertContains(response, 'pattern=".*\\S.*"', html=False)
+        self.assertContains(response, 'id="checkout-guest-name-error"', html=False)
+        self.assertContains(response, 'name="guest_email"', html=False)
+        self.assertContains(response, 'type="email"', html=False)
+        self.assertContains(response, 'data-checkout-validate="email"', html=False)
+        self.assertContains(response, 'id="checkout-guest-email-error"', html=False)
+        self.assertContains(response, 'name="guest_phone_number"', html=False)
+        self.assertContains(response, 'inputmode="tel"', html=False)
+        self.assertContains(
+            response,
+            'pattern="(?:\\D*\\d){10}\\D*"',
+            html=False,
+        )
+        self.assertContains(response, 'data-checkout-validate="phone"', html=False)
+        self.assertContains(response, 'id="checkout-guest-phone-error"', html=False)
+
+    def test_guest_checkout_invalid_email_is_still_rejected_server_side(self):
+        guest_client = Client()
+        self._add_drink_to_cart(guest_client)
+        response = guest_client.post(
+            reverse("orders:checkout"),
+            {
+                "pickup_time_choice": self._future_pickup_value(),
+                "guest_name": "Taylor Guest",
+                "guest_email": "notanemail",
+                "guest_phone_number": "801-555-0101",
+            },
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Enter a valid email address.")
+        self.assertEqual(Order.objects.count(), 0)
 
     def test_customer_status_page_hides_cancel_after_preparing(self):
         order = create_order(
@@ -262,6 +474,27 @@ class CustomerOrderingViewTests(TestCase):
 
         self.client.force_login(manager)
         response = self.client.get(reverse("orders:menu", args=[self.store.store_code]))
+        self.assertEqual(response.status_code, 403)
+        self.assertIn("outside your current scope", response.content.decode())
+
+    def test_staff_roles_cannot_switch_stores_in_customer_builder(self):
+        manager = make_user(
+            email="customer-switch-block@test.local",
+            role="manager",
+            preferred_store=self.store,
+            default_region=self.region,
+        )
+        assign_store(manager, self.store)
+        self.client.force_login(manager)
+
+        response = self.client.post(
+            reverse(
+                "orders:customize-switch-store",
+                args=[self.store.store_code, "berry-burst"],
+            ),
+            {"target_store_code": self.store_alt.store_code},
+        )
+
         self.assertEqual(response.status_code, 403)
         self.assertIn("outside your current scope", response.content.decode())
 
@@ -483,6 +716,11 @@ class DashboardAndHtmxViewTests(TestCase):
             default_region=cls.region_c,
             is_superuser=True,
         )
+        cls.account_user = make_user(
+            email="account-views@test.local",
+            preferred_store=cls.store_c1,
+            default_region=cls.region_c,
+        )
 
         assign_store(cls.manager, cls.store_c1)
         assign_store(cls.admin, cls.store_c1)
@@ -666,6 +904,60 @@ class DashboardAndHtmxViewTests(TestCase):
             self.assertEqual(len(group["stores"]), 1)
             self.assertEqual(group["stores"][0]["balance"].store, self.store_c1)
 
+    def test_manager_queue_actions_render_confirm_prompts_and_valid_next_step_only(
+        self,
+    ):
+        self.client.force_login(self.manager)
+
+        queued_response = self.client.get(reverse("orders:index"))
+        preparing_url = reverse("orders:mark-preparing", args=[self.queue_order.id])
+        ready_url = reverse("orders:mark-ready", args=[self.queue_order.id])
+        picked_up_url = reverse("orders:mark-picked-up", args=[self.queue_order.id])
+
+        self.assertEqual(queued_response.status_code, 200)
+        self.assertContains(queued_response, preparing_url)
+        self.assertContains(
+            queued_response,
+            'hx-confirm="Mark order as preparing?"',
+            html=False,
+        )
+        self.assertContains(
+            queued_response,
+            "hx-disabled-elt=\"find button[type='submit']\"",
+            html=False,
+        )
+        self.assertContains(queued_response, "Updating...")
+        self.assertNotContains(queued_response, ready_url)
+        self.assertNotContains(queued_response, picked_up_url)
+
+        transition_order_status(
+            self.queue_order,
+            Order.Status.PREPARING,
+            actor=self.manager,
+        )
+        preparing_response = self.client.get(reverse("orders:index"))
+        self.assertContains(preparing_response, ready_url)
+        self.assertContains(
+            preparing_response,
+            "Mark order as ready? This cannot be undone from the queue.",
+        )
+        self.assertNotContains(preparing_response, preparing_url)
+        self.assertNotContains(preparing_response, picked_up_url)
+
+        transition_order_status(
+            self.queue_order,
+            Order.Status.READY,
+            actor=self.manager,
+        )
+        ready_response = self.client.get(reverse("orders:index"))
+        self.assertContains(ready_response, picked_up_url)
+        self.assertContains(
+            ready_response,
+            "Mark order as picked up? This completes the order.",
+        )
+        self.assertNotContains(ready_response, preparing_url)
+        self.assertNotContains(ready_response, ready_url)
+
     def test_order_transition_htmx_moves_queue_forward(self):
         self.client.force_login(self.manager)
         response = self.client.post(
@@ -676,6 +968,22 @@ class DashboardAndHtmxViewTests(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertEqual(self.queue_order.status, Order.Status.PREPARING)
         self.assertContains(response, "Preparing")
+        self.assertContains(response, '<table class="data-table">', html=False)
+        self.assertContains(
+            response,
+            reverse("orders:mark-ready", args=[self.queue_order.id]),
+        )
+
+    def test_admin_cannot_transition_order_status(self):
+        self.client.force_login(self.admin)
+        response = self.client.post(
+            reverse("orders:mark-preparing", args=[self.queue_order.id]),
+            HTTP_HX_REQUEST="true",
+        )
+
+        self.queue_order.refresh_from_db()
+        self.assertEqual(response.status_code, 403)
+        self.assertEqual(self.queue_order.status, Order.Status.QUEUED)
 
     def test_manager_queue_rows_are_clickable_beyond_order_code(self):
         self.client.force_login(self.manager)
@@ -694,6 +1002,36 @@ class DashboardAndHtmxViewTests(TestCase):
             count=1,
             html=False,
         )
+
+    def test_super_admin_nav_persists_dashboard_link_across_workspaces(self):
+        self.client.force_login(self.super_admin)
+        dashboard_url = reverse("super-admin-dashboard")
+        workspace_routes = [
+            reverse("analytics:index"),
+            reverse("admin-users"),
+            reverse("imports:index"),
+        ]
+
+        for route in workspace_routes:
+            with self.subTest(route=route):
+                response = self.client.get(route)
+                self.assertEqual(response.status_code, 200)
+                self.assertContains(response, dashboard_url)
+                self.assertContains(response, "Dashboard")
+                self.assertContains(
+                    response, 'class="topnav topnav--dense"', html=False
+                )
+                self.assertContains(response, 'id="topnav-mobile-toggle"', html=False)
+                self.assertContains(response, 'class="topnav-toggle"', html=False)
+
+    def test_manager_nav_does_not_render_super_admin_dashboard_link(self):
+        self.client.force_login(self.manager)
+        response = self.client.get(reverse("orders:index"))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, reverse("manager-dashboard"))
+        self.assertNotContains(response, reverse("super-admin-dashboard"))
+        self.assertNotContains(response, 'class="topnav topnav--dense"', html=False)
 
     def test_transfer_approval_htmx_updates_transfer_panel(self):
         self.client.force_login(self.logistics)
@@ -790,6 +1128,50 @@ class DashboardAndHtmxViewTests(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, "Scoped User Management")
 
+    def test_imports_workspace_renders_responsive_structure_and_role_scoped_actions(
+        self,
+    ):
+        scenarios = [
+            (self.logistics, True, False),
+            (self.repair, False, True),
+            (self.super_admin, True, True),
+        ]
+        for user, expects_supply, expects_repair in scenarios:
+            with self.subTest(role=user.role):
+                self.client.force_login(user)
+                response = self.client.get(reverse("imports:index"))
+
+                self.assertEqual(response.status_code, 200)
+                self.assertContains(
+                    response,
+                    'class="page-grid page-grid--sidebar imports-workspace"',
+                    html=False,
+                )
+                self.assertContains(response, 'class="imports-tabbar"', html=False)
+                self.assertContains(response, 'href="#import-history"', html=False)
+
+                if expects_supply:
+                    self.assertContains(
+                        response, 'href="#imports-supply-upload"', html=False
+                    )
+                    self.assertContains(response, "Import supply usage CSV")
+                else:
+                    self.assertNotContains(
+                        response, 'href="#imports-supply-upload"', html=False
+                    )
+                    self.assertNotContains(response, "Import supply usage CSV")
+
+                if expects_repair:
+                    self.assertContains(
+                        response, 'href="#imports-repair-upload"', html=False
+                    )
+                    self.assertContains(response, "Import maintenance CSV")
+                else:
+                    self.assertNotContains(
+                        response, 'href="#imports-repair-upload"', html=False
+                    )
+                    self.assertNotContains(response, "Import maintenance CSV")
+
     def test_supply_usage_import_htmx_renders_history_panel(self):
         self.client.force_login(self.logistics)
         upload = SimpleUploadedFile(
@@ -818,6 +1200,7 @@ class DashboardAndHtmxViewTests(TestCase):
                 ImportJob.Status.SUCCEEDED,
             },
         )
+        self.assertContains(response, 'class="imports-history-table"', html=False)
         self.assertContains(response, "usage.csv")
 
     def test_analytics_workspace_surfaces_daily_and_ai_sections(self):
@@ -829,3 +1212,84 @@ class DashboardAndHtmxViewTests(TestCase):
         self.assertContains(response, "Order-Backed Financial Rows")
         self.assertContains(response, "Maintenance Summary")
         self.assertContains(response, "AI Supply Drafts")
+
+    def test_analytics_workspace_view_payments_button_visibility_matches_role_policy(
+        self,
+    ):
+        analytics_url = reverse("analytics:index")
+        payments_url = reverse("payments:index")
+        scenarios = [
+            (self.manager, True),
+            (self.super_admin, True),
+            (self.admin, False),
+            (self.logistics, False),
+        ]
+        for user, should_show in scenarios:
+            with self.subTest(role=user.role):
+                self.client.force_login(user)
+                response = self.client.get(analytics_url)
+                self.assertEqual(response.status_code, 200)
+                if should_show:
+                    self.assertContains(response, "View payments")
+                    self.assertContains(
+                        response,
+                        f'href="{payments_url}"',
+                        html=False,
+                    )
+                    self.assertContains(response, "Revenue snapshot")
+                else:
+                    self.assertNotContains(response, "View payments")
+
+    def test_analytics_workspace_renders_scroll_wrappers_for_dense_panels(self):
+        self.client.force_login(self.super_admin)
+        response = self.client.get(reverse("analytics:index"))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(
+            response, 'class="panel analytics-scroll-window"', html=False
+        )
+        self.assertContains(response, 'class="analytics-table-scroll"', html=False)
+        self.assertContains(response, "Audit Visibility")
+        self.assertContains(response, "Recent system events")
+
+    def test_payments_workspace_access_is_restricted_to_manager_and_super_admin(self):
+        payments_url = reverse("payments:index")
+
+        anonymous_response = self.client.get(payments_url)
+        self.assertEqual(anonymous_response.status_code, 302)
+        self.assertIn(reverse("login"), anonymous_response.headers["Location"])
+
+        for user in [self.manager, self.super_admin]:
+            with self.subTest(role=f"allowed-{user.role}"):
+                self.client.force_login(user)
+                response = self.client.get(payments_url)
+                self.assertEqual(response.status_code, 200)
+
+        for user in [self.admin, self.logistics, self.repair, self.account_user]:
+            with self.subTest(role=f"denied-{user.role}"):
+                self.client.force_login(user)
+                response = self.client.get(payments_url)
+                self.assertEqual(response.status_code, 403)
+
+    def test_payments_workspace_keeps_manager_store_scope(self):
+        record_payment_pending(
+            self.out_of_scope_order, payment_intent_id="pi_scope_test"
+        )
+        record_payment_success(
+            self.out_of_scope_order,
+            payment_intent_id="pi_scope_test",
+            actor=self.super_admin,
+        )
+
+        self.client.force_login(self.manager)
+        manager_response = self.client.get(reverse("payments:index"))
+        self.assertEqual(manager_response.status_code, 200)
+        self.assertContains(manager_response, self.queue_order.public_order_code)
+        self.assertNotContains(
+            manager_response, self.out_of_scope_order.public_order_code
+        )
+
+        self.client.force_login(self.super_admin)
+        super_response = self.client.get(reverse("payments:index"))
+        self.assertEqual(super_response.status_code, 200)
+        self.assertContains(super_response, self.out_of_scope_order.public_order_code)

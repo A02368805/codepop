@@ -215,7 +215,7 @@ class NavigationSelectorTests(TestCase):
         self.assertEqual(sync_item["url"], reverse("sync:index"))
         self.assertEqual(sync_item["icon"], "sync")
 
-    def test_staff_brandmark_is_not_clickable(self):
+    def test_staff_brandmark_routes_to_role_dashboard(self):
         expected_routes = [
             (self.manager, "manager-dashboard"),
             (self.admin, "admin-dashboard"),
@@ -226,6 +226,6 @@ class NavigationSelectorTests(TestCase):
         for user, route_name in expected_routes:
             with self.subTest(role=user.role):
                 brand = build_brandmark(user)
-                self.assertFalse(brand["is_clickable"])
-                self.assertEqual(brand["url"], "")
+                self.assertTrue(brand["is_clickable"])
+                self.assertEqual(brand["url"], reverse(route_name))
                 self.assertEqual(get_post_login_url(user), reverse(route_name))

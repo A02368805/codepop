@@ -276,6 +276,11 @@ def _build_store_menu_sections(*, store):
     return cards, sections, nav
 
 
+def _store_offers_menu_item(*, store, drink_slug):
+    menu_cards, _, _ = _build_store_menu_sections(store=store)
+    return any(card.get("slug") == drink_slug for card in menu_cards)
+
+
 def _build_menu_hero_recommendations(*, store, latest_result, limit=4):
     menu_items = get_menu_items()
     menu_items_by_slug = {item["slug"]: item for item in menu_items}
@@ -432,6 +437,12 @@ def _build_customized_builder_url(*, store_code, menu_slug, selection=None):
     notes = str(selection.get("notes", "")).strip()
     if notes:
         query.append(("notes", notes[:180]))
+    try:
+        quantity = int(selection.get("quantity", 1))
+    except (TypeError, ValueError):
+        quantity = 1
+    if 1 <= quantity <= 12 and quantity != 1:
+        query.append(("quantity", quantity))
     if not query:
         return base_url
     return f"{base_url}?{urlencode(query, doseq=True)}"
@@ -550,7 +561,29 @@ def _customize_initial_from_query(request):
     if notes:
         initial["notes"] = notes[:500]
 
+    try:
+        quantity = int(str(request.GET.get("quantity", "")).strip())
+    except ValueError:
+        quantity = None
+    if quantity and 1 <= quantity <= 12:
+        initial["quantity"] = quantity
+
     return initial
+
+
+def _customize_selection_from_post(request, *, drink_slug):
+    form = DrinkCustomizationForm(request.POST, drink_slug=drink_slug)
+    if not form.is_valid():
+        return {}
+    return {
+        "size": form.cleaned_data["size"],
+        "soda": form.cleaned_data["soda"],
+        "syrups": form.cleaned_data["syrups"],
+        "add_ins": form.cleaned_data["add_ins"],
+        "ice_cream": form.cleaned_data["ice_cream"],
+        "notes": form.cleaned_data["notes"],
+        "quantity": form.cleaned_data["quantity"],
+    }
 
 
 def _build_choice_cards(*, name, groups, selected_values, multiple):
@@ -856,6 +889,9 @@ class CustomizeDrinkView(CustomerOrderingRequiredMixin, TemplateView):
                 "store": self.store,
                 "menu_item": self.menu_item,
                 "form": form,
+                "store_switch_options": Store.objects.filter(is_active=True)
+                .select_related("region")
+                .order_by("name"),
                 "assistant": build_drink_builder_assistance(
                     user=self.request.user,
                     menu_item=self.menu_item,
@@ -912,6 +948,49 @@ class CustomizeDrinkView(CustomerOrderingRequiredMixin, TemplateView):
             messages.success(request, "Saved to favorites.")
         messages.success(request, f"Added {self.menu_item['name']} to your cart.")
         return redirect("orders:cart")
+
+
+class CustomizeSwitchStoreView(CustomerOrderingRequiredMixin, View):
+    def post(self, request, *args, **kwargs):
+        drink_slug = kwargs["drink_slug"]
+        current_store = get_object_or_404(
+            Store, store_code=kwargs["store_code"], is_active=True
+        )
+        target_store_code = str(request.POST.get("target_store_code", "")).strip()
+        if not target_store_code:
+            messages.error(request, "Choose a pickup store before switching.")
+            return redirect("orders:customize", current_store.store_code, drink_slug)
+
+        target_store = Store.objects.filter(
+            store_code=target_store_code, is_active=True
+        ).first()
+        if not target_store:
+            messages.error(request, "That pickup store is no longer available.")
+            return redirect("orders:customize", current_store.store_code, drink_slug)
+
+        if not _store_offers_menu_item(store=target_store, drink_slug=drink_slug):
+            messages.error(request, "That drink is not available at this store.")
+            return redirect("orders:menu", target_store.store_code)
+
+        cart = get_cart(request.session)
+        if (
+            cart.get("items")
+            and cart.get("store_code")
+            and cart["store_code"] != target_store.store_code
+        ):
+            clear_cart(request.session)
+            messages.warning(
+                request,
+                "Your cart was reset because each order must stay tied to one store.",
+            )
+
+        selection = _customize_selection_from_post(request, drink_slug=drink_slug)
+        destination = _build_customized_builder_url(
+            store_code=target_store.store_code,
+            menu_slug=drink_slug,
+            selection=selection,
+        )
+        return redirect(destination)
 
 
 class CartView(CustomerOrderingRequiredMixin, TemplateView):

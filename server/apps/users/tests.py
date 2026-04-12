@@ -4,6 +4,7 @@ from django.test import TestCase
 from django.urls import reverse
 
 from .models import TastePreference, User
+from .services import get_effective_role, get_post_login_url
 
 
 class PreferenceRecommendationFlowTests(TestCase):
@@ -84,3 +85,52 @@ class PreferenceRecommendationFlowTests(TestCase):
                 base_tags,
                 msg=f"{row['slug']} should honor caffeine-free dietary preference.",
             )
+
+
+class RoleContractTests(TestCase):
+    def test_super_admin_effective_role_and_redirect_remain_unambiguous(self):
+        super_admin = User.objects.create_user(
+            email="super.role.contract@floatstack.local",
+            password="FloatStack123!",
+            role=User.Role.SUPER_ADMIN,
+            status=User.Status.ACTIVE,
+            is_superuser=True,
+        )
+
+        self.assertTrue(super_admin.is_superuser)
+        self.assertTrue(super_admin.is_staff)
+        self.assertEqual(get_effective_role(super_admin), User.Role.SUPER_ADMIN)
+        self.assertEqual(
+            get_post_login_url(super_admin),
+            reverse("super-admin-dashboard"),
+        )
+
+    def test_admin_and_manager_redirects_follow_explicit_role(self):
+        admin = User.objects.create_user(
+            email="admin.role.contract@floatstack.local",
+            password="FloatStack123!",
+            role=User.Role.ADMIN,
+            status=User.Status.ACTIVE,
+        )
+        manager = User.objects.create_user(
+            email="manager.role.contract@floatstack.local",
+            password="FloatStack123!",
+            role=User.Role.MANAGER,
+            status=User.Status.ACTIVE,
+        )
+        account_user = User.objects.create_user(
+            email="account.role.contract@floatstack.local",
+            password="FloatStack123!",
+            role=User.Role.ACCOUNT_USER,
+            status=User.Status.ACTIVE,
+        )
+
+        self.assertEqual(get_effective_role(admin), User.Role.ADMIN)
+        self.assertEqual(get_post_login_url(admin), reverse("admin-dashboard"))
+        self.assertEqual(get_effective_role(manager), User.Role.MANAGER)
+        self.assertEqual(get_post_login_url(manager), reverse("manager-dashboard"))
+        self.assertEqual(get_effective_role(account_user), User.Role.ACCOUNT_USER)
+        self.assertEqual(
+            get_post_login_url(account_user),
+            reverse("orders:recommendations"),
+        )
