@@ -25,6 +25,13 @@ class ScaffoldSmokeTests(TestCase):
             preferred_store=cls.store,
             default_region=cls.region,
         )
+        cls.super_admin = make_user(
+            email="superadmin@test.local",
+            role="super_admin",
+            preferred_store=cls.store,
+            default_region=cls.region,
+            is_superuser=True,
+        )
         assign_store(
             cls.manager,
             cls.store,
@@ -41,6 +48,18 @@ class ScaffoldSmokeTests(TestCase):
         self.client.force_login(self.manager)
         response = self.client.get(reverse("dashboard"))
         self.assertRedirects(response, reverse("manager-dashboard"))
+
+    def test_dashboard_redirects_super_admin_to_super_admin_page(self):
+        self.client.force_login(self.super_admin)
+        response = self.client.get(reverse("dashboard"))
+        self.assertRedirects(response, reverse("super-admin-dashboard"))
+
+    def test_legacy_backend_auth_login_endpoint_returns_not_found(self):
+        response = self.client.post(
+            "/backend/auth/login/",
+            {"username": self.super_admin.email, "password": "FloatStack123!"},
+        )
+        self.assertEqual(response.status_code, 404)
 
     def test_customer_cannot_open_manager_dashboard(self):
         self.client.force_login(self.customer)
