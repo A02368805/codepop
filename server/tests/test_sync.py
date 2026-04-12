@@ -478,3 +478,24 @@ class NodeHealthViewTests(TestCase):
         self.assertIn("peers", data)
         self.assertIn("store-b", data["peers"])
         self.assertFalse(data["peers"]["store-b"]["reachable"])
+
+    @override_settings(
+        STORE_ID="store-a",
+        SYNC_API_SECRET="test-secret",
+        PEER_STORES={"store-b": "http://store-b:8000"},
+    )
+    def test_health_probe_header_skips_nested_peer_calls(self):
+        """Probe requests should not recurse into peer health checks."""
+        from unittest.mock import patch
+
+        with patch("requests.get") as mock_get:
+            response = self.client.get(
+                reverse("sync:health"),
+                HTTP_X_SYNC_TOKEN="test-secret",
+                HTTP_X_DISTRIBUTED_HEALTH_PROBE="1",
+            )
+
+        self.assertEqual(response.status_code, 200)
+        data = response.json()
+        self.assertNotIn("peers", data)
+        mock_get.assert_not_called()

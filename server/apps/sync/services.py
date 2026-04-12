@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import logging
 from dataclasses import dataclass
 from datetime import date, datetime, timedelta
 from decimal import Decimal
@@ -26,6 +27,8 @@ from django.urls import reverse
 from django.utils import timezone
 
 from .models import AuditLog, SyncConflictLog, SyncOutboxEvent, SyncProjectionState
+
+sync_logger = logging.getLogger("distributed.sync")
 
 EVENT_STAGE_ORDER = {
     "order.created": 0,
@@ -866,6 +869,13 @@ def push_event_to_peer(event: SyncOutboxEvent, delivery) -> None:
     from django.conf import settings
 
     try:
+        sync_logger.info(
+            "DISTRIBUTED: Reaching another store's data to push sync event '%s' "
+            "to peer '%s' at %s.",
+            event.event_type,
+            delivery.peer_node_id,
+            delivery.peer_url,
+        )
         payload = {
             "event_id": str(event.pk),
             "event_type": event.event_type,
@@ -891,6 +901,12 @@ def push_event_to_peer(event: SyncOutboxEvent, delivery) -> None:
         # Success: mark delivered
         delivery.status = "delivered"
         delivery.save(update_fields=["status", "updated_at"])
+        sync_logger.info(
+            "DISTRIBUTED: Peer '%s' accepted event '%s' (%s).",
+            delivery.peer_node_id,
+            event.event_type,
+            event.pk,
+        )
 
     except Exception as exc:
         # Failure: increment attempt and schedule retry with backoff
@@ -913,6 +929,13 @@ def push_event_to_peer(event: SyncOutboxEvent, delivery) -> None:
                 "next_attempt_at",
                 "updated_at",
             ]
+        )
+        sync_logger.warning(
+            "DISTRIBUTED: Peer '%s' delivery failed for event '%s' (%s): %s",
+            delivery.peer_node_id,
+            event.event_type,
+            event.pk,
+            exc,
         )
 
 
@@ -950,6 +973,11 @@ def ingest_event_from_peer(payload: dict, *, origin_node_id: str) -> SyncOutboxE
         remote_event_id=remote_event_id,
     ).first()
     if existing:
+        sync_logger.info(
+            "DISTRIBUTED: Ignoring duplicate peer event from '%s' (%s).",
+            origin_node_id,
+            remote_event_id,
+        )
         return existing
 
     # Create the event locally with peer origin marker
@@ -962,6 +990,12 @@ def ingest_event_from_peer(payload: dict, *, origin_node_id: str) -> SyncOutboxE
         payload=payload["payload"],
         origin_node_id=origin_node_id,
         remote_event_id=remote_event_id,
+    )
+    sync_logger.info(
+        "DISTRIBUTED: Ingested peer event '%s' from '%s' (remote id: %s).",
+        event.event_type,
+        origin_node_id,
+        remote_event_id,
     )
 
     # Process the event locally (projects, conflicts, notifications)
