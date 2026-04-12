@@ -18,6 +18,30 @@
         <p class="eyebrow">Pickup Store</p>
         <h2>{{ store.name }}</h2>
         <p class="muted">{{ store.full_address }}</p>
+        <div class="builder-store-switch">
+            <label class="field" for="id_target_store_code">
+                <span>Change Store</span>
+                <select id="id_target_store_code" name="target_store_code" form="drink-builder-form">
+                    {% for switch_store in store_switch_options %}
+                        <option
+                            value="{{ switch_store.store_code }}"
+                            {% if switch_store.store_code == store.store_code %}selected{% endif %}
+                        >
+                            {{ switch_store.name }} ({{ switch_store.store_code }})
+                        </option>
+                    {% endfor %}
+                </select>
+            </label>
+            <button
+                class="button button--ghost"
+                type="submit"
+                form="drink-builder-form"
+                formaction="{% url 'orders:customize-switch-store' store.store_code menu_item.slug %}"
+                formnovalidate
+            >
+                Change store
+            </button>
+        </div>
         <div class="cta-row">
             <a class="button button--ghost" href="{% url 'orders:menu' store.store_code %}">Back to menu</a>
             <a class="button button--ghost" href="{% url 'orders:cart' %}">View cart</a>

@@ -1,5 +1,6 @@
 from datetime import timedelta
 from decimal import Decimal
+from unittest.mock import patch
 
 from apps.imports.models import ImportJob
 from apps.inventory.models import InventoryItem, LocalSupplier, SupplierReplenishment
@@ -82,6 +83,27 @@ class CustomerOrderingViewTests(TestCase):
     def _future_pickup_value(self):
         return pickup_time_choices(now=timezone.now())[1][0]
 
+    def _customization_payload(
+        self,
+        *,
+        size="medium",
+        soda="lemon-lime",
+        syrups=None,
+        add_ins=None,
+        ice_cream="",
+        quantity=1,
+        notes="",
+    ):
+        return {
+            "size": size,
+            "soda": soda,
+            "syrups": syrups or [],
+            "add_ins": add_ins or [],
+            "ice_cream": ice_cream,
+            "quantity": quantity,
+            "notes": notes,
+        }
+
     @override_settings(STORE_ID="store-c")
     def test_topbar_shows_current_store_and_region_in_distributed_mode(self):
         self.client.force_login(self.customer)
@@ -97,6 +119,150 @@ class CustomerOrderingViewTests(TestCase):
         response = self.client.get(reverse("orders:menu", args=[self.store.store_code]))
         self.assertEqual(response.status_code, 200)
         self.assertNotContains(response, "Current Node")
+
+    def test_customize_page_renders_change_store_control(self):
+        guest_client = Client()
+        response = guest_client.get(
+            reverse("orders:customize", args=[self.store.store_code, "berry-burst"])
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Change Store")
+        self.assertContains(response, 'name="target_store_code"', html=False)
+        self.assertContains(
+            response,
+            reverse(
+                "orders:customize-switch-store",
+                args=[self.store.store_code, "berry-burst"],
+            ),
+        )
+        self.assertContains(
+            response, f"{self.store_alt.name} ({self.store_alt.store_code})"
+        )
+
+    def test_switch_store_keeps_user_on_same_builder_and_preserves_selection(self):
+        guest_client = Client()
+        response = guest_client.post(
+            reverse(
+                "orders:customize-switch-store",
+                args=[self.store.store_code, "berry-burst"],
+            ),
+            {
+                "target_store_code": self.store_alt.store_code,
+                **self._customization_payload(
+                    size="large",
+                    soda="lemon-lime",
+                    syrups=["strawberry"],
+                    add_ins=["cream"],
+                    ice_cream="scoop-vanilla",
+                    quantity=3,
+                    notes="extra cherry",
+                ),
+            },
+        )
+
+        self.assertEqual(response.status_code, 302)
+        location = response.headers["Location"]
+        self.assertTrue(
+            location.startswith(
+                reverse(
+                    "orders:customize",
+                    args=[self.store_alt.store_code, "berry-burst"],
+                )
+            )
+        )
+        self.assertIn("size=large", location)
+        self.assertIn("syrups=strawberry", location)
+        self.assertIn("add_ins=cream", location)
+        self.assertIn("quantity=3", location)
+
+        follow_response = guest_client.get(location)
+        self.assertEqual(follow_response.status_code, 200)
+        self.assertContains(follow_response, self.store_alt.name)
+        self.assertContains(follow_response, 'value="3"', html=False)
+
+    def test_switch_store_resets_cart_when_existing_items_are_from_other_store(self):
+        guest_client = Client()
+        self._add_drink_to_cart(guest_client)
+
+        response = guest_client.post(
+            reverse(
+                "orders:customize-switch-store",
+                args=[self.store.store_code, "berry-burst"],
+            ),
+            {
+                "target_store_code": self.store_alt.store_code,
+                **self._customization_payload(),
+            },
+            follow=True,
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(
+            response,
+            "Your cart was reset because each order must stay tied to one store.",
+        )
+        cart = guest_client.session[SESSION_CART_KEY]
+        self.assertEqual(cart["store_code"], "")
+        self.assertEqual(cart["items"], [])
+
+    def test_add_to_cart_after_store_switch_uses_new_store_context(self):
+        guest_client = Client()
+        guest_client.post(
+            reverse(
+                "orders:customize-switch-store",
+                args=[self.store.store_code, "berry-burst"],
+            ),
+            {
+                "target_store_code": self.store_alt.store_code,
+                **self._customization_payload(
+                    size="small",
+                    quantity=2,
+                    notes="switch to Boise",
+                ),
+            },
+        )
+
+        response = guest_client.post(
+            reverse(
+                "orders:customize", args=[self.store_alt.store_code, "berry-burst"]
+            ),
+            self._customization_payload(
+                size="small",
+                quantity=2,
+                notes="switch to Boise",
+            ),
+            follow=True,
+        )
+
+        self.assertEqual(response.status_code, 200)
+        cart = guest_client.session[SESSION_CART_KEY]
+        self.assertEqual(cart["store_code"], self.store_alt.store_code)
+        self.assertEqual(
+            cart["items"][0]["store_code_snapshot"],
+            self.store_alt.store_code,
+        )
+
+    @patch("apps.orders.views._store_offers_menu_item", return_value=False)
+    def test_switch_store_redirects_to_target_menu_when_drink_unavailable(
+        self, _mock_store_offers_menu_item
+    ):
+        guest_client = Client()
+        response = guest_client.post(
+            reverse(
+                "orders:customize-switch-store",
+                args=[self.store.store_code, "berry-burst"],
+            ),
+            {"target_store_code": self.store_alt.store_code},
+            follow=True,
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(
+            response.request["PATH_INFO"],
+            reverse("orders:menu", args=[self.store_alt.store_code]),
+        )
+        self.assertContains(response, "That drink is not available at this store.")
 
     def test_account_user_can_complete_checkout_and_save_favorite(self):
         self.client.force_login(self.customer)
@@ -166,6 +332,52 @@ class CustomerOrderingViewTests(TestCase):
         self.assertEqual(
             Order.objects.filter(order_type=Order.OrderType.GUEST).count(), 1
         )
+
+    def test_guest_checkout_renders_client_validation_attributes_and_error_slots(self):
+        guest_client = Client()
+        self._add_drink_to_cart(guest_client)
+        response = guest_client.get(reverse("orders:checkout"))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(
+            response,
+            'data-checkout-guest-validation="true"',
+            html=False,
+        )
+        self.assertContains(response, 'name="guest_name"', html=False)
+        self.assertContains(response, 'data-checkout-validate="name"', html=False)
+        self.assertContains(response, 'pattern=".*\\S.*"', html=False)
+        self.assertContains(response, 'id="checkout-guest-name-error"', html=False)
+        self.assertContains(response, 'name="guest_email"', html=False)
+        self.assertContains(response, 'type="email"', html=False)
+        self.assertContains(response, 'data-checkout-validate="email"', html=False)
+        self.assertContains(response, 'id="checkout-guest-email-error"', html=False)
+        self.assertContains(response, 'name="guest_phone_number"', html=False)
+        self.assertContains(response, 'inputmode="tel"', html=False)
+        self.assertContains(
+            response,
+            'pattern="(?:\\D*\\d){10}\\D*"',
+            html=False,
+        )
+        self.assertContains(response, 'data-checkout-validate="phone"', html=False)
+        self.assertContains(response, 'id="checkout-guest-phone-error"', html=False)
+
+    def test_guest_checkout_invalid_email_is_still_rejected_server_side(self):
+        guest_client = Client()
+        self._add_drink_to_cart(guest_client)
+        response = guest_client.post(
+            reverse("orders:checkout"),
+            {
+                "pickup_time_choice": self._future_pickup_value(),
+                "guest_name": "Taylor Guest",
+                "guest_email": "notanemail",
+                "guest_phone_number": "801-555-0101",
+            },
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Enter a valid email address.")
+        self.assertEqual(Order.objects.count(), 0)
 
     def test_customer_status_page_hides_cancel_after_preparing(self):
         order = create_order(
@@ -262,6 +474,27 @@ class CustomerOrderingViewTests(TestCase):
 
         self.client.force_login(manager)
         response = self.client.get(reverse("orders:menu", args=[self.store.store_code]))
+        self.assertEqual(response.status_code, 403)
+        self.assertIn("outside your current scope", response.content.decode())
+
+    def test_staff_roles_cannot_switch_stores_in_customer_builder(self):
+        manager = make_user(
+            email="customer-switch-block@test.local",
+            role="manager",
+            preferred_store=self.store,
+            default_region=self.region,
+        )
+        assign_store(manager, self.store)
+        self.client.force_login(manager)
+
+        response = self.client.post(
+            reverse(
+                "orders:customize-switch-store",
+                args=[self.store.store_code, "berry-burst"],
+            ),
+            {"target_store_code": self.store_alt.store_code},
+        )
+
         self.assertEqual(response.status_code, 403)
         self.assertIn("outside your current scope", response.content.decode())
 

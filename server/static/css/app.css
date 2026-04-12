@@ -200,7 +200,7 @@ h3 {
 .topnav {
     display: flex;
     flex-wrap: nowrap;
-    justify-content: flex-start;
+    justify-content: flex-end;
     align-items: center;
     flex: 1 1 auto;
     min-width: 0;
@@ -731,6 +731,17 @@ h3 {
     gap: 0.45rem;
 }
 
+.field-error {
+    margin: 0;
+    color: var(--danger);
+    font-size: 0.82rem;
+    line-height: 1.35;
+}
+
+.field-error[hidden] {
+    display: none !important;
+}
+
 .field span,
 .field legend {
     color: var(--muted);
@@ -813,6 +824,13 @@ h3 {
 
 .fieldset input[type="checkbox"] {
     width: auto;
+}
+
+.field--invalid input,
+.field--invalid select,
+.field--invalid textarea {
+    border-color: rgba(143, 74, 97, 0.5);
+    outline: 2px solid rgba(143, 74, 97, 0.16);
 }
 
 .auth-shell {
@@ -1826,6 +1844,16 @@ h3 {
 .builder-overview-card {
     padding: 1.15rem 1.25rem;
     background: rgba(255, 255, 255, 0.72);
+}
+
+.builder-store-switch {
+    display: grid;
+    gap: 0.65rem;
+    margin-top: 0.95rem;
+}
+
+.builder-store-switch .button {
+    justify-self: start;
 }
 
 .cup-preview {
