@@ -198,3 +198,28 @@ class MaintenanceWorkspaceViewTests(TestCase):
         )
 
         self.assertEqual(response.status_code, 403)
+
+    def test_workspace_renders_stacked_assignments_panel_with_view_all_toggle(self):
+        create_repair_assignment(
+            self.machine,
+            assigned_to=self.repair_staff,
+            priority_score=Decimal("70.00"),
+            notes="Seeded preview assignment.",
+        )
+        self.client.force_login(self.repair_staff)
+
+        response = self.client.get(reverse("maintenance:index"))
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Route-Aware Queue")
+        self.assertContains(response, "Repair Assignments")
+        self.assertContains(response, "View all")
+
+        html = response.content.decode()
+        self.assertLess(html.find("Route-Aware Queue"), html.find("Repair Assignments"))
+
+        expanded_response = self.client.get(
+            reverse("maintenance:index"),
+            {"assignments": "all"},
+        )
+        self.assertEqual(expanded_response.status_code, 200)
+        self.assertContains(expanded_response, "Show preview")
