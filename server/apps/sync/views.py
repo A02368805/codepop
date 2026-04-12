@@ -1,4 +1,5 @@
 import json
+import logging
 
 from apps.users.models import User
 from apps.users.permissions import RoleRequiredMixin
@@ -17,6 +18,8 @@ from .services import (
     retry_failed_outbox_events,
 )
 from .tasks import process_pending_outbox_events_async
+
+health_logger = logging.getLogger("distributed.health")
 
 
 def _sync_context():
@@ -163,6 +166,7 @@ class NodeHealthView(View):
 
         node_id = settings.STORE_ID or "unconfigured"
         sync_enabled = settings.SYNC_PUSH_ENABLED
+        is_probe_request = request.headers.get("X-Distributed-Health-Probe", "") == "1"
         authenticated = (
             request.headers.get("X-Sync-Token", "") == settings.SYNC_API_SECRET
             and settings.SYNC_API_SECRET
@@ -174,21 +178,39 @@ class NodeHealthView(View):
             "sync_enabled": sync_enabled,
         }
 
-        # Only expose peer details to authenticated callers
+        # Probe requests are for liveness only and must not recurse into peers.
+        if is_probe_request:
+            return JsonResponse(health)
+
+        # Only expose peer details to authenticated callers.
         if authenticated and settings.PEER_STORES:
             peers = {}
             for peer_id, peer_url in settings.PEER_STORES.items():
                 try:
+                    health_logger.info(
+                        "DISTRIBUTED: Health check reaching peer '%s' at %s.",
+                        peer_id,
+                        peer_url,
+                    )
                     resp = http_requests.get(
                         f"{peer_url}/sync/health/",
-                        headers={"X-Sync-Token": settings.SYNC_API_SECRET},
+                        headers={
+                            "X-Sync-Token": settings.SYNC_API_SECRET,
+                            "X-Distributed-Health-Probe": "1",
+                        },
                         timeout=3,
                     )
                     peers[peer_id] = {
                         "url": peer_url,
                         "reachable": resp.status_code == 200,
                     }
-                except Exception:
+                except Exception as exc:
+                    health_logger.warning(
+                        "DISTRIBUTED: Health check could not reach peer '%s' at %s: %s",
+                        peer_id,
+                        peer_url,
+                        exc,
+                    )
                     peers[peer_id] = {"url": peer_url, "reachable": False}
             health["peers"] = peers
 

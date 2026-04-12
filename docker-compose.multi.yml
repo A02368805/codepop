@@ -8,12 +8,14 @@ services:
   # Shared Redis broker for all stores
   redis:
     image: redis:7-alpine
+    restart: unless-stopped
     ports:
       - "6379:6379"
 
   # ===== STORE A (always active) =====
   db_a:
     image: postgres:16
+    restart: unless-stopped
     environment:
       POSTGRES_DB: codepop_store_a
       POSTGRES_USER: codepop
@@ -25,6 +27,7 @@ services:
 
   web_a:
     build: .
+    restart: unless-stopped
     command: sh -c "python manage.py migrate && python manage.py runserver 0.0.0.0:8000"
     env_file:
       - .env.multi
@@ -46,6 +49,7 @@ services:
 
   worker_a:
     build: .
+    restart: unless-stopped
     command: sh -c "celery -A config worker -l info"
     env_file:
       - .env.multi
@@ -65,6 +69,7 @@ services:
 
   beat_a:
     build: .
+    restart: unless-stopped
     command: sh -c "celery -A config beat -l info"
     env_file:
       - .env.multi
@@ -85,6 +90,7 @@ services:
   # ===== STORE B (optional, profile: store-b) =====
   db_b:
     image: postgres:16
+    restart: unless-stopped
     profiles:
       - store-b
     environment:
@@ -98,6 +104,7 @@ services:
 
   web_b:
     build: .
+    restart: unless-stopped
     profiles:
       - store-b
     command: sh -c "python manage.py migrate && python manage.py runserver 0.0.0.0:8000"
@@ -121,6 +128,7 @@ services:
 
   worker_b:
     build: .
+    restart: unless-stopped
     profiles:
       - store-b
     command: sh -c "celery -A config worker -l info"
@@ -142,6 +150,7 @@ services:
 
   beat_b:
     build: .
+    restart: unless-stopped
     profiles:
       - store-b
     command: sh -c "celery -A config beat -l info"
@@ -164,6 +173,7 @@ services:
   # ===== STORE C (optional, profile: store-c) =====
   db_c:
     image: postgres:16
+    restart: unless-stopped
     profiles:
       - store-c
     environment:
@@ -177,6 +187,7 @@ services:
 
   web_c:
     build: .
+    restart: unless-stopped
     profiles:
       - store-c
     command: sh -c "python manage.py migrate && python manage.py runserver 0.0.0.0:8000"
@@ -200,6 +211,7 @@ services:
 
   worker_c:
     build: .
+    restart: unless-stopped
     profiles:
       - store-c
     command: sh -c "celery -A config worker -l info"
@@ -221,6 +233,7 @@ services:
 
   beat_c:
     build: .
+    restart: unless-stopped
     profiles:
       - store-c
     command: sh -c "celery -A config beat -l info"

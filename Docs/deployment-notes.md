@@ -30,6 +30,7 @@ cd server
 - SQLite works for quick local runs, but PostgreSQL is still the intended shared-environment target.
 - Local development defaults to eager Celery execution unless `CELERY_TASK_ALWAYS_EAGER=False`.
 - When async workers are enabled, run Redis plus Celery worker and beat.
+- In distributed mode, set `DISTRIBUTED_LOG_LEVEL=INFO` so console logs clearly show inter-node calls ("Reaching another store's data...") during demos.
 
 ## Production-Shaped Boundaries
 
