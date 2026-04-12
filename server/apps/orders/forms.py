@@ -69,6 +69,32 @@ class CheckoutForm(forms.Form):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.fields["pickup_time_choice"].choices = pickup_time_choices()
+        self.fields["guest_name"].widget.attrs.update(
+            {
+                "required": True,
+                "autocomplete": "name",
+                "pattern": r".*\S.*",
+                "data-checkout-validate": "name",
+                "aria-describedby": "checkout-guest-name-error",
+            }
+        )
+        self.fields["guest_email"].widget.attrs.update(
+            {
+                "required": True,
+                "autocomplete": "email",
+                "data-checkout-validate": "email",
+                "aria-describedby": "checkout-guest-email-error",
+            }
+        )
+        self.fields["guest_phone_number"].widget.attrs.update(
+            {
+                "autocomplete": "tel",
+                "inputmode": "tel",
+                "pattern": r"(?:\D*\d){10}\D*",
+                "data-checkout-validate": "phone",
+                "aria-describedby": "checkout-guest-phone-error",
+            }
+        )
 
     def clean(self):
         cleaned_data = super().clean()

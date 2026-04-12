@@ -167,6 +167,52 @@ class CustomerOrderingViewTests(TestCase):
             Order.objects.filter(order_type=Order.OrderType.GUEST).count(), 1
         )
 
+    def test_guest_checkout_renders_client_validation_attributes_and_error_slots(self):
+        guest_client = Client()
+        self._add_drink_to_cart(guest_client)
+        response = guest_client.get(reverse("orders:checkout"))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(
+            response,
+            'data-checkout-guest-validation="true"',
+            html=False,
+        )
+        self.assertContains(response, 'name="guest_name"', html=False)
+        self.assertContains(response, 'data-checkout-validate="name"', html=False)
+        self.assertContains(response, 'pattern=".*\\S.*"', html=False)
+        self.assertContains(response, 'id="checkout-guest-name-error"', html=False)
+        self.assertContains(response, 'name="guest_email"', html=False)
+        self.assertContains(response, 'type="email"', html=False)
+        self.assertContains(response, 'data-checkout-validate="email"', html=False)
+        self.assertContains(response, 'id="checkout-guest-email-error"', html=False)
+        self.assertContains(response, 'name="guest_phone_number"', html=False)
+        self.assertContains(response, 'inputmode="tel"', html=False)
+        self.assertContains(
+            response,
+            'pattern="(?:\\D*\\d){10}\\D*"',
+            html=False,
+        )
+        self.assertContains(response, 'data-checkout-validate="phone"', html=False)
+        self.assertContains(response, 'id="checkout-guest-phone-error"', html=False)
+
+    def test_guest_checkout_invalid_email_is_still_rejected_server_side(self):
+        guest_client = Client()
+        self._add_drink_to_cart(guest_client)
+        response = guest_client.post(
+            reverse("orders:checkout"),
+            {
+                "pickup_time_choice": self._future_pickup_value(),
+                "guest_name": "Taylor Guest",
+                "guest_email": "notanemail",
+                "guest_phone_number": "801-555-0101",
+            },
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Enter a valid email address.")
+        self.assertEqual(Order.objects.count(), 0)
+
     def test_customer_status_page_hides_cancel_after_preparing(self):
         order = create_order(
             store=self.store,
