@@ -779,6 +779,20 @@ h3 {
     display: none !important;
 }
 
+.auth-form .errorlist,
+.field .errorlist {
+    margin: 0;
+    padding-left: 1.1rem;
+    color: var(--danger);
+    font-size: 0.82rem;
+    line-height: 1.35;
+}
+
+.auth-form .errorlist li,
+.field .errorlist li {
+    margin: 0.12rem 0;
+}
+
 .field span,
 .field legend {
     color: var(--muted);
