@@ -159,7 +159,7 @@ class PaymentIntentCreateView(View):
         )
         if not user_can_view_order(request.user, order, session=request.session):
             return JsonResponse(
-                {"error": "This order is outside your access scope."},
+                {"error": "You don't have access to this order."},
                 status=403,
             )
 
@@ -186,7 +186,7 @@ class PaymentStatusView(View):
         )
         if not user_can_view_order(request.user, order, session=request.session):
             return JsonResponse(
-                {"error": "This order is outside your access scope."},
+                {"error": "You don't have access to this order."},
                 status=403,
             )
 

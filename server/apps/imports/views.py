@@ -20,13 +20,19 @@ def _job_queryset_for_user(user):
     return queryset
 
 
-def _render_history_response(request):
-    html = render_to_string(
+def _history_fragment_html(request):
+    return render_to_string(
         "imports/partials/history.html",
-        {"jobs": _job_queryset_for_user(request.user)[:25]},
+        {
+            "jobs": _job_queryset_for_user(request.user)[:25],
+            "show_history_link": True,
+        },
         request=request,
     )
-    return HttpResponse(html)
+
+
+def _render_history_response(request):
+    return HttpResponse(_history_fragment_html(request))
 
 
 class ImportWorkspaceView(RoleRequiredMixin, TemplateView):
@@ -44,13 +50,14 @@ class ImportWorkspaceView(RoleRequiredMixin, TemplateView):
                 "jobs": _job_queryset_for_user(self.request.user)[:25],
                 "supply_form": SupplyUsageImportForm(),
                 "repair_form": RepairStatusImportForm(),
+                "show_history_link": True,
             }
         )
         return context
 
 
 class ImportHistoryView(RoleRequiredMixin, TemplateView):
-    template_name = "imports/partials/history.html"
+    template_name = "imports/history_page.html"
     allowed_roles = (
         User.Role.LOGISTICS_MANAGER,
         User.Role.REPAIR_STAFF,
@@ -58,7 +65,15 @@ class ImportHistoryView(RoleRequiredMixin, TemplateView):
     )
 
     def get(self, request, *args, **kwargs):
-        return _render_history_response(request)
+        if getattr(request, "htmx", False):
+            return _render_history_response(request)
+        context = self.get_context_data(**kwargs)
+        return self.render_to_response(context)
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context["jobs"] = _job_queryset_for_user(self.request.user)
+        return context
 
 
 class SupplyUsageImportView(RoleRequiredMixin, View):
@@ -75,7 +90,13 @@ class SupplyUsageImportView(RoleRequiredMixin, View):
                 csv_text=csv_text,
             )
             messages.success(request, "Supply usage import queued.")
-        return _render_history_response(request)
+            return _render_history_response(request)
+        oob = render_to_string(
+            "imports/partials/supply_upload_card.html",
+            {"supply_form": form, "hx_swap_oob": True},
+            request=request,
+        )
+        return HttpResponse(_history_fragment_html(request) + oob)
 
 
 class RepairStatusImportView(RoleRequiredMixin, View):
@@ -92,4 +113,10 @@ class RepairStatusImportView(RoleRequiredMixin, View):
                 csv_text=csv_text,
             )
             messages.success(request, "Maintenance import queued.")
-        return _render_history_response(request)
+            return _render_history_response(request)
+        oob = render_to_string(
+            "imports/partials/repair_upload_card.html",
+            {"repair_form": form, "hx_swap_oob": True},
+            request=request,
+        )
+        return HttpResponse(_history_fragment_html(request) + oob)

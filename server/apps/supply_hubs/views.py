@@ -58,35 +58,35 @@ def _decorate_transfer_actions(*, transfers, user):
                 "label": "Approve",
                 "url_name": "supply_hubs:approve-transfer",
                 "allowed": user_can_approve_transfer(user, transfer),
-                "denied_reason": "Approval requires logistics scope for this destination region.",
+                "denied_reason": "Approval requires logistics access for this destination region.",
             }
         elif transfer.status == SupplyTransfer.Status.APPROVED:
             transfer.next_action = {
                 "label": "Reserve",
                 "url_name": "supply_hubs:reserve-transfer",
                 "allowed": user_can_progress_transfer(user, transfer),
-                "denied_reason": "You do not have scope to reserve this transfer.",
+                "denied_reason": "You don't have permission to reserve this transfer.",
             }
         elif transfer.status == SupplyTransfer.Status.RESERVED:
             transfer.next_action = {
                 "label": "Ship",
                 "url_name": "supply_hubs:ship-transfer",
                 "allowed": user_can_progress_transfer(user, transfer),
-                "denied_reason": "You do not have scope to ship this transfer.",
+                "denied_reason": "You don't have permission to ship this transfer.",
             }
         elif transfer.status == SupplyTransfer.Status.IN_TRANSIT:
             transfer.next_action = {
                 "label": "Mark delivered",
                 "url_name": "supply_hubs:deliver-transfer",
                 "allowed": user_can_progress_transfer(user, transfer),
-                "denied_reason": "You do not have scope to mark this transfer as delivered.",
+                "denied_reason": "You don't have permission to mark this transfer as delivered.",
             }
         elif transfer.status == SupplyTransfer.Status.DELIVERED:
             transfer.next_action = {
                 "label": "Receive",
                 "url_name": "supply_hubs:receive-transfer",
                 "allowed": user_can_receive_transfer(user, transfer),
-                "denied_reason": "You do not have scope to receive this transfer.",
+                "denied_reason": "You don't have permission to receive this transfer.",
             }
         decorated.append(transfer)
     return decorated

@@ -131,7 +131,7 @@ class MaintenanceMachineAssignView(RoleRequiredMixin, View):
             pk=kwargs["machine_id"],
         )
         if not user_can_manage_machine(request.user, machine):
-            raise PermissionDenied("You cannot assign repair work outside your scope.")
+            raise PermissionDenied("You can only assign repair work for your stores.")
 
         try:
             if request.user.role == User.Role.REPAIR_STAFF:
@@ -141,7 +141,7 @@ class MaintenanceMachineAssignView(RoleRequiredMixin, View):
             if assignment is None:
                 messages.error(
                     request,
-                    "No scoped repair staff is available for that machine yet.",
+                    "No available repair staff found for that machine.",
                 )
         except MaintenanceServiceError as exc:
             messages.error(request, str(exc))
@@ -165,7 +165,7 @@ class RepairAssignmentActionView(RoleRequiredMixin, View):
             pk=kwargs["assignment_id"],
         )
         if not user_can_manage_machine(request.user, assignment.machine):
-            raise PermissionDenied("You cannot update repair work outside your scope.")
+            raise PermissionDenied("You can only update repair work for your stores.")
 
         action = request.POST.get("action", "").strip()
         note = request.POST.get("note", "").strip()

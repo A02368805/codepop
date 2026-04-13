@@ -1,0 +1,25 @@
+<article
+    class="imports-upload-card"
+    id="imports-supply-upload"
+    {% if hx_swap_oob %}hx-swap-oob="outerHTML"{% endif %}
+>
+    <h2 class="imports-upload-title">Supply usage CSV</h2>
+    <form
+        method="post"
+        enctype="multipart/form-data"
+        class="form-grid imports-upload-form"
+        hx-post="{% url 'imports:supply-usage' %}"
+        hx-target="#import-history"
+        hx-swap="innerHTML"
+        hx-indicator="#import-history-indicator"
+    >
+        {% csrf_token %}
+        {{ supply_form.non_field_errors }}
+        <label class="field">
+            <span>{{ supply_form.file.label }}</span>
+            {{ supply_form.file }}
+            {{ supply_form.file.errors }}
+        </label>
+        <button class="button button--primary" type="submit">Import supply usage CSV</button>
+    </form>
+</article>

@@ -35,6 +35,7 @@
         <label class="field">
             <span>Message</span>
             {{ message_form.message }}
+            {{ message_form.message.errors }}
         </label>
         <p class="ai-loading-indicator htmx-indicator" data-support-send-status hidden>Processing your message...</p>
         <div class="action-row">
@@ -76,10 +77,12 @@
             <label class="field">
                 <span>Issue summary</span>
                 {{ escalation_form.summary }}
+                {{ escalation_form.summary.errors }}
             </label>
             <label class="field">
                 <span>Contact email (optional for guests)</span>
                 {{ escalation_form.contact_email }}
+                {{ escalation_form.contact_email.errors }}
             </label>
             <div class="action-row">
                 <button class="button button--ghost" type="submit">Send follow-up request</button>

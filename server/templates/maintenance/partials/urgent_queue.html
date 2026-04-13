@@ -6,15 +6,13 @@
                 <th>Machine</th>
                 <th>Status</th>
                 <th>Assignment</th>
-                <th>Route</th>
                 <th>Priority</th>
-                <th>Priority Reason</th>
                 <th>Actions</th>
             </tr>
         </thead>
         <tbody>
             {% for row in machines %}
-                <tr>
+                <tr class="queue-main-row">
                     <td>{{ row.machine.store.name }}</td>
                     <td>
                         <strong>{{ row.machine.display_name }}</strong>
@@ -36,10 +34,8 @@
                             <span class="pill pill--warning">Needs assignee</span>
                         {% endif %}
                     </td>
-                    <td><code>{{ row.route_batch_key }}</code></td>
                     <td>{{ row.priority_score }}</td>
-                    <td>{{ row.explanation }}</td>
-                    <td>
+                    <td class="queue-actions-cell">
                         {% if row.can_claim or row.can_auto_assign %}
                             <form
                                 method="post"
@@ -61,6 +57,26 @@
                         {% else %}
                             <span class="muted">No repair staff currently available.</span>
                         {% endif %}
+                        <button
+                            class="queue-detail-toggle"
+                            type="button"
+                            aria-expanded="false"
+                            onclick="(function(btn){var row=btn.closest('tr').nextElementSibling;var open=row.classList.toggle('is-open');btn.setAttribute('aria-expanded',open);btn.textContent=open?'Details \u25BE':'Details \u25B8';})(this)"
+                        >Details &#x25B8;</button>
+                    </td>
+                </tr>
+                <tr class="queue-row-detail">
+                    <td colspan="6">
+                        <div class="queue-row-detail__inner">
+                            <div class="queue-row-detail__item">
+                                <span class="queue-row-detail__label">Route</span>
+                                <code>{{ row.route_batch_key }}</code>
+                            </div>
+                            <div class="queue-row-detail__item">
+                                <span class="queue-row-detail__label">Priority Reason</span>
+                                <span>{{ row.explanation }}</span>
+                            </div>
+                        </div>
                     </td>
                 </tr>
             {% endfor %}
