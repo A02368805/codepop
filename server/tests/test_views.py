@@ -475,7 +475,7 @@ class CustomerOrderingViewTests(TestCase):
         self.client.force_login(manager)
         response = self.client.get(reverse("orders:menu", args=[self.store.store_code]))
         self.assertEqual(response.status_code, 403)
-        self.assertIn("outside your current scope", response.content.decode())
+        self.assertIn("permission to view this page", response.content.decode())
 
     def test_staff_roles_cannot_switch_stores_in_customer_builder(self):
         manager = make_user(
@@ -496,7 +496,7 @@ class CustomerOrderingViewTests(TestCase):
         )
 
         self.assertEqual(response.status_code, 403)
-        self.assertIn("outside your current scope", response.content.decode())
+        self.assertIn("permission to view this page", response.content.decode())
 
     def test_account_preferences_save_multiple_structured_choices(self):
         self.client.force_login(self.customer)
@@ -832,7 +832,7 @@ class DashboardAndHtmxViewTests(TestCase):
         self.client.force_login(self.manager)
         response = self.client.get(reverse("admin-dashboard"))
         self.assertEqual(response.status_code, 403)
-        self.assertIn("outside your current scope", response.content.decode())
+        self.assertIn("permission to view this page", response.content.decode())
 
     def test_inventory_adjust_htmx_updates_the_row(self):
         self.client.force_login(self.manager)
@@ -1120,7 +1120,7 @@ class DashboardAndHtmxViewTests(TestCase):
             reverse("orders:detail", args=[self.out_of_scope_order.public_order_code])
         )
         self.assertEqual(response.status_code, 403)
-        self.assertIn("outside your current scope", response.content.decode())
+        self.assertIn("permission to view this page", response.content.decode())
 
     def test_custom_admin_users_route_resolves_successfully(self):
         self.client.force_login(self.admin)
