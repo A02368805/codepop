@@ -20,8 +20,8 @@ def _job_queryset_for_user(user):
     return queryset
 
 
-def _render_history_response(request):
-    html = render_to_string(
+def _history_fragment_html(request):
+    return render_to_string(
         "imports/partials/history.html",
         {
             "jobs": _job_queryset_for_user(request.user)[:25],
@@ -29,7 +29,10 @@ def _render_history_response(request):
         },
         request=request,
     )
-    return HttpResponse(html)
+
+
+def _render_history_response(request):
+    return HttpResponse(_history_fragment_html(request))
 
 
 class ImportWorkspaceView(RoleRequiredMixin, TemplateView):
@@ -87,7 +90,13 @@ class SupplyUsageImportView(RoleRequiredMixin, View):
                 csv_text=csv_text,
             )
             messages.success(request, "Supply usage import queued.")
-        return _render_history_response(request)
+            return _render_history_response(request)
+        oob = render_to_string(
+            "imports/partials/supply_upload_card.html",
+            {"supply_form": form, "hx_swap_oob": True},
+            request=request,
+        )
+        return HttpResponse(_history_fragment_html(request) + oob)
 
 
 class RepairStatusImportView(RoleRequiredMixin, View):
@@ -104,4 +113,10 @@ class RepairStatusImportView(RoleRequiredMixin, View):
                 csv_text=csv_text,
             )
             messages.success(request, "Maintenance import queued.")
-        return _render_history_response(request)
+            return _render_history_response(request)
+        oob = render_to_string(
+            "imports/partials/repair_upload_card.html",
+            {"repair_form": form, "hx_swap_oob": True},
+            request=request,
+        )
+        return HttpResponse(_history_fragment_html(request) + oob)

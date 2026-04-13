@@ -29,35 +29,46 @@ class CustomerSupportAccessMixin:
         return super().dispatch(request, *args, **kwargs)
 
 
-def _workspace_context(request, conversation):
+def _workspace_context(
+    request,
+    conversation,
+    *,
+    message_form=None,
+    escalation_form=None,
+):
     messages_qs = conversation.messages.order_by("created_at")
     last_assistant_message = (
         messages_qs.filter(role="assistant").order_by("-created_at").first()
     )
     latest_meta = getattr(last_assistant_message, "metadata_json", {}) or {}
 
-    return {
-        "conversation": conversation,
-        "messages": messages_qs,
-        "message_form": SupportMessageForm(),
-        "escalation_form": SupportEscalationForm(
+    if message_form is None:
+        message_form = SupportMessageForm()
+    if escalation_form is None:
+        escalation_form = SupportEscalationForm(
             initial={
                 "summary": (
                     f"Need follow-up for support conversation {conversation.id}. "
                     f"Last intent: {conversation.last_intent or 'general_help'}."
                 )
             }
-        ),
+        )
+
+    return {
+        "conversation": conversation,
+        "messages": messages_qs,
+        "message_form": message_form,
+        "escalation_form": escalation_form,
         "quick_actions": latest_meta.get("quick_actions", []),
         "related_links": latest_meta.get("links", []),
         "show_escalation": bool(latest_meta.get("suggest_escalation")),
     }
 
 
-def _render_workspace(request, conversation):
+def _render_workspace(request, conversation, **context_overrides):
     return render_to_string(
         "support/partials/workspace.html",
-        _workspace_context(request, conversation),
+        _workspace_context(request, conversation, **context_overrides),
         request=request,
     )
 
@@ -110,10 +121,9 @@ class SupportSendView(CustomerSupportAccessMixin, View):
                 conversation=conversation,
                 message_text=form.cleaned_data["message"],
             )
+            html = _render_workspace(request, conversation)
         else:
-            messages.error(request, "Please enter a support message.")
-
-        html = _render_workspace(request, conversation)
+            html = _render_workspace(request, conversation, message_form=form)
         return HttpResponse(html)
 
 
@@ -137,8 +147,7 @@ class SupportEscalateView(CustomerSupportAccessMixin, View):
                 request,
                 "Support escalation submitted. A follow-up can be handled by the team.",
             )
+            html = _render_workspace(request, conversation)
         else:
-            messages.error(request, "Please provide a short escalation summary.")
-
-        html = _render_workspace(request, conversation)
+            html = _render_workspace(request, conversation, escalation_form=form)
         return HttpResponse(html)
