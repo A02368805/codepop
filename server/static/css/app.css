@@ -397,6 +397,10 @@ h3 {
     overflow: hidden;
 }
 
+.maintenance-panel--hero {
+    overflow: visible;
+}
+
 .panel-stack,
 .card-grid,
 .metric-grid,
@@ -927,11 +931,84 @@ h3 {
     justify-content: flex-end;
 }
 
+.maintenance-filter-bar {
+    position: relative;
+}
+
+.maintenance-filter-bar select {
+    min-width: 200px;
+    padding-right: 2.5rem;
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%23888' stroke-width='1.5' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 0.9rem center;
+}
+
 .maintenance-urgent-table {
     margin-top: 1rem;
     overflow-x: auto;
     overflow-y: visible;
     -webkit-overflow-scrolling: touch;
+}
+
+.queue-row-detail {
+    display: none;
+}
+
+.queue-row-detail.is-open {
+    display: table-row;
+}
+
+.queue-row-detail > td {
+    border-top: none;
+    padding: 0 0.85rem 0.85rem;
+    background: var(--surface-soft);
+}
+
+.queue-row-detail__inner {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1rem 2rem;
+}
+
+.queue-row-detail__item {
+    display: flex;
+    flex-direction: column;
+    gap: 0.2rem;
+    min-width: 160px;
+}
+
+.queue-row-detail__label {
+    font-size: 0.78rem;
+    text-transform: uppercase;
+    letter-spacing: 0.07em;
+    color: var(--muted);
+}
+
+.queue-actions-cell {
+    white-space: nowrap;
+    vertical-align: top;
+}
+
+.queue-actions-cell > * + * {
+    margin-top: 0.4rem;
+}
+
+.queue-detail-toggle {
+    display: block;
+    background: none;
+    border: none;
+    padding: 0;
+    font-size: 0.82rem;
+    color: var(--muted);
+    cursor: pointer;
+    white-space: nowrap;
+}
+
+.queue-detail-toggle:hover {
+    color: var(--text);
 }
 
 .maintenance-route-groups {
@@ -1042,7 +1119,7 @@ h3 {
 
 @media (min-width: 641px) {
     .maintenance-urgent-table .data-table {
-        min-width: 980px;
+        min-width: 1100px;
     }
 }
 
@@ -2617,8 +2694,8 @@ details.ingredient-group[open] .ingredient-group__header::after {
 @media (max-width: 1100px), (max-height: 860px) {
     .maintenance-panel--hero {
         max-height: 78vh;
-        overflow-y: auto;
-        overflow-x: hidden;
+        overflow-y: visible;
+        overflow-x: visible;
         overscroll-behavior: contain;
     }
 }
