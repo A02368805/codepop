@@ -18,7 +18,7 @@ from django.views.generic import TemplateView
 from .forms import InventoryAdjustmentForm
 from .models import RestockAlert, StoreInventoryBalance
 from .selectors import adjustment_step_for_item, group_balances_by_item
-from .services import adjust_store_inventory
+from .services import InventoryServiceError, adjust_store_inventory
 
 
 class InventoryWorkspaceView(RoleRequiredMixin, TemplateView):
@@ -102,13 +102,18 @@ class InventoryAdjustView(LoginRequiredMixin, View):
 
         form = InventoryAdjustmentForm(post_data)
         if form.is_valid():
-            adjust_store_inventory(
-                balance=balance,
-                delta=form.cleaned_data["delta"],
-                actor=request.user,
-                reason=form.cleaned_data["reason"],
-            )
-            adjustment_form = InventoryAdjustmentForm()
+            try:
+                adjust_store_inventory(
+                    balance=balance,
+                    delta=form.cleaned_data["delta"],
+                    actor=request.user,
+                    reason=form.cleaned_data["reason"],
+                )
+            except InventoryServiceError as exc:
+                form.add_error(None, str(exc))
+                adjustment_form = form
+            else:
+                adjustment_form = InventoryAdjustmentForm()
         else:
             adjustment_form = form
 
