@@ -9,8 +9,7 @@ from apps.sync.models import AuditLog
 from apps.users.models import User
 from apps.users.permissions import RoleRequiredMixin, user_can_view_payments_workspace
 from django.contrib.auth.mixins import LoginRequiredMixin
-from django.db.models import Count, Sum
-from django.db.models import Q
+from django.db.models import Count, Q, Sum
 from django.http import HttpResponse
 from django.template.loader import render_to_string
 from django.utils import timezone
