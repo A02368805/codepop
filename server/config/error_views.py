@@ -13,7 +13,7 @@ def permission_denied(request, exception=None):
         request,
         "errors/403.html",
         {
-            "error_title": "That page is outside your current scope.",
+            "error_title": "You don't have permission to view this page.",
             "return_home_url": return_home_url,
             "show_sign_in": not is_authenticated,
         },

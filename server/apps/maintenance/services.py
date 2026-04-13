@@ -288,7 +288,7 @@ def create_repair_assignment(
         )
     if not user_has_store_scope(assigned_to, machine.store):
         raise MaintenanceServiceError(
-            "Assigned repair staff must already have scope for the machine store."
+            "Assigned repair staff must be assigned to that machine's store."
         )
 
     assignment = RepairAssignment.objects.create(
@@ -671,7 +671,7 @@ def auto_assign_machine(machine, *, actor=None):
         and not user_can_manage_store(actor, machine.store)
     ):
         raise MaintenanceServiceError(
-            "You cannot assign work outside your store scope."
+            "You can only assign repair work for stores assigned to you."
         )
     return ensure_repair_assignment(
         machine,

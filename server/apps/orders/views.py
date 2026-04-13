@@ -1204,7 +1204,7 @@ class OrderConfirmationView(TemplateView):
         if not user_can_view_order(
             self.request.user, order, session=self.request.session
         ):
-            raise PermissionDenied("This order is outside your access scope.")
+            raise PermissionDenied("You don't have access to this order.")
         context["order"] = order
         return context
 
@@ -1223,7 +1223,7 @@ class OrderDetailView(TemplateView):
         if not user_can_view_order(
             self.request.user, order, session=self.request.session
         ):
-            raise PermissionDenied("This order is outside your access scope.")
+            raise PermissionDenied("You don't have access to this order.")
         actor = self.request.user if self.request.user.is_authenticated else None
         refund_allowed, refund_message = get_refund_eligibility(order, actor=actor)
         can_cancel = (
@@ -1258,7 +1258,7 @@ class OrderCancelView(View):
     def post(self, request, *args, **kwargs):
         order = get_object_or_404(Order, public_order_code=kwargs["order_code"])
         if not user_can_view_order(request.user, order, session=request.session):
-            raise PermissionDenied("This order is outside your access scope.")
+            raise PermissionDenied("You don't have access to this order.")
         actor = request.user if request.user.is_authenticated else None
         if hasattr(order, "payment_transaction"):
             allowed, reason = get_refund_eligibility(order, actor=actor)
