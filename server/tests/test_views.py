@@ -860,6 +860,26 @@ class DashboardAndHtmxViewTests(TestCase):
         self.assertEqual(balance.on_hand_quantity, Decimal("10.00"))
         self.assertContains(response, "Provide a reason for this adjustment.")
 
+    def test_inventory_adjust_htmx_shows_service_error_when_adjustment_is_invalid(self):
+        self.client.force_login(self.manager)
+        balance = get_store_balance(self.store_c1, self.inventory_item)
+        balance.reserved_quantity = Decimal("9.00")
+        balance.save()
+
+        response = self.client.post(
+            reverse("inventory:adjust", args=[balance.id]),
+            {"count": "8.00", "reason": "post-rush recount"},
+            HTTP_HX_REQUEST="true",
+        )
+
+        balance.refresh_from_db()
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(balance.on_hand_quantity, Decimal("10.00"))
+        self.assertContains(
+            response,
+            "Inventory mutation would result in invalid quantities.",
+        )
+
     def test_inventory_adjust_step_size_matches_item_unit_expectation(self):
         self.client.force_login(self.manager)
         liquid_item = InventoryItem.objects.create(
