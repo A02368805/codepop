@@ -200,7 +200,7 @@ Useful demo logins:
 - Repair staff: `repair.north@floatstack.local`
 - Super admin: `superadmin@floatstack.local`
 
-Seeded guest lookup example:
+Seeded guest lookup example:git 
 
 - Order code: `FS-M5K9TD`
 - Pickup combo: `624`

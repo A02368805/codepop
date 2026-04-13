@@ -847,6 +847,19 @@ class DashboardAndHtmxViewTests(TestCase):
         self.assertEqual(balance.on_hand_quantity, Decimal("11.00"))
         self.assertContains(response, "11.00")
 
+    def test_inventory_adjust_htmx_shows_inline_reason_error_when_blank(self):
+        self.client.force_login(self.manager)
+        balance = get_store_balance(self.store_c1, self.inventory_item)
+        response = self.client.post(
+            reverse("inventory:adjust", args=[balance.id]),
+            {"delta": "1.00", "reason": ""},
+            HTTP_HX_REQUEST="true",
+        )
+        balance.refresh_from_db()
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(balance.on_hand_quantity, Decimal("10.00"))
+        self.assertContains(response, "Provide a reason for this adjustment.")
+
     def test_inventory_adjust_step_size_matches_item_unit_expectation(self):
         self.client.force_login(self.manager)
         liquid_item = InventoryItem.objects.create(
