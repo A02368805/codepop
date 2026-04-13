@@ -1245,6 +1245,28 @@ class DashboardAndHtmxViewTests(TestCase):
         self.assertContains(response, "Order-Backed Financial Rows")
         self.assertContains(response, "Maintenance Summary")
         self.assertContains(response, "AI Supply Drafts")
+        self.assertContains(response, 'name="order_search"', html=False)
+        self.assertContains(response, "Search order code")
+
+    def test_analytics_workspace_order_search_filters_ledger_rows_within_scope(self):
+        self.client.force_login(self.manager)
+        response = self.client.get(
+            reverse("analytics:index"),
+            {"order_search": self.queue_order.public_order_code[-6:]},
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, self.queue_order.public_order_code)
+        self.assertContains(
+            response,
+            f'value="{self.queue_order.public_order_code[-6:]}"',
+            html=False,
+        )
+        self.assertContains(
+            response,
+            f'Filtered to orders matching "{self.queue_order.public_order_code[-6:]}" within the selected scope.',
+        )
+        self.assertNotContains(response, self.out_of_scope_order.public_order_code)
 
     def test_analytics_workspace_view_payments_button_visibility_matches_role_policy(
         self,
