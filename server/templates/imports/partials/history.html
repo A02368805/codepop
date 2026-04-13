@@ -68,6 +68,16 @@
             </tbody>
         </table>
     </div>
+    {% if show_history_link %}
+        <div class="imports-history-footer">
+            <a class="button button--ghost" href="{% url 'imports:history' %}">View full history</a>
+        </div>
+    {% endif %}
 {% else %}
     <div class="empty-state"><p>No imports yet.</p></div>
+    {% if show_history_link %}
+        <div class="imports-history-footer">
+            <a class="button button--ghost" href="{% url 'imports:history' %}">View full history</a>
+        </div>
+    {% endif %}
 {% endif %}

@@ -500,12 +500,23 @@ h3 {
     justify-self: start;
 }
 
+.imports-panel--history {
+    overflow: visible;
+}
+
 .imports-history-table {
     width: 100%;
     min-width: 0;
+    max-height: 420px;
     overflow-x: auto;
-    overflow-y: hidden;
+    overflow-y: auto;
     -webkit-overflow-scrolling: touch;
+}
+
+.imports-history-footer {
+    margin-top: 0.75rem;
+    display: flex;
+    justify-content: flex-end;
 }
 
 .imports-history-table .data-table td:first-child {
