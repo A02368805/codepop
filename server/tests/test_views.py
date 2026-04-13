@@ -870,7 +870,7 @@ class DashboardAndHtmxViewTests(TestCase):
         self.assertEqual(syrup_response.status_code, 200)
         self.assertContains(
             syrup_response,
-            'name="delta" step="0.01" value="1"',
+            'name="delta" step="0.01" placeholder="Delta"',
             html=False,
         )
 
@@ -882,7 +882,7 @@ class DashboardAndHtmxViewTests(TestCase):
         self.assertEqual(cup_response.status_code, 200)
         self.assertContains(
             cup_response,
-            'name="delta" step="1" value="1"',
+            'name="delta" step="1" placeholder="Delta"',
             html=False,
         )
 
