@@ -70,9 +70,7 @@ def store_scope_required(store_kwarg="store_id"):
         def wrapped(request, *args, **kwargs):
             store = get_object_or_404(Store, pk=kwargs[store_kwarg])
             if not user_has_store_scope(request.user, store):
-                raise PermissionDenied(
-                    "You don't have access to this store."
-                )
+                raise PermissionDenied("You don't have access to this store.")
             return view_func(request, *args, **kwargs)
 
         return wrapped
@@ -86,9 +84,7 @@ def region_scope_required(region_kwarg="region_id"):
         def wrapped(request, *args, **kwargs):
             region = get_object_or_404(Region, pk=kwargs[region_kwarg])
             if not user_has_region_scope(request.user, region):
-                raise PermissionDenied(
-                    "You don't have access to this region."
-                )
+                raise PermissionDenied("You don't have access to this region.")
             return view_func(request, *args, **kwargs)
 
         return wrapped
