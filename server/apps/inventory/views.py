@@ -1,3 +1,5 @@
+from decimal import Decimal, InvalidOperation
+
 from apps.stores.selectors import scoped_region_store_options, stores_visible_to_user
 from apps.users.models import User
 from apps.users.permissions import (
@@ -90,7 +92,15 @@ class InventoryAdjustView(LoginRequiredMixin, View):
                 "You cannot adjust inventory outside your store scope."
             )
 
-        form = InventoryAdjustmentForm(request.POST)
+        post_data = request.POST.copy()
+        raw_count = post_data.get("count", "").strip()
+        if raw_count:
+            try:
+                post_data["delta"] = str(Decimal(raw_count) - balance.on_hand_quantity)
+            except InvalidOperation:
+                pass
+
+        form = InventoryAdjustmentForm(post_data)
         if form.is_valid():
             adjust_store_inventory(
                 balance=balance,
@@ -98,6 +108,9 @@ class InventoryAdjustView(LoginRequiredMixin, View):
                 actor=request.user,
                 reason=form.cleaned_data["reason"],
             )
+            adjustment_form = InventoryAdjustmentForm()
+        else:
+            adjustment_form = form
 
         balance.refresh_from_db()
         available = balance.on_hand_quantity - balance.reserved_quantity
@@ -114,7 +127,7 @@ class InventoryAdjustView(LoginRequiredMixin, View):
                 "status": status,
                 "can_adjust": True,
                 "adjustment_step": adjustment_step_for_item(balance.inventory_item),
-                "adjustment_form": InventoryAdjustmentForm(),
+                "adjustment_form": adjustment_form,
             },
             request=request,
         )

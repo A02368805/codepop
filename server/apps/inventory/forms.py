@@ -16,6 +16,4 @@ class InventoryAdjustmentForm(forms.Form):
                 "delta",
                 "Adjustments over 5000 units must be handled through a supply workflow.",
             )
-        if delta not in {None, 0} and not reason:
-            self.add_error("reason", "Provide a reason for the inventory adjustment.")
         return cleaned_data
