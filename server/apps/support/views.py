@@ -83,7 +83,7 @@ class SupportConversationDetailView(CustomerSupportAccessMixin, TemplateView):
             SupportConversation, pk=kwargs["conversation_id"]
         )
         if not user_can_access_conversation(self.request, conversation):
-            raise PermissionDenied("This support conversation is outside your scope.")
+            raise PermissionDenied("You don't have access to this conversation.")
         context.update(_workspace_context(self.request, conversation))
         return context
 
@@ -101,7 +101,7 @@ class SupportSendView(CustomerSupportAccessMixin, View):
             SupportConversation, pk=kwargs["conversation_id"]
         )
         if not user_can_access_conversation(request, conversation):
-            raise PermissionDenied("This support conversation is outside your scope.")
+            raise PermissionDenied("You don't have access to this conversation.")
 
         form = SupportMessageForm(request.POST)
         if form.is_valid():
@@ -123,7 +123,7 @@ class SupportEscalateView(CustomerSupportAccessMixin, View):
             SupportConversation, pk=kwargs["conversation_id"]
         )
         if not user_can_access_conversation(request, conversation):
-            raise PermissionDenied("This support conversation is outside your scope.")
+            raise PermissionDenied("You don't have access to this conversation.")
 
         form = SupportEscalationForm(request.POST)
         if form.is_valid():

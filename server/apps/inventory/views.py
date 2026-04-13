@@ -89,7 +89,7 @@ class InventoryAdjustView(LoginRequiredMixin, View):
             or user_can_manage_store(request.user, balance.store)
         ):
             raise PermissionDenied(
-                "You cannot adjust inventory outside your store scope."
+                "You can only adjust inventory for stores assigned to you."
             )
 
         post_data = request.POST.copy()

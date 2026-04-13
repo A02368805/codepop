@@ -154,7 +154,7 @@ def remove_favorite_drink(*, user, favorite):
 
 def update_scoped_user(*, actor, target_user, role, status):
     if actor == target_user and not user_has_global_access(actor):
-        raise PermissionDenied("You cannot change your own account scope here.")
+        raise PermissionDenied("You cannot change your own account role here.")
 
     if user_has_global_access(actor):
         allowed = True
@@ -168,7 +168,7 @@ def update_scoped_user(*, actor, target_user, role, status):
         allowed = bool(scoped_store and user_can_manage_store(actor, scoped_store))
 
     if not allowed:
-        raise PermissionDenied("This user is outside your management scope.")
+        raise PermissionDenied("This user is not in your management area.")
     if role not in {User.Role.ACCOUNT_USER, User.Role.MANAGER, User.Role.ADMIN}:
         raise PermissionDenied(
             "This role cannot be assigned from the store admin panel."
