@@ -23,7 +23,10 @@ def _job_queryset_for_user(user):
 def _render_history_response(request):
     html = render_to_string(
         "imports/partials/history.html",
-        {"jobs": _job_queryset_for_user(request.user)[:25]},
+        {
+            "jobs": _job_queryset_for_user(request.user)[:25],
+            "show_history_link": True,
+        },
         request=request,
     )
     return HttpResponse(html)
@@ -44,13 +47,14 @@ class ImportWorkspaceView(RoleRequiredMixin, TemplateView):
                 "jobs": _job_queryset_for_user(self.request.user)[:25],
                 "supply_form": SupplyUsageImportForm(),
                 "repair_form": RepairStatusImportForm(),
+                "show_history_link": True,
             }
         )
         return context
 
 
 class ImportHistoryView(RoleRequiredMixin, TemplateView):
-    template_name = "imports/partials/history.html"
+    template_name = "imports/history_page.html"
     allowed_roles = (
         User.Role.LOGISTICS_MANAGER,
         User.Role.REPAIR_STAFF,
@@ -58,7 +62,15 @@ class ImportHistoryView(RoleRequiredMixin, TemplateView):
     )
 
     def get(self, request, *args, **kwargs):
-        return _render_history_response(request)
+        if getattr(request, "htmx", False):
+            return _render_history_response(request)
+        context = self.get_context_data(**kwargs)
+        return self.render_to_response(context)
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context["jobs"] = _job_queryset_for_user(self.request.user)
+        return context
 
 
 class SupplyUsageImportView(RoleRequiredMixin, View):

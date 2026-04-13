@@ -1,0 +1,16 @@
+{% extends "base/base.html" %}
+
+{% block title %}Import History | FloatStack{% endblock %}
+
+{% block content %}
+<section class="panel">
+    <div class="section-heading">
+        <div>
+            <p class="eyebrow">Import History</p>
+            <h1>All import jobs</h1>
+        </div>
+        <a class="button button--ghost" href="{% url 'imports:index' %}">Back to imports</a>
+    </div>
+    {% include "imports/partials/history.html" %}
+</section>
+{% endblock %}
