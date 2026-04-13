@@ -1266,9 +1266,7 @@ class DashboardAndHtmxViewTests(TestCase):
             response,
             f'Filtered to orders matching "{self.queue_order.public_order_code[-6:]}" within the selected scope.',
         )
-        self.assertNotContains(
-            response, self.out_of_scope_order.public_order_code
-        )
+        self.assertNotContains(response, self.out_of_scope_order.public_order_code)
 
     def test_analytics_workspace_view_payments_button_visibility_matches_role_policy(
         self,
