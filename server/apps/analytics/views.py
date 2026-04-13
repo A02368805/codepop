@@ -10,6 +10,7 @@ from apps.users.models import User
 from apps.users.permissions import RoleRequiredMixin, user_can_view_payments_workspace
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.db.models import Count, Sum
+from django.db.models import Q
 from django.http import HttpResponse
 from django.template.loader import render_to_string
 from django.utils import timezone
@@ -52,11 +53,17 @@ class AnalyticsWorkspaceView(RoleRequiredMixin, TemplateView):
             _parse_date(self.request.GET.get("date_to", "").strip())
             or timezone.now().date()
         )
+        order_search = self.request.GET.get("order_search", "").strip()
         revenue_entries = RevenueLedgerEntry.objects.filter(
             store__in=visible_stores,
             posted_at__date__gte=date_from,
             posted_at__date__lte=date_to,
         )
+        if order_search:
+            revenue_entries = revenue_entries.filter(
+                Q(order__public_order_code__icontains=order_search)
+                | Q(order__locker_code__icontains=order_search)
+            )
         revenue = revenue_entries.aggregate(
             gross=Sum("gross_amount"),
             net=Sum("net_amount"),
@@ -143,6 +150,7 @@ class AnalyticsWorkspaceView(RoleRequiredMixin, TemplateView):
                 "selected_store": scope["selected_store"],
                 "date_from": date_from.isoformat(),
                 "date_to": date_to.isoformat(),
+                "order_search": order_search,
                 "open_alerts": RestockAlert.objects.filter(
                     store__in=visible_stores, status=RestockAlert.Status.OPEN
                 ).count(),
