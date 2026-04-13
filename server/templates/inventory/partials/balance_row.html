@@ -22,7 +22,7 @@
                     {% csrf_token %}
                     <div class="inventory-adjust-row">
                         <span class="muted inventory-adjust-label">+/&minus;</span>
-                        <input class="inventory-adjust-input" type="number" name="delta" step="{{ adjustment_step|default:'0.01' }}" placeholder="Delta" value="{{ adjustment_form.delta.value|default:'' }}">
+                        <input class="inventory-adjust-input" type="number" name="delta" step="{{ adjustment_step|default:'0.01' }}" value="{{ adjustment_form.delta.value|default:'1' }}">
                         <span class="muted inventory-adjust-sep">or set to</span>
                         <input class="inventory-adjust-input" type="number" name="count" step="{{ adjustment_step|default:'0.01' }}" min="0" placeholder="Amount">
                     </div>
