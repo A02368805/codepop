@@ -11,18 +11,39 @@
     </td>
     <td>
         {% if can_adjust %}
-            <form
-                method="post"
-                class="inline-cluster inventory-adjust-form"
-                hx-post="{% url 'inventory:adjust' balance.id %}"
-                hx-target="#balance-row-{{ balance.id }}"
-                hx-swap="outerHTML"
-            >
-                {% csrf_token %}
-                <input type="number" name="delta" step="{{ adjustment_step|default:'0.01' }}" value="1">
-                <input type="text" name="reason" placeholder="Adjustment note">
-                <button class="button button--ghost" type="submit">Apply</button>
-            </form>
+            <div class="inventory-adjust-wrap">
+                <form
+                    method="post"
+                    class="inventory-adjust-form"
+                    hx-post="{% url 'inventory:adjust' balance.id %}"
+                    hx-target="#balance-row-{{ balance.id }}"
+                    hx-swap="outerHTML"
+                >
+                    {% csrf_token %}
+                    <div class="inventory-adjust-row">
+                        <span class="muted inventory-adjust-label">+/&minus;</span>
+                        <input class="inventory-adjust-input" type="number" name="delta" step="{{ adjustment_step|default:'0.01' }}" placeholder="Delta" value="{{ adjustment_form.delta.value|default:'' }}">
+                        <span class="muted inventory-adjust-sep">or set to</span>
+                        <input class="inventory-adjust-input" type="number" name="count" step="{{ adjustment_step|default:'0.01' }}" min="0" placeholder="Amount">
+                    </div>
+                    <div class="inventory-adjust-row">
+                        <input class="inventory-adjust-reason" type="text" name="reason" placeholder="Reason (optional)" value="{{ adjustment_form.reason.value|default:'' }}">
+                        <button class="button button--ghost" type="submit">Apply</button>
+                    </div>
+                </form>
+                {% if adjustment_form.errors %}
+                    <div class="inventory-adjust-errors">
+                        {% for field in adjustment_form %}
+                            {% for error in field.errors %}
+                                <p class="field-error">{{ error }}</p>
+                            {% endfor %}
+                        {% endfor %}
+                        {% for error in adjustment_form.non_field_errors %}
+                            <p class="field-error">{{ error }}</p>
+                        {% endfor %}
+                    </div>
+                {% endif %}
+            </div>
         {% else %}
             <span class="muted">View only</span>
         {% endif %}

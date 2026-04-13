@@ -2540,7 +2540,63 @@ details.ingredient-group[open] .ingredient-group__header::after {
 }
 
 .inventory-adjust-form {
+    display: flex;
+    flex-direction: column;
+    gap: 0.45rem;
+}
+
+.inventory-adjust-row {
+    display: flex;
     align-items: center;
+    gap: 0.5rem;
+}
+
+.inventory-adjust-wrap {
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+}
+
+.inventory-adjust-input {
+    width: 100px;
+    border-radius: 16px;
+    border: 1px solid var(--line);
+    padding: 0.55rem 0.75rem;
+    font: inherit;
+    font-size: 0.9rem;
+    min-width: 0;
+}
+
+.inventory-adjust-input:focus {
+    outline: 2px solid rgba(var(--berry-rgb), 0.16);
+    border-color: rgba(var(--berry-rgb), 0.42);
+}
+
+.inventory-adjust-reason {
+    flex: 1;
+    min-width: 0;
+    border-radius: 16px;
+    border: 1px solid var(--line);
+    padding: 0.55rem 0.75rem;
+    font: inherit;
+    font-size: 0.9rem;
+}
+
+.inventory-adjust-reason:focus {
+    outline: 2px solid rgba(var(--berry-rgb), 0.16);
+    border-color: rgba(var(--berry-rgb), 0.42);
+}
+
+.inventory-adjust-label,
+.inventory-adjust-sep {
+    font-size: 0.8rem;
+    white-space: nowrap;
+}
+
+.inventory-adjust-errors {
+    display: flex;
+    flex-direction: column;
+    gap: 0.15rem;
 }
 
 .metric-grid--compact {
