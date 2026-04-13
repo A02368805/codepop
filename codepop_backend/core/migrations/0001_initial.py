@@ -8,56 +8,116 @@ class Migration(migrations.Migration):
 
     initial = True
 
-    dependencies = [
-    ]
+    dependencies = []
 
     operations = [
         migrations.CreateModel(
-            name='ConflictLog',
+            name="ConflictLog",
             fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('entity_type', models.CharField(max_length=100)),
-                ('entity_id', models.CharField(max_length=200)),
-                ('conflict_type', models.CharField(max_length=100)),
-                ('first_update_timestamp', models.DateTimeField()),
-                ('second_update_timestamp', models.DateTimeField()),
-                ('resolution', models.CharField(max_length=200)),
-                ('applied_value', models.TextField()),
-                ('discarded_value', models.TextField()),
-                ('created_at', models.DateTimeField(auto_now_add=True)),
+                (
+                    "id",
+                    models.BigAutoField(
+                        auto_created=True,
+                        primary_key=True,
+                        serialize=False,
+                        verbose_name="ID",
+                    ),
+                ),
+                ("entity_type", models.CharField(max_length=100)),
+                ("entity_id", models.CharField(max_length=200)),
+                ("conflict_type", models.CharField(max_length=100)),
+                ("first_update_timestamp", models.DateTimeField()),
+                ("second_update_timestamp", models.DateTimeField()),
+                ("resolution", models.CharField(max_length=200)),
+                ("applied_value", models.TextField()),
+                ("discarded_value", models.TextField()),
+                ("created_at", models.DateTimeField(auto_now_add=True)),
             ],
         ),
         migrations.CreateModel(
-            name='Region',
+            name="Region",
             fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('code', models.CharField(choices=[('A', 'A'), ('B', 'B'), ('C', 'C'), ('D', 'D'), ('E', 'E'), ('F', 'F'), ('G', 'G')], max_length=1, unique=True)),
-                ('name', models.CharField(max_length=100)),
+                (
+                    "id",
+                    models.BigAutoField(
+                        auto_created=True,
+                        primary_key=True,
+                        serialize=False,
+                        verbose_name="ID",
+                    ),
+                ),
+                (
+                    "code",
+                    models.CharField(
+                        choices=[
+                            ("A", "A"),
+                            ("B", "B"),
+                            ("C", "C"),
+                            ("D", "D"),
+                            ("E", "E"),
+                            ("F", "F"),
+                            ("G", "G"),
+                        ],
+                        max_length=1,
+                        unique=True,
+                    ),
+                ),
+                ("name", models.CharField(max_length=100)),
             ],
         ),
         migrations.CreateModel(
-            name='Store',
+            name="Store",
             fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('store_id', models.CharField(max_length=50, unique=True)),
-                ('name', models.CharField(max_length=100)),
-                ('address', models.TextField()),
-                ('latitude', models.DecimalField(decimal_places=6, max_digits=9)),
-                ('longitude', models.DecimalField(decimal_places=6, max_digits=9)),
-                ('is_active', models.BooleanField(default=True)),
-                ('region', models.ForeignKey(on_delete=django.db.models.deletion.PROTECT, related_name='stores', to='core.region')),
+                (
+                    "id",
+                    models.BigAutoField(
+                        auto_created=True,
+                        primary_key=True,
+                        serialize=False,
+                        verbose_name="ID",
+                    ),
+                ),
+                ("store_id", models.CharField(max_length=50, unique=True)),
+                ("name", models.CharField(max_length=100)),
+                ("address", models.TextField()),
+                ("latitude", models.DecimalField(decimal_places=6, max_digits=9)),
+                ("longitude", models.DecimalField(decimal_places=6, max_digits=9)),
+                ("is_active", models.BooleanField(default=True)),
+                (
+                    "region",
+                    models.ForeignKey(
+                        on_delete=django.db.models.deletion.PROTECT,
+                        related_name="stores",
+                        to="core.region",
+                    ),
+                ),
             ],
         ),
         migrations.CreateModel(
-            name='SupplyHub',
+            name="SupplyHub",
             fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('name', models.CharField(max_length=100)),
-                ('address', models.TextField()),
-                ('latitude', models.DecimalField(decimal_places=6, max_digits=9)),
-                ('longitude', models.DecimalField(decimal_places=6, max_digits=9)),
-                ('is_active', models.BooleanField(default=True)),
-                ('region', models.ForeignKey(on_delete=django.db.models.deletion.PROTECT, related_name='supply_hubs', to='core.region')),
+                (
+                    "id",
+                    models.BigAutoField(
+                        auto_created=True,
+                        primary_key=True,
+                        serialize=False,
+                        verbose_name="ID",
+                    ),
+                ),
+                ("name", models.CharField(max_length=100)),
+                ("address", models.TextField()),
+                ("latitude", models.DecimalField(decimal_places=6, max_digits=9)),
+                ("longitude", models.DecimalField(decimal_places=6, max_digits=9)),
+                ("is_active", models.BooleanField(default=True)),
+                (
+                    "region",
+                    models.ForeignKey(
+                        on_delete=django.db.models.deletion.PROTECT,
+                        related_name="supply_hubs",
+                        to="core.region",
+                    ),
+                ),
             ],
         ),
     ]
