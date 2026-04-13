@@ -27,16 +27,23 @@
                         <input class="inventory-adjust-input" type="number" name="count" step="{{ adjustment_step|default:'0.01' }}" min="0" placeholder="Amount">
                     </div>
                     <div class="inventory-adjust-row">
-                        <input class="inventory-adjust-reason" type="text" name="reason" placeholder="Reason (optional)" value="{{ adjustment_form.reason.value|default:'' }}">
+                        <div>
+                            <input class="inventory-adjust-reason" type="text" name="reason" placeholder="Reason" value="{{ adjustment_form.reason.value|default:'' }}">
+                            {% for error in adjustment_form.reason.errors %}
+                                <p class="field-error">{{ error }}</p>
+                            {% endfor %}
+                        </div>
                         <button class="button button--ghost" type="submit">Apply</button>
                     </div>
                 </form>
                 {% if adjustment_form.errors %}
                     <div class="inventory-adjust-errors">
                         {% for field in adjustment_form %}
+                            {% if field.name != "reason" %}
                             {% for error in field.errors %}
                                 <p class="field-error">{{ error }}</p>
                             {% endfor %}
+                            {% endif %}
                         {% endfor %}
                         {% for error in adjustment_form.non_field_errors %}
                             <p class="field-error">{{ error }}</p>
