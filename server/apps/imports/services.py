@@ -18,6 +18,7 @@ from apps.notifications.services import notify_user
 from apps.stores.models import Store
 from apps.sync.services import create_audit_log, create_outbox_event, serialize_instance
 from apps.users.permissions import user_has_region_scope, user_has_store_scope
+from dateutil import parser as dateutil_parser
 from django.db import transaction
 from django.utils import timezone
 
@@ -60,17 +61,38 @@ def _read_rows(csv_text):
     return csv.DictReader(StringIO(csv_text.strip()))
 
 
+def _normalize_headers(fieldnames):
+    """Normalize CSV headers by stripping whitespace from each field name."""
+    if fieldnames is None:
+        return None
+    return [name.strip() if isinstance(name, str) else name for name in fieldnames]
+
+
 def _exact_headers(reader, expected_headers):
-    if reader.fieldnames != expected_headers:
+    normalized_fieldnames = _normalize_headers(reader.fieldnames)
+    if normalized_fieldnames != expected_headers:
         raise CSVImportError(
             [
                 {
                     "row": 1,
                     "field": "headers",
-                    "message": f"Expected headers {expected_headers} but received {reader.fieldnames}.",
+                    "message": f"Expected headers {expected_headers} but received {normalized_fieldnames}.",
                 }
             ]
         )
+
+
+def _parse_date(date_str):
+    """
+    Parse date string in multiple formats: M/D/YY, YYYY-MM-DD, YYYY/MM/DD, etc.
+
+    Tries dateutil.parser first for flexible parsing, falls back to ISO format.
+    """
+    try:
+        # Use dateutil.parser for flexible date parsing
+        return dateutil_parser.parse(date_str).date()
+    except (ValueError, TypeError) as exc:
+        raise ValueError(f"Invalid date format: '{date_str}'") from exc
 
 
 def _build_store_address_lookup(store):
@@ -85,12 +107,17 @@ def parse_supply_usage_csv(csv_text, *, uploaded_by):
 
     for row_number, row in enumerate(reader, start=2):
         try:
-            store = Store.objects.get(store_code=row["store_code"])
+            # Normalize row keys by stripping whitespace
+            normalized_row = {k.strip(): v for k, v in row.items()}
+
+            store = Store.objects.get(store_code=normalized_row["store_code"])
             if not user_has_region_scope(uploaded_by, store.region):
                 raise ValueError("Store is outside the user's regional scope.")
-            inventory_item = InventoryItem.objects.get(sku=row["inventory_sku"])
-            usage_date = date.fromisoformat(row["usage_date"])
-            quantity_used = Decimal(row["quantity_used"])
+            inventory_item = InventoryItem.objects.get(
+                sku=normalized_row["inventory_sku"]
+            )
+            usage_date = _parse_date(normalized_row["usage_date"])
+            quantity_used = Decimal(normalized_row["quantity_used"])
             if quantity_used <= 0:
                 raise ValueError("Quantity used must be positive.")
             parsed_rows.append(
@@ -118,22 +145,28 @@ def parse_repair_status_csv(csv_text, *, uploaded_by):
 
     for row_number, row in enumerate(reader, start=2):
         try:
+            # Normalize row keys by stripping whitespace
+            normalized_row = {k.strip(): v for k, v in row.items()}
+
             store = next(
                 store
                 for store in Store.objects.all()
-                if _build_store_address_lookup(store) == row["store_address"].lower()
+                if _build_store_address_lookup(store)
+                == normalized_row["store_address"].lower()
             )
             if (
                 not user_has_store_scope(uploaded_by, store)
                 and uploaded_by.role != uploaded_by.Role.SUPER_ADMIN
             ):
                 raise ValueError("Store is outside the user's store scope.")
-            machine_type = MachineType.objects.get(code=row["machine_type_code"])
-            operational_from_date = date.fromisoformat(
-                row["machine_operational_from_date"]
+            machine_type = MachineType.objects.get(
+                code=normalized_row["machine_type_code"]
             )
-            status_date = date.fromisoformat(row["status_date"])
-            machine_status = row["machine_status"]
+            operational_from_date = _parse_date(
+                normalized_row["machine_operational_from_date"]
+            )
+            status_date = _parse_date(normalized_row["status_date"])
+            machine_status = normalized_row["machine_status"]
             if machine_status not in valid_statuses:
                 raise ValueError("Invalid machine status value.")
             parsed_rows.append(
