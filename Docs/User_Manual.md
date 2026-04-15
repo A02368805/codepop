@@ -1,6 +1,6 @@
 # FloatStack User Manual
 
-**Version:** 1.0 (Draft)  
+**Version:** 1.0 (Draft)
 **Last Updated:** April 2026
 
 ---
@@ -478,46 +478,50 @@ Transfer lifecycle:
 ### Accessing the Repair Dashboard
 
 1. Log in with a repair staff account
-2. You'll be redirected to `/dashboards/repair/`
+2. After sign-in, you should land on the **Repair Dashboard**
+3. Confirm the top navigation includes **Dashboard**, **Maintenance**, and **Imports**
 
-> 📸 **Screenshot:** Repair dashboard with urgent machine alerts, upcoming assignments, regional overview
+![Repair dashboard with urgent machine alerts, upcoming assignments, and regional overview](screenshots/MaintenanceDash.png)
 
 ### View Maintenance Assignments
 
-1. From the repair dashboard or go to `/maintenance/`
-2. You'll see:
+1. Open **Maintenance** from the top navigation (or click **Open machine queue** on the dashboard)
+2. In the maintenance workspace, review:
    - **Urgent Queue** — machines needing immediate service
-   - **Assigned Repairs** — tasks assigned to you
-   - **Route Groups** — repairs grouped by location to optimize travel
+   - **Route-Aware Queue** — grouped city/route batches for dispatch planning
+   - **Repair Assignments** — active and recent tasks assigned to you
 
-> 📸 **Screenshot:** Maintenance workspace with urgent card group, assignment cards, route optimization
+![Maintenance workspace with urgent queue, assignment cards, and route-aware grouping](screenshots/RoutesDash.png)
 
 ### Complete a Repair Assignment
 
-1. Click on an assignment
-2. You'll see:
-   - Machine type and location
-   - Current status
-   - Work history
-3. Click **"Start Service"** when you arrive
-4. Complete your work
-5. Click **"Mark Complete"**
-6. System updates the machine's service history
+1. In **Repair Assignments**, open the assignment card you are working
+2. Confirm key details:
+   - Store and machine
+   - Assignment and machine status
+   - Route batch and latest activity notes
+3. Add an update note if needed in the note box
+4. Use the appropriate action button for the current state:
+   - **Acknowledge**
+   - **Start repair**
+   - **Save update**
+   - **Block**
+   - **Complete**
+   - **Close assignment** (when available)
+5. Confirm the card updates and your latest activity appears in the assignment history line
 
-> 📸 **Screenshot:** Assignment detail with machine info, status history, start/complete buttons
+![Repair assignment card with machine info, status, notes, and action buttons](screenshots/MaintenanceAssign.png)
 
 ### Upload CSV Imports (Repair Status)
 
-1. Go to `/imports/`
-2. Click **"Import Repair Status"**
-3. Upload a CSV with:
-   - Machine ID
-   - Status (Service Due, Servicing, Service Complete)
-   - Notes
-   - Date
-4. System validates and updates machine records
+1. Open **Imports** from the top navigation (or click **Import maintenance CSV** on the repair dashboard)
+2. In the imports workspace, use the **Maintenance status CSV** card
+3. Choose your CSV file and click **Import maintenance CSV**
+4. Use the required header row exactly:
+   - `store_address,machine_type_code,machine_operational_from_date,machine_status,status_date`
+5. Confirm the job result in import history (queued, succeeded, or failed with validation details)
 
-> 📸 **Screenshot:** CSV import form for repair status
+![Repair status CSV import form](screenshots/CSVupload.png)
 
 ---
 
@@ -616,34 +620,34 @@ If your issue needs urgent attention:
 
 ## FAQs
 
-**Q: Can I order as a guest without creating an account?**  
+**Q: Can I order as a guest without creating an account?**
 A: Yes. Guests can browse stores, customize drinks, and checkout without an account. You'll receive an order code to look up your order later.
 
-**Q: How do I save my favorite drink combination?**  
+**Q: How do I save my favorite drink combination?**
 A: Create an account, customize your drink, and check "Save as Favorite" before adding to cart. You can later quickly add it again from your favorites list.
 
-**Q: How long does drink preparation take?**  
+**Q: How long does drink preparation take?**
 A: Estimated times vary by store and current queue. You'll see the estimate on your confirmation page. Typical preparation is 5–10 minutes.
 
-**Q: Can managers see all stores' orders or just their own?**  
+**Q: Can managers see all stores' orders or just their own?**
 A: Managers see orders for their assigned store only. Super admins and logistics managers have cross-store visibility.
 
-**Q: How do I know if an inventory item is low?**  
+**Q: How do I know if an inventory item is low?**
 A: The system alerts managers and logistics coordinators when inventory drops below configurable thresholds. Restock alerts appear in the logistics dashboard.
 
-**Q: Can I cancel my order?**  
+**Q: Can I cancel my order?**
 A: Yes, if the order hasn't started being prepared. Go to your order detail page and click "Cancel Order." Refunds are processed according to the payment method.
 
-**Q: What happens if I order something that runs out of stock?**  
+**Q: What happens if I order something that runs out of stock?**
 A: The system prevents ordering items that are out of stock. If an item is allocated to your order but runs out during preparation, staff will contact you to suggest alternatives.
 
-**Q: How do supply transfers work?**  
+**Q: How do supply transfers work?**
 A: Transfers move inventory from one store/hub to another. Logistics managers create requests, approvals are made, items are reserved, shipped, and delivered between locations.
 
-**Q: Can repair staff work on machines outside their assigned region?**  
+**Q: Can repair staff work on machines outside their assigned region?**
 A: Repair staff are assigned to specific regions and stores. Cross-region assignments require super admin or logistics manager coordination.
 
-**Q: Where can I see my entire order history?**  
+**Q: Where can I see my entire order history?**
 A: Account users can go to `/orders/history/` to see all past and current orders.
 
 ---
@@ -652,10 +656,10 @@ A: Account users can go to `/orders/history/` to see all past and current orders
 
 For support issues, bugs, or feature requests:
 
-- **In-App Support:** Use the `/support/` chat feature anytime
-- **Email:** [support email — to be determined]
-- **Phone:** [support phone — to be determined]
-- **Feedback Form:** [link — to be determined]
+- **In-App Support (Primary):** Use **Help** in the app to start a support conversation and submit a follow-up request.
+- **Demo Escalation Email (Demo Only):** `support@floatstack.demo` (for presentation/testing use; not a production inbox).
+- **Repair Staff Operational Issues:** Report through your manager/super admin workflow and include store, machine, assignment context, and screenshots.
+- **Bug Reports / Feature Feedback:** Submit through your team’s standard tracker with clear reproduction steps and expected vs actual behavior.
 
 ---
 
