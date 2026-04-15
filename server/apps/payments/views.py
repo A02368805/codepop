@@ -174,6 +174,54 @@ class PaymentIntentCreateView(View):
         return JsonResponse(payload)
 
 
+class PaymentIntentConfirmView(View):
+    def post(self, request, *args, **kwargs):
+        if get_payment_mode() != PaymentMode.STRIPE:
+            return JsonResponse(
+                {"error": "Stripe payments are not enabled in this environment."},
+                status=400,
+            )
+
+        order_code = request.POST.get("order_code", "").strip()
+        payment_intent_id = request.POST.get("payment_intent_id", "").strip()
+        if not order_code or not payment_intent_id:
+            return HttpResponseBadRequest("Missing payment confirmation identifiers.")
+
+        order = get_object_or_404(
+            Order.objects.select_related("payment_transaction"),
+            public_order_code=order_code,
+        )
+        if not user_can_view_order(request.user, order, session=request.session):
+            return JsonResponse(
+                {"error": "You don't have access to this order."},
+                status=403,
+            )
+
+        try:
+            order = finalize_stripe_payment_intent(
+                order_code=order_code,
+                payment_intent_id=payment_intent_id,
+                actor=request.user if request.user.is_authenticated else None,
+            )
+        except PaymentGatewayError as exc:
+            return JsonResponse({"error": str(exc)}, status=400)
+
+        if order.order_type == Order.OrderType.GUEST and hasattr(
+            order, "guest_contact"
+        ):
+            authorize_guest_order_access(request.session, order)
+
+        return JsonResponse(
+            {
+                "order_code": order.public_order_code,
+                "order_status": order.status,
+                "redirect_url": reverse(
+                    "orders:confirmation", args=[order.public_order_code]
+                ),
+            }
+        )
+
+
 class PaymentStatusView(View):
     def get(self, request, *args, **kwargs):
         order_code = request.GET.get("order_code", "").strip()

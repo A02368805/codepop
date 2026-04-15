@@ -3,6 +3,7 @@ from django.urls import path
 from .views import (
     CheckoutCancelView,
     CheckoutSuccessView,
+    PaymentIntentConfirmView,
     PaymentIntentCreateView,
     PaymentStatusView,
     PaymentWorkspaceView,
@@ -14,6 +15,9 @@ app_name = "payments"
 urlpatterns = [
     path("", PaymentWorkspaceView.as_view(), name="index"),
     path("payment-intent/", PaymentIntentCreateView.as_view(), name="payment-intent"),
+    path(
+        "payment-confirm/", PaymentIntentConfirmView.as_view(), name="payment-confirm"
+    ),
     path("payment-status/", PaymentStatusView.as_view(), name="payment-status"),
     path("checkout/success/", CheckoutSuccessView.as_view(), name="checkout-success"),
     path("checkout/cancel/", CheckoutCancelView.as_view(), name="checkout-cancel"),

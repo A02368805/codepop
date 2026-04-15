@@ -8,6 +8,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
     initStoreRecommendation();
     initCheckoutGuestValidation();
+    initStripeElementsCheckout();
     initDrinkBuilder();
     initPreferenceProfile();
     initMenuAiAssistant();
@@ -21,7 +22,17 @@ document.addEventListener("DOMContentLoaded", () => {
 });
 
 function getCsrfToken() {
-    return document.querySelector("input[name=csrfmiddlewaretoken]")?.value || "";
+    const tokenInput = document.querySelector("input[name=csrfmiddlewaretoken]")?.value;
+    if (tokenInput) {
+        return tokenInput;
+    }
+    const csrfCookie = document.cookie
+        .split("; ")
+        .find((entry) => entry.startsWith("csrftoken="));
+    if (!csrfCookie) {
+        return "";
+    }
+    return decodeURIComponent(csrfCookie.split("=", 2)[1] || "");
 }
 
 function debounce(callback, wait = 240) {
@@ -122,6 +133,136 @@ function initCheckoutGuestValidation() {
                 validateInput(validator);
             }
         });
+    });
+}
+
+function initStripeElementsCheckout() {
+    const panel = document.querySelector("#stripe-elements-panel");
+    if (!panel) {
+        return;
+    }
+
+    const publishableKey = panel.dataset.publishableKey || "";
+    const intentEndpoint = panel.dataset.endpoint || "";
+    const confirmEndpoint = panel.dataset.confirmEndpoint || "";
+    const orderCode = panel.dataset.orderCode || "";
+    const cardMount = panel.querySelector("#card-element");
+    const payButton = panel.querySelector("#stripe-pay-btn");
+    const statusNode = panel.querySelector("#stripe-pay-status");
+
+    const setStatus = (message) => {
+        if (statusNode) {
+            statusNode.textContent = message;
+        }
+    };
+
+    if (!window.Stripe || !publishableKey || !intentEndpoint || !confirmEndpoint || !orderCode || !cardMount || !payButton) {
+        setStatus("Card entry is temporarily unavailable.");
+        if (payButton) {
+            payButton.disabled = true;
+        }
+        return;
+    }
+
+    const stripe = window.Stripe(publishableKey);
+    if (!stripe) {
+        setStatus("Card entry is temporarily unavailable.");
+        payButton.disabled = true;
+        return;
+    }
+
+    const elements = stripe.elements();
+    const cardElement = elements.create("card");
+    cardElement.mount(cardMount);
+    cardElement.on("change", (event) => {
+        if (event.error) {
+            setStatus(event.error.message || "Please check your card details.");
+        } else {
+            setStatus("Enter your card details to finish checkout.");
+        }
+    });
+
+    let cachedClientSecret = "";
+
+    const postForm = async (endpoint, params) => {
+        const response = await window.fetch(endpoint, {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/x-www-form-urlencoded",
+                "X-CSRFToken": getCsrfToken(),
+            },
+            credentials: "same-origin",
+            body: new URLSearchParams(params).toString(),
+        });
+        let payload = {};
+        try {
+            payload = await response.json();
+        } catch (error) {
+            payload = {};
+        }
+        return { response, payload };
+    };
+
+    const getClientSecret = async () => {
+        if (cachedClientSecret) {
+            return cachedClientSecret;
+        }
+        const { response, payload } = await postForm(intentEndpoint, {
+            order_code: orderCode,
+        });
+        if (!response.ok || payload.error) {
+            throw new Error(payload.error || "Unable to initialize payment.");
+        }
+        const clientSecret = payload.client_secret || "";
+        if (!clientSecret) {
+            throw new Error("Payment setup did not return a client secret.");
+        }
+        cachedClientSecret = clientSecret;
+        return clientSecret;
+    };
+
+    payButton.addEventListener("click", async () => {
+        payButton.disabled = true;
+        try {
+            setStatus("Preparing secure payment...");
+            const clientSecret = await getClientSecret();
+
+            setStatus("Confirming card payment...");
+            const result = await stripe.confirmCardPayment(clientSecret, {
+                payment_method: { card: cardElement },
+            });
+            if (result.error) {
+                throw new Error(
+                    result.error.message || "Payment confirmation failed."
+                );
+            }
+
+            const paymentIntentId = result.paymentIntent?.id || "";
+            if (!paymentIntentId) {
+                throw new Error("Stripe did not return a payment confirmation ID.");
+            }
+
+            setStatus("Finalizing order...");
+            const { response, payload } = await postForm(confirmEndpoint, {
+                order_code: orderCode,
+                payment_intent_id: paymentIntentId,
+            });
+            if (!response.ok || payload.error) {
+                throw new Error(payload.error || "Unable to finalize payment.");
+            }
+
+            setStatus("Payment complete. Redirecting...");
+            if (payload.redirect_url) {
+                window.location.assign(payload.redirect_url);
+                return;
+            }
+        } catch (error) {
+            setStatus(error?.message || "Payment could not be completed.");
+            payButton.disabled = false;
+            return;
+        }
+
+        payButton.disabled = false;
     });
 }
 

@@ -124,6 +124,7 @@
                 <div
                     id="stripe-elements-panel"
                     data-endpoint="{% url 'payments:payment-intent' %}"
+                    data-confirm-endpoint="{% url 'payments:payment-confirm' %}"
                     data-status-endpoint="{% url 'payments:payment-status' %}"
                     data-order-code="{{ order.public_order_code }}"
                     data-publishable-key="{{ stripe_publishable_key }}"
@@ -142,6 +143,7 @@
                     <div
                         id="stripe-elements-panel"
                         data-endpoint="{% url 'payments:payment-intent' %}"
+                        data-confirm-endpoint="{% url 'payments:payment-confirm' %}"
                         data-status-endpoint="{% url 'payments:payment-status' %}"
                         data-order-code="{{ order.public_order_code }}"
                         data-publishable-key="{{ stripe_publishable_key }}"
