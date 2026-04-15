@@ -10,7 +10,7 @@
     </div>
 
     <div class="support-thread" id="support-thread-log">
-        {% for item in messages %}
+        {% for item in thread_messages %}
             <article class="support-message support-message--{{ item.role }}">
                 <p class="support-message__role">{{ item.get_role_display }}</p>
                 <p>{{ item.content }}</p>

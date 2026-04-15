@@ -56,7 +56,7 @@ def _workspace_context(
 
     return {
         "conversation": conversation,
-        "messages": messages_qs,
+        "thread_messages": messages_qs,
         "message_form": message_form,
         "escalation_form": escalation_form,
         "quick_actions": latest_meta.get("quick_actions", []),
