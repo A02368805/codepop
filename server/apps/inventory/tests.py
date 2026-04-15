@@ -1,12 +1,11 @@
 from decimal import Decimal
 
-from django.test import TestCase
-
 from apps.inventory.models import InventoryItem
 from apps.inventory.services import get_store_balance, reserve_order_inventory
 from apps.orders.models import Order, OrderItem
 from apps.orders.services import create_order, transition_order_status
-from apps.payments.services import record_payment_success, record_payment_pending
+from apps.payments.services import record_payment_pending, record_payment_success
+from django.test import TestCase
 from tests.helpers import (
     assign_store,
     make_inventory_item,
