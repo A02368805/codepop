@@ -53,7 +53,7 @@
                                 </button>
                             </form>
                         {% elif row.assignment %}
-                            <a href="#assignment-{{ row.assignment.id }}">Open assignment</a>
+                            <a href="{% url 'maintenance:index' %}?assignments=all{% if status_filter %}&status={{ status_filter|urlencode }}{% endif %}#assignment-{{ row.assignment.id }}">Open assignment</a>
                         {% else %}
                             <span class="muted">No repair staff currently available.</span>
                         {% endif %}

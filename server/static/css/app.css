@@ -1096,6 +1096,12 @@ h3 {
     align-items: start;
     gap: 1rem;
     padding: 1.15rem 1.2rem;
+    scroll-margin-top: 7rem;
+}
+
+.maintenance-assignment-card:target {
+    outline: 2px solid rgba(var(--berry-rgb), 0.42);
+    box-shadow: 0 0 0 4px rgba(var(--berry-rgb), 0.12);
 }
 
 .maintenance-assignment-main {
