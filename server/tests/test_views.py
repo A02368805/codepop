@@ -4,7 +4,11 @@ from unittest.mock import patch
 
 from apps.imports.models import ImportJob
 from apps.inventory.models import InventoryItem, LocalSupplier, SupplierReplenishment
-from apps.inventory.services import get_store_balance, request_transfer
+from apps.inventory.services import (
+    InventoryServiceError,
+    get_store_balance,
+    request_transfer,
+)
 from apps.notifications.models import Notification
 from apps.orders.cart import SESSION_CART_KEY
 from apps.orders.models import Order
@@ -830,6 +834,59 @@ class DashboardAndHtmxViewTests(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertEqual(balance.on_hand_quantity, Decimal("11.00"))
         self.assertContains(response, "11.00")
+        self.assertContains(response, "Inventory updated successfully.")
+
+    def test_inventory_adjust_supports_set_count_semantics(self):
+        self.client.force_login(self.manager)
+        balance = get_store_balance(self.store_c1, self.inventory_item)
+
+        response = self.client.post(
+            reverse("inventory:adjust", args=[balance.id]),
+            {"delta": "", "count": "14", "reason": "cycle count"},
+            HTTP_HX_REQUEST="true",
+        )
+
+        balance.refresh_from_db()
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(balance.on_hand_quantity, Decimal("14.00"))
+        self.assertContains(response, "Inventory updated successfully.")
+
+    def test_inventory_adjust_invalid_set_count_shows_inline_error(self):
+        self.client.force_login(self.manager)
+        balance = get_store_balance(self.store_c1, self.inventory_item)
+
+        response = self.client.post(
+            reverse("inventory:adjust", args=[balance.id]),
+            {"delta": "", "count": "not-a-number", "reason": "cycle count"},
+            HTTP_HX_REQUEST="true",
+        )
+
+        balance.refresh_from_db()
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(balance.on_hand_quantity, Decimal("10.00"))
+        self.assertContains(response, "Enter a number.")
+
+    @patch("apps.inventory.views.adjust_store_inventory")
+    def test_inventory_adjust_service_errors_render_inline(self, mock_adjust):
+        self.client.force_login(self.manager)
+        balance = get_store_balance(self.store_c1, self.inventory_item)
+        mock_adjust.side_effect = InventoryServiceError(
+            "Inventory mutation would result in invalid quantities."
+        )
+
+        response = self.client.post(
+            reverse("inventory:adjust", args=[balance.id]),
+            {"delta": "1", "reason": "manual correction"},
+            HTTP_HX_REQUEST="true",
+        )
+
+        balance.refresh_from_db()
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(balance.on_hand_quantity, Decimal("10.00"))
+        self.assertContains(
+            response,
+            "Inventory mutation would result in invalid quantities.",
+        )
 
     def test_inventory_adjust_htmx_shows_inline_reason_error_when_blank(self):
         self.client.force_login(self.manager)
@@ -878,6 +935,17 @@ class DashboardAndHtmxViewTests(TestCase):
         syrup_balance.reorder_threshold = Decimal("5.00")
         syrup_balance.save()
         cup_balance = get_store_balance(self.store_c1, self.cup_item)
+        carton_item = InventoryItem.objects.create(
+            sku="SYRUP-CARTON-TEST",
+            name="Syrup Carton Test",
+            category=InventoryItem.Category.SYRUP,
+            unit_of_measure="carton",
+            default_low_stock_threshold=Decimal("5.00"),
+        )
+        carton_balance = get_store_balance(self.store_c1, carton_item)
+        carton_balance.on_hand_quantity = Decimal("10.00")
+        carton_balance.reorder_threshold = Decimal("5.00")
+        carton_balance.save()
 
         syrup_response = self.client.post(
             reverse("inventory:adjust", args=[syrup_balance.id]),
@@ -899,6 +967,18 @@ class DashboardAndHtmxViewTests(TestCase):
         self.assertEqual(cup_response.status_code, 200)
         self.assertContains(
             cup_response,
+            'name="delta" step="1" value="1"',
+            html=False,
+        )
+
+        carton_response = self.client.post(
+            reverse("inventory:adjust", args=[carton_balance.id]),
+            {"delta": "1", "reason": "carton count correction"},
+            HTTP_HX_REQUEST="true",
+        )
+        self.assertEqual(carton_response.status_code, 200)
+        self.assertContains(
+            carton_response,
             'name="delta" step="1" value="1"',
             html=False,
         )
@@ -1007,6 +1087,12 @@ class DashboardAndHtmxViewTests(TestCase):
         response = self.client.get(reverse("orders:index"))
         detail_url = reverse("orders:detail", args=[self.queue_order.public_order_code])
         self.assertEqual(response.status_code, 200)
+        self.assertContains(
+            response,
+            f'class="queue-row" data-order-detail-url="{detail_url}"',
+            count=1,
+            html=False,
+        )
         self.assertContains(
             response,
             f'class="queue-row-link" href="{detail_url}"',
