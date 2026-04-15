@@ -614,6 +614,36 @@ If your issue needs urgent attention:
 - Check if destination location has space for the items
 - Retry the transfer operation
 
+**"My payment was declined or failed"**
+- Double-check your card number, expiration date, and CVV
+- Try a different payment method
+- Contact your bank if the issue persists — your order code is preserved and you can retry payment from your order detail page
+
+**"My Stripe checkout session expired"**
+- This happens if the Stripe payment page was left open too long without completing
+- Go back and click "Place Order" again to start a new checkout session
+- Complete payment promptly once the Stripe page opens
+
+**"My order is stuck on 'Payment Pending'"**
+- Refresh the page — the system checks payment status automatically
+- If the status doesn't update after a few minutes, try navigating back to your order detail page using your order code
+- If the problem continues, use the in-app support chat at `/support/`
+
+**"The checkout form won't submit"**
+- Name field cannot be blank or only spaces
+- Email must be a valid format (e.g., `name@example.com`)
+- Phone number must contain at least 10 digits
+- All three fields are required for guest checkout — verify each one is filled in correctly
+
+**"The pickup time I selected shows an error"**
+- This happens if the page was open for a long time and the time slot is no longer in the future
+- Refresh the page to load updated pickup time options and reselect
+
+**"FloatStack can't find my location"**
+- If you typed an address or ZIP code, make sure it is a valid US address
+- Try entering just a ZIP code rather than a full street address
+- If the issue continues, allow browser location access or manually select a store from the list
+
 ---
 
 ## FAQs
@@ -625,7 +655,7 @@ A: Yes. Guests can browse stores, customize drinks, and checkout without an acco
 A: Create an account, customize your drink, and check "Save as Favorite" before adding to cart. You can later quickly add it again from your favorites list.
 
 **Q: How long does drink preparation take?**  
-A: Estimated times vary by store and current queue. You'll see the estimate on your confirmation page. Typical preparation is 5–10 minutes.
+A: Estimated times vary by store and current queue. You'll see the estimate on your confirmation page. Typical preparation is approximately 12–15 minutes from the time you order.
 
 **Q: Can managers see all stores' orders or just their own?**  
 A: Managers see orders for their assigned store only. Super admins and logistics managers have cross-store visibility.
@@ -647,6 +677,24 @@ A: Repair staff are assigned to specific regions and stores. Cross-region assign
 
 **Q: Where can I see my entire order history?**  
 A: Account users can go to `/orders/history/` to see all past and current orders.
+
+**Q: How does FloatStack recommend a store near me?**  
+A: On the store selection page at `/stores/`, you can type a ZIP code or street address to find nearby locations. You can also click "Use My Location" to allow browser location access. FloatStack ranks stores by distance and, for logged-in users, also factors in your preferred store. If no location is provided, stores are listed alphabetically.
+
+**Q: What if my location can't be found?**  
+A: If FloatStack can't resolve the address you typed, you'll see a message: "We couldn't place that location yet." Try entering just your ZIP code, use your device's location instead, or scroll down to browse all stores manually and select one.
+
+**Q: Can I choose what time to pick up my order?**  
+A: Yes. During checkout you can select a pickup time. The default is "ASAP" (approximately 12 minutes from when you order), and the system also suggests two additional time slots spaced 15 minutes apart. You can select whichever works best for you.
+
+**Q: Where exactly do I pick up my order?**  
+A: Your order confirmation page shows the store address and any locker number or pickup code assigned to your order. Bring your order code or pickup combo and show it to staff, or use the locker code if your store has lockers.
+
+**Q: Can I order more than one of the same drink?**  
+A: Yes. On the customization page, set the quantity up to 12 per drink. You can also add the same drink multiple times from the menu and adjust quantities in your cart before checkout.
+
+**Q: What is the difference between the AI assistant and recommendations?**  
+A: The AI chat assistant (available to guests and account users) lets you describe what you're in the mood for and suggests a drink build. Recommendations at `/orders/recommendations/` are available to account users only and are personalized based on your saved taste preferences and order history. Only account users can save AI-suggested builds to their favorites.
 
 ---
 
