@@ -1,5 +1,3 @@
-from decimal import Decimal, InvalidOperation
-
 from apps.stores.selectors import scoped_region_store_options, stores_visible_to_user
 from apps.users.models import User
 from apps.users.permissions import (
@@ -92,28 +90,35 @@ class InventoryAdjustView(LoginRequiredMixin, View):
                 "You can only adjust inventory for stores assigned to you."
             )
 
-        post_data = request.POST.copy()
-        raw_count = post_data.get("count", "").strip()
-        if raw_count:
-            try:
-                post_data["delta"] = str(Decimal(raw_count) - balance.on_hand_quantity)
-            except InvalidOperation:
-                pass
-
-        form = InventoryAdjustmentForm(post_data)
+        form = InventoryAdjustmentForm(request.POST)
+        adjustment_success_message = ""
         if form.is_valid():
-            try:
-                adjust_store_inventory(
-                    balance=balance,
-                    delta=form.cleaned_data["delta"],
-                    actor=request.user,
-                    reason=form.cleaned_data["reason"],
-                )
-            except InventoryServiceError as exc:
-                form.add_error(None, str(exc))
-                adjustment_form = form
+            delta = form.cleaned_data.get("delta")
+            target_count = form.cleaned_data.get("count")
+
+            if target_count is not None:
+                delta = target_count - balance.on_hand_quantity
+                if delta == 0:
+                    form.add_error(
+                        "count",
+                        "Set-count already matches current on-hand quantity.",
+                    )
+
+            if form.is_valid():
+                try:
+                    adjust_store_inventory(
+                        balance=balance,
+                        delta=delta,
+                        actor=request.user,
+                        reason=form.cleaned_data["reason"],
+                    )
+                    adjustment_form = InventoryAdjustmentForm()
+                    adjustment_success_message = "Inventory updated successfully."
+                except InventoryServiceError as exc:
+                    form.add_error(None, str(exc))
+                    adjustment_form = form
             else:
-                adjustment_form = InventoryAdjustmentForm()
+                adjustment_form = form
         else:
             adjustment_form = form
 
@@ -133,6 +138,7 @@ class InventoryAdjustView(LoginRequiredMixin, View):
                 "can_adjust": True,
                 "adjustment_step": adjustment_step_for_item(balance.inventory_item),
                 "adjustment_form": adjustment_form,
+                "adjustment_success_message": adjustment_success_message,
             },
             request=request,
         )

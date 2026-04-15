@@ -8,7 +8,7 @@
     hx-disabled-elt="find button[type='submit']"
 >
     {% csrf_token %}
-    <button class="button button--ghost" type="submit">{{ button_label }}</button>
+    <button class="button button--primary queue-action-button" type="submit">{{ button_label }}</button>
     <span class="muted htmx-indicator queue-action-indicator" aria-live="polite">
         Updating...
     </span>

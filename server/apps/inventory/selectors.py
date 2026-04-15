@@ -9,7 +9,26 @@ from django.db.models import Count, F, Q, Sum
 
 from .models import InventoryItem, RestockAlert, StoreInventoryBalance
 
-WHOLE_NUMBER_UOM_VALUES = {"each", "unit", "count", "item"}
+WHOLE_NUMBER_UOM_VALUES = {
+    "each",
+    "unit",
+    "count",
+    "item",
+    "bag",
+    "bags",
+    "carton",
+    "cartons",
+    "tray",
+    "trays",
+    "tub",
+    "tubs",
+    "case",
+    "cases",
+    "crate",
+    "crates",
+    "box",
+    "boxes",
+}
 WHOLE_NUMBER_CATEGORIES = {
     InventoryItem.Category.CUPS,
     InventoryItem.Category.LIDS,
