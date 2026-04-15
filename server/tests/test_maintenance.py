@@ -172,6 +172,12 @@ class MaintenanceWorkspaceViewTests(TestCase):
             HTTP_HX_REQUEST="true",
         )
         self.assertEqual(ack_response.status_code, 200)
+        self.assertContains(ack_response, 'id="repair-assignments"', html=False)
+        self.assertNotContains(
+            ack_response,
+            'id="maintenance-workspace"',
+            html=False,
+        )
         assignment.refresh_from_db()
         self.assertEqual(assignment.status, assignment.Status.ACKNOWLEDGED)
 

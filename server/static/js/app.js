@@ -11,6 +11,7 @@ document.addEventListener("DOMContentLoaded", () => {
     initDrinkBuilder();
     initPreferenceProfile();
     initMenuAiAssistant();
+    initQueueRowNavigation();
     initHomeHeroCarousel();
     initHomeDrinkBrowser();
     initPickupDistance();
@@ -517,6 +518,44 @@ function initMenuAiAssistant() {
         }
         openPanel();
         promptField.value = target.getAttribute("data-menu-ai-prompt") || "";
+    });
+}
+
+function initQueueRowNavigation() {
+    document.body.addEventListener("click", (event) => {
+        if (
+            event.defaultPrevented ||
+            event.button !== 0 ||
+            event.metaKey ||
+            event.ctrlKey ||
+            event.shiftKey ||
+            event.altKey
+        ) {
+            return;
+        }
+
+        const target = event.target instanceof Element ? event.target : null;
+        if (!target) {
+            return;
+        }
+
+        const row = target.closest("tr.queue-row[data-order-detail-url]");
+        if (!row) {
+            return;
+        }
+
+        if (target.closest("a, button, input, select, textarea, label, form")) {
+            return;
+        }
+
+        if (target.closest(".queue-actions-cell")) {
+            return;
+        }
+
+        const detailUrl = row.getAttribute("data-order-detail-url");
+        if (detailUrl) {
+            window.location.assign(detailUrl);
+        }
     });
 }
 

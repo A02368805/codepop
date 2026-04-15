@@ -13,13 +13,13 @@
         <tbody>
             {% for order in orders %}
                 {% url 'orders:detail' order.public_order_code as order_detail_url %}
-                <tr>
+                <tr class="queue-row" data-order-detail-url="{{ order_detail_url }}">
                     <td><a class="queue-row-link queue-row-link--code" href="{{ order_detail_url }}">{{ order.public_order_code }}</a></td>
                     <td><a class="queue-row-link" href="{{ order_detail_url }}">{{ order.store.name }}</a></td>
                     <td><a class="queue-row-link" href="{{ order_detail_url }}">{{ order.get_status_display }}</a></td>
                     <td><a class="queue-row-link" href="{{ order_detail_url }}">{{ order.pickup_time_requested|date:"M j, g:i A"|default:"ASAP" }}</a></td>
                     <td><a class="queue-row-link" href="{{ order_detail_url }}">${{ order.total_amount }}</a></td>
-                    <td>
+                    <td class="queue-actions-cell">
                         <div class="inline-cluster">
                             {% if order.status == "queued" %}
                                 {% include "orders/partials/queue_transition_form.html" with action_url_name="orders:mark-preparing" order_id=order.id button_label="Preparing" confirm_message="Mark order as preparing?" %}

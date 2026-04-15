@@ -81,6 +81,17 @@ def _render_workspace_response(request):
     return HttpResponse(html)
 
 
+def _render_assignment_section_response(request):
+    context = _workspace_context(request)
+    context["include_messages"] = True
+    html = render_to_string(
+        "maintenance/partials/assignment_section.html",
+        context,
+        request=request,
+    )
+    return HttpResponse(html)
+
+
 def _workspace_redirect(request):
     status_filter = request.POST.get("status", "").strip()
     assignments_view = (
@@ -201,4 +212,4 @@ class RepairAssignmentActionView(RoleRequiredMixin, View):
 
         if not getattr(request, "htmx", False):
             return _workspace_redirect(request)
-        return _render_workspace_response(request)
+        return _render_assignment_section_response(request)
