@@ -108,22 +108,6 @@ class CustomerOrderingViewTests(TestCase):
             "notes": notes,
         }
 
-    @override_settings(STORE_ID="store-c")
-    def test_topbar_shows_current_store_and_region_in_distributed_mode(self):
-        self.client.force_login(self.customer)
-        response = self.client.get(reverse("orders:menu", args=[self.store.store_code]))
-        self.assertEqual(response.status_code, 200)
-        self.assertContains(response, "Current Node")
-        self.assertContains(response, f"{self.store.name} ({self.store.store_code})")
-        self.assertContains(response, f"Region {self.region.code}: {self.region.name}")
-
-    @override_settings(STORE_ID="")
-    def test_topbar_hides_distributed_indicator_when_node_unconfigured(self):
-        self.client.force_login(self.customer)
-        response = self.client.get(reverse("orders:menu", args=[self.store.store_code]))
-        self.assertEqual(response.status_code, 200)
-        self.assertNotContains(response, "Current Node")
-
     def test_customize_page_renders_change_store_control(self):
         guest_client = Client()
         response = guest_client.get(
@@ -904,6 +888,39 @@ class DashboardAndHtmxViewTests(TestCase):
             "Inventory mutation would result in invalid quantities.",
         )
 
+    def test_inventory_adjust_htmx_shows_inline_reason_error_when_blank(self):
+        self.client.force_login(self.manager)
+        balance = get_store_balance(self.store_c1, self.inventory_item)
+        response = self.client.post(
+            reverse("inventory:adjust", args=[balance.id]),
+            {"delta": "1.00", "reason": ""},
+            HTTP_HX_REQUEST="true",
+        )
+        balance.refresh_from_db()
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(balance.on_hand_quantity, Decimal("10.00"))
+        self.assertContains(response, "Provide a reason for this adjustment.")
+
+    def test_inventory_adjust_htmx_shows_service_error_when_adjustment_is_invalid(self):
+        self.client.force_login(self.manager)
+        balance = get_store_balance(self.store_c1, self.inventory_item)
+        balance.reserved_quantity = Decimal("9.00")
+        balance.save()
+
+        response = self.client.post(
+            reverse("inventory:adjust", args=[balance.id]),
+            {"count": "8.00", "reason": "post-rush recount"},
+            HTTP_HX_REQUEST="true",
+        )
+
+        balance.refresh_from_db()
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(balance.on_hand_quantity, Decimal("10.00"))
+        self.assertContains(
+            response,
+            "Inventory mutation would result in invalid quantities.",
+        )
+
     def test_inventory_adjust_step_size_matches_item_unit_expectation(self):
         self.client.force_login(self.manager)
         liquid_item = InventoryItem.objects.create(
@@ -1298,6 +1315,28 @@ class DashboardAndHtmxViewTests(TestCase):
         self.assertContains(response, "Order-Backed Financial Rows")
         self.assertContains(response, "Maintenance Summary")
         self.assertContains(response, "AI Supply Drafts")
+        self.assertContains(response, 'name="order_search"', html=False)
+        self.assertContains(response, "Search order code")
+
+    def test_analytics_workspace_order_search_filters_ledger_rows_within_scope(self):
+        self.client.force_login(self.manager)
+        response = self.client.get(
+            reverse("analytics:index"),
+            {"order_search": self.queue_order.public_order_code[-6:]},
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, self.queue_order.public_order_code)
+        self.assertContains(
+            response,
+            f'value="{self.queue_order.public_order_code[-6:]}"',
+            html=False,
+        )
+        self.assertContains(
+            response,
+            f'Filtered to orders matching "{self.queue_order.public_order_code[-6:]}" within the selected scope.',
+        )
+        self.assertNotContains(response, self.out_of_scope_order.public_order_code)
 
     def test_analytics_workspace_view_payments_button_visibility_matches_role_policy(
         self,

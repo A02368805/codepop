@@ -12,13 +12,13 @@
         <a class="button button--ghost" href="{% url 'orders:recommendations' %}">Get drink ideas</a>
     </div>
     {% if favorites %}
-        <div class="card-grid">
+        <div class="card-grid favorites-grid">
             {% for favorite in favorites %}
-                <article class="menu-card">
+                <article class="menu-card menu-card--favorite">
                     <h3>{{ favorite.name }}</h3>
                     <p>{{ favorite.description }}</p>
                     <p class="muted">Starts at ${{ favorite.base_price_snapshot|floatformat:2 }}</p>
-                    <div class="action-row">
+                    <div class="action-row action-row--favorite">
                         {% if request.user.preferred_store %}
                             <form method="post" action="{% url 'orders:favorite-add-to-cart' favorite.id %}">
                                 {% csrf_token %}

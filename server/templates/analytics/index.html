@@ -25,6 +25,13 @@
         </select>
         <input type="date" name="date_from" value="{{ date_from }}">
         <input type="date" name="date_to" value="{{ date_to }}">
+        <input
+            type="search"
+            name="order_search"
+            value="{{ order_search }}"
+            placeholder="Search order code"
+            aria-label="Search for a specific order"
+        >
         <button class="button button--ghost" type="submit">Filter</button>
     </form>
     <div class="metric-grid">
@@ -116,6 +123,9 @@
             <div>
                 <p class="eyebrow">Order-Backed Financial Rows</p>
                 <h2>Recent ledger entries</h2>
+                {% if order_search %}
+                    <p class="muted">Filtered to orders matching "{{ order_search }}" within the selected scope.</p>
+                {% endif %}
             </div>
         </div>
         <div class="analytics-table-scroll">
@@ -139,7 +149,7 @@
                             <td>${{ entry.net_amount }}</td>
                         </tr>
                     {% empty %}
-                        <tr><td colspan="5">No ledger entries are available.</td></tr>
+                        <tr><td colspan="5">{% if order_search %}No ledger entries matched that order search in the current scope.{% else %}No ledger entries are available.{% endif %}</td></tr>
                     {% endfor %}
                 </tbody>
             </table>

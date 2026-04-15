@@ -22,47 +22,11 @@
         </nav>
 
         {% if request.user.role == "logistics_manager" or request.user.role == "super_admin" %}
-            <article class="imports-upload-card" id="imports-supply-upload">
-                <h2 class="imports-upload-title">Supply usage CSV</h2>
-                <form
-                    method="post"
-                    enctype="multipart/form-data"
-                    class="form-grid imports-upload-form"
-                    hx-post="{% url 'imports:supply-usage' %}"
-                    hx-target="#import-history"
-                    hx-swap="innerHTML"
-                    hx-indicator="#import-history-indicator"
-                >
-                    {% csrf_token %}
-                    <label class="field">
-                        <span>{{ supply_form.file.label }}</span>
-                        {{ supply_form.file }}
-                    </label>
-                    <button class="button button--primary" type="submit">Import supply usage CSV</button>
-                </form>
-            </article>
+            {% include "imports/partials/supply_upload_card.html" with supply_form=supply_form %}
         {% endif %}
 
         {% if request.user.role == "repair_staff" or request.user.role == "super_admin" %}
-            <article class="imports-upload-card" id="imports-repair-upload">
-                <h2 class="imports-upload-title">Maintenance status CSV</h2>
-                <form
-                    method="post"
-                    enctype="multipart/form-data"
-                    class="form-grid imports-upload-form"
-                    hx-post="{% url 'imports:repair-status' %}"
-                    hx-target="#import-history"
-                    hx-swap="innerHTML"
-                    hx-indicator="#import-history-indicator"
-                >
-                    {% csrf_token %}
-                    <label class="field">
-                        <span>{{ repair_form.file.label }}</span>
-                        {{ repair_form.file }}
-                    </label>
-                    <button class="button button--primary" type="submit">Import maintenance CSV</button>
-                </form>
-            </article>
+            {% include "imports/partials/repair_upload_card.html" with repair_form=repair_form %}
         {% endif %}
     </div>
 

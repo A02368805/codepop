@@ -425,6 +425,10 @@ h3 {
     align-items: start;
 }
 
+.favorites-grid {
+    align-items: stretch;
+}
+
 .metric-grid {
     grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
 }
@@ -500,12 +504,23 @@ h3 {
     justify-self: start;
 }
 
+.imports-panel--history {
+    overflow: visible;
+}
+
 .imports-history-table {
     width: 100%;
     min-width: 0;
+    max-height: 420px;
     overflow-x: auto;
-    overflow-y: hidden;
+    overflow-y: auto;
     -webkit-overflow-scrolling: touch;
+}
+
+.imports-history-footer {
+    margin-top: 0.75rem;
+    display: flex;
+    justify-content: flex-end;
 }
 
 .imports-history-table .data-table td:first-child {
@@ -646,6 +661,30 @@ h3 {
     align-content: start;
 }
 
+.menu-card--favorite {
+    height: 100%;
+    grid-template-rows: auto auto auto 1fr;
+}
+
+.action-row--favorite {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    align-items: stretch;
+}
+
+.action-row--favorite form,
+.action-row--favorite > .button {
+    min-width: 0;
+}
+
+.action-row--favorite form {
+    display: flex;
+}
+
+.action-row--favorite .button {
+    width: 100%;
+}
+
 .menu-card__visual,
 .recommendation-card__visual {
     height: 148px;
@@ -766,6 +805,20 @@ h3 {
 
 .field-error[hidden] {
     display: none !important;
+}
+
+.auth-form .errorlist,
+.field .errorlist {
+    margin: 0;
+    padding-left: 1.1rem;
+    color: var(--danger);
+    font-size: 0.82rem;
+    line-height: 1.35;
+}
+
+.auth-form .errorlist li,
+.field .errorlist li {
+    margin: 0.12rem 0;
 }
 
 .field span,
@@ -2946,6 +2999,10 @@ details.ingredient-group[open] .ingredient-group__header::after {
     .inline-cluster {
         flex-direction: column;
         align-items: stretch;
+    }
+
+    .action-row--favorite {
+        grid-template-columns: 1fr;
     }
 
     .choice-grid,
