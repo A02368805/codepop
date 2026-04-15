@@ -19,6 +19,19 @@
                 <p class="eyebrow">Suggested Custom Drink</p>
                 <h3>{{ menu_ai_result.drink.name }}</h3>
                 <p>{{ menu_ai_result.drink.description }}</p>
+                <form
+                    method="post"
+                    class="menu-ai-add-form"
+                    hx-post="{% url 'orders:menu-ai-add-to-cart' store.store_code %}"
+                    hx-target="#menu-ai-result"
+                    hx-swap="innerHTML"
+                >
+                    {% csrf_token %}
+                    <button class="button button--primary" type="submit">Add {{ menu_ai_result.drink.name }} to order</button>
+                </form>
+                {% if menu_ai_result.added_to_cart %}
+                    <p class="pill">Added to order{% if menu_ai_result.added_to_cart_name %}: {{ menu_ai_result.added_to_cart_name }}{% endif %}</p>
+                {% endif %}
                 {% if menu_ai_result.recipe.reason %}
                     <p class="muted">{{ menu_ai_result.recipe.reason }}</p>
                 {% endif %}
@@ -46,18 +59,6 @@
                     </form>
                 {% elif menu_ai_result.saved %}
                     <p class="pill">Saved to favorites{% if menu_ai_result.saved_favorite_name %}: {{ menu_ai_result.saved_favorite_name }}{% endif %}</p>
-                {% endif %}
-                <form
-                    method="post"
-                    hx-post="{% url 'orders:menu-ai-add-to-cart' store.store_code %}"
-                    hx-target="#menu-ai-result"
-                    hx-swap="innerHTML"
-                >
-                    {% csrf_token %}
-                    <button class="button button--primary" type="submit">Add {{ menu_ai_result.drink.name }} to order</button>
-                </form>
-                {% if menu_ai_result.added_to_cart %}
-                    <p class="pill">Added to order{% if menu_ai_result.added_to_cart_name %}: {{ menu_ai_result.added_to_cart_name }}{% endif %}</p>
                 {% endif %}
             </div>
         {% endif %}

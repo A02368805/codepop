@@ -57,28 +57,7 @@
         </div>
     </section>
 
-    <section class="panel maintenance-panel maintenance-panel--assignments" id="repair-assignments">
-        <div class="section-heading">
-            <div>
-                <p class="eyebrow">Repair Assignments</p>
-                <h2>{% if request.user.role == "repair_staff" %}My active and recent work{% else %}Team repair work{% endif %}</h2>
-                <p class="muted maintenance-assignment-summary">
-                    {% if show_all_assignments %}
-                        Showing all {{ assignments|length }} assignment{{ assignments|length|pluralize }}.
-                    {% else %}
-                        Showing {{ assignment_display_count }} of {{ assignments|length }} assignments.
-                    {% endif %}
-                </p>
-            </div>
-            <a
-                class="button button--ghost maintenance-view-all-link"
-                href="{% url 'maintenance:index' %}{% if show_all_assignments %}{% if status_filter %}?status={{ status_filter }}{% endif %}{% else %}?assignments=all{% if status_filter %}&status={{ status_filter }}{% endif %}{% endif %}#repair-assignments"
-            >
-                {% if show_all_assignments %}Show preview{% else %}View all{% endif %}
-            </a>
-        </div>
-        {% include "maintenance/partials/assignment_cards.html" %}
-    </section>
+    {% include "maintenance/partials/assignment_section.html" %}
 
     <section class="panel maintenance-panel maintenance-panel--imports">
         <div class="section-heading">

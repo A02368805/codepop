@@ -21,29 +21,26 @@
                 >
                     {% csrf_token %}
                     <div class="inventory-adjust-row">
-                        <span class="muted inventory-adjust-label">+/&minus;</span>
+                        <span class="muted inventory-adjust-label">Change by</span>
                         <input class="inventory-adjust-input" type="number" name="delta" step="{{ adjustment_step|default:'0.01' }}" value="{{ adjustment_form.delta.value|default:'1' }}">
-                        <span class="muted inventory-adjust-sep">or set to</span>
-                        <input class="inventory-adjust-input" type="number" name="count" step="{{ adjustment_step|default:'0.01' }}" min="0" placeholder="Amount">
+                        <span class="muted inventory-adjust-sep">Set on-hand to</span>
+                        <input class="inventory-adjust-input" type="number" name="count" step="{{ adjustment_step|default:'0.01' }}" min="0" placeholder="Amount" value="{{ adjustment_form.count.value|default:'' }}">
                     </div>
                     <div class="inventory-adjust-row">
-                        <div>
-                            <input class="inventory-adjust-reason" type="text" name="reason" placeholder="Reason" value="{{ adjustment_form.reason.value|default:'' }}">
-                            {% for error in adjustment_form.reason.errors %}
-                                <p class="field-error">{{ error }}</p>
-                            {% endfor %}
-                        </div>
+                        <input class="inventory-adjust-reason" type="text" name="reason" placeholder="Reason" value="{{ adjustment_form.reason.value|default:'' }}">
                         <button class="button button--ghost" type="submit">Apply</button>
                     </div>
+                    <p class="inventory-adjust-hint">Use one field per update: change by delta or set an exact on-hand count.</p>
                 </form>
+                {% if adjustment_success_message %}
+                    <p class="inventory-adjust-success">{{ adjustment_success_message }}</p>
+                {% endif %}
                 {% if adjustment_form.errors %}
                     <div class="inventory-adjust-errors">
                         {% for field in adjustment_form %}
-                            {% if field.name != "reason" %}
                             {% for error in field.errors %}
                                 <p class="field-error">{{ error }}</p>
                             {% endfor %}
-                            {% endif %}
                         {% endfor %}
                         {% for error in adjustment_form.non_field_errors %}
                             <p class="field-error">{{ error }}</p>
