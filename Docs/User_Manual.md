@@ -286,20 +286,20 @@ Go to `/orders/favorites/` anytime to:
 ### Accessing the Manager Dashboard
 
 1. Log in with a manager account
-2. You'll be redirected to `/dashboards/manager/`
+2. After logging in, you'll be redirected to `/dashboards/manager/`
 
-> 📸 **Screenshot:** Manager dashboard with order summary, daily metrics, quick-access buttons
+![Manager Dashboard](diagrams/Manager_Dashboard.png)
 
 ### View the Order Queue
 
-1. From the manager dashboard, click **"View Full Queue"** or go to `/orders/`
+1. From the manager dashboard, click **"Open order queue"** or go to `/orders/`
 2. You'll see all orders for your store, grouped by status:
    - **Queued** — orders waiting to start
    - **Preparing** — orders being made
    - **Ready** — orders ready for pickup
    - **Picked Up** — completed orders
 
-> 📸 **Screenshot:** Order queue table with columns for order code, pickup combo, items, status, action buttons
+![Order Queue](diagrams/Order_Queue.png)
 
 ### Process an Order
 
@@ -309,7 +309,7 @@ Go to `/orders/favorites/` anytime to:
 4. **Mark as Ready:** Click "Ready for Pickup" when complete
 5. **Mark as Picked Up:** Click "Picked Up" when the customer takes the order
 
-> 📸 **Screenshot:** Order detail view with full customization summary and "Preparing" / "Ready" / "Picked Up" action buttons
+![Process Order](diagrams/Process_Order.png)
 
 ### Manage Inventory
 
@@ -320,14 +320,16 @@ Go to `/orders/favorites/` anytime to:
    - Reserved quantity (allocated to orders)
    - Adjust button
 
-> 📸 **Screenshot:** Inventory table with item names, quantities, adjust input fields, save buttons
+![Manager Inventory](diagrams/Manager_Inventory.png)
 
 3. **Adjust Stock:**
-   - Click on the quantity field for an item
+   - Click on an item
+   - Under the "Adjust" section of the item click into the field box to change the quantity or in the Amount field box
    - Enter the new on-hand count
+   - Provide a reason for the adjustment
    - Click **"Save"** — the system updates immediately
 
-> 📸 **Screenshot:** Inline inventory adjustment form (single row highlighted)
+![Adjust Stock](diagrams/Adjust_Stock.png)
 
 ---
 
@@ -532,7 +534,7 @@ Transfer lifecycle:
 1. Log in with a super admin account
 2. You'll be redirected to `/dashboards/super-admin/`
 
-> 📸 **Screenshot:** Super admin dashboard with system-wide metrics, all-store overview, health indicators
+![Super Admin Dashboard](diagrams/SuperAdmin_Dashboard.png)
 
 ### Monitor System Health
 
@@ -547,7 +549,7 @@ Transfer lifecycle:
    - Failed sync attempts
    - Conflict resolution status
 
-> 📸 **Screenshot:** Sync workspace with event timeline, conflict details, retry options
+![Sync Workspace](diagrams/Sync_Workspace.png)
 
 ### Manage System Users
 

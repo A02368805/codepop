@@ -3,12 +3,20 @@ from django import forms
 
 class InventoryAdjustmentForm(forms.Form):
     delta = forms.DecimalField(decimal_places=2, max_digits=12)
-    reason = forms.CharField(required=False)
+    reason = forms.CharField(
+        required=True,
+        error_messages={"required": "Provide a reason for this adjustment."},
+    )
+
+    def clean_reason(self):
+        reason = (self.cleaned_data.get("reason") or "").strip()
+        if not reason:
+            raise forms.ValidationError("Provide a reason for this adjustment.")
+        return reason
 
     def clean(self):
         cleaned_data = super().clean()
         delta = cleaned_data.get("delta")
-        reason = (cleaned_data.get("reason") or "").strip()
         if delta in {None, 0}:
             self.add_error("delta", "Enter a non-zero adjustment.")
         if delta is not None and abs(delta) > 5000:

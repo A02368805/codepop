@@ -114,8 +114,9 @@ class OrderWorkflowTests(TestCase):
 
         syrup_balance = get_store_balance(self.store, self.inventory_item)
         cup_balance = get_store_balance(self.store, self.cups)
-        self.assertEqual(syrup_balance.on_hand_quantity, Decimal("10.00"))
-        self.assertEqual(cup_balance.on_hand_quantity, Decimal("198.00"))
+        # Order quantity 2 × requirement 2.00 = 4.00 deduction
+        self.assertEqual(syrup_balance.on_hand_quantity, Decimal("8.00"))
+        self.assertEqual(cup_balance.on_hand_quantity, Decimal("196.00"))
         self.assertEqual(order.status, Order.Status.PICKED_UP)
         self.assertIsNotNone(order.queued_at)
         self.assertIsNotNone(order.preparing_at)
