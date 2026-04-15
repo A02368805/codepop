@@ -174,7 +174,7 @@ def reserve_order_inventory(order):
         requirements = item.customizations_json.get("inventory_requirements", [])
         for requirement in requirements:
             sku = requirement.get("sku")
-            quantity = _as_decimal(requirement.get("quantity", 0))
+            quantity = _as_decimal(requirement.get("quantity", 0)) * item.quantity
             if quantity <= 0:
                 continue
             inventory_item = _inventory_item_for_reservation(sku=sku)
@@ -194,7 +194,7 @@ def reverse_order_inventory(order):
         requirements = item.customizations_json.get("inventory_requirements", [])
         for requirement in requirements:
             sku = requirement.get("sku")
-            quantity = _as_decimal(requirement.get("quantity", 0))
+            quantity = _as_decimal(requirement.get("quantity", 0)) * item.quantity
             if quantity <= 0:
                 continue
             inventory_item = _inventory_item_for_reservation(sku=sku)
