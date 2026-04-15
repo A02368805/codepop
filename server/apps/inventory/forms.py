@@ -9,14 +9,21 @@ class InventoryAdjustmentForm(forms.Form):
         required=False,
         min_value=0,
     )
-    reason = forms.CharField(required=False)
+    reason = forms.CharField(
+        required=True,
+        error_messages={"required": "Provide a reason for this adjustment."},
+    )
+
+    def clean_reason(self):
+        reason = (self.cleaned_data.get("reason") or "").strip()
+        if not reason:
+            raise forms.ValidationError("Provide a reason for this adjustment.")
+        return reason
 
     def clean(self):
         cleaned_data = super().clean()
         delta = cleaned_data.get("delta")
         count = cleaned_data.get("count")
-        reason = (cleaned_data.get("reason") or "").strip()
-        cleaned_data["reason"] = reason
 
         # A set-count target takes precedence over delta validation.
         if count is not None:

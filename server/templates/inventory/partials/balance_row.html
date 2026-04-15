@@ -27,7 +27,7 @@
                         <input class="inventory-adjust-input" type="number" name="count" step="{{ adjustment_step|default:'0.01' }}" min="0" placeholder="Amount" value="{{ adjustment_form.count.value|default:'' }}">
                     </div>
                     <div class="inventory-adjust-row">
-                        <input class="inventory-adjust-reason" type="text" name="reason" placeholder="Reason (optional)" value="{{ adjustment_form.reason.value|default:'' }}">
+                        <input class="inventory-adjust-reason" type="text" name="reason" placeholder="Reason" value="{{ adjustment_form.reason.value|default:'' }}">
                         <button class="button button--ghost" type="submit">Apply</button>
                     </div>
                     <p class="inventory-adjust-hint">Use one field per update: change by delta or set an exact on-hand count.</p>
