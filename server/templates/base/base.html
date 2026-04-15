@@ -38,19 +38,6 @@
                         </span>
                     </div>
                 {% endif %}
-                {% if active_node_context %}
-                    <div class="node-indicator" aria-label="Current distributed node">
-                        <p class="node-indicator__label">Current Node</p>
-                        {% if active_node_context.store_name and active_node_context.store_code %}
-                            <p class="node-indicator__value">{{ active_node_context.store_name }} ({{ active_node_context.store_code }})</p>
-                        {% elif active_node_context.node_id %}
-                            <p class="node-indicator__value">{{ active_node_context.node_id|upper }}</p>
-                        {% endif %}
-                        {% if active_node_context.region_code %}
-                            <p class="node-indicator__meta">Region {{ active_node_context.region_code }}{% if active_node_context.region_name %}: {{ active_node_context.region_name }}{% endif %}</p>
-                        {% endif %}
-                    </div>
-                {% endif %}
             </div>
             <input
                 type="checkbox"
