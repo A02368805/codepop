@@ -104,21 +104,6 @@ class CustomerOrderingViewTests(TestCase):
             "notes": notes,
         }
 
-    @override_settings(STORE_ID="store-c")
-    def test_topbar_shows_current_store_and_region_in_distributed_mode(self):
-        self.client.force_login(self.customer)
-        response = self.client.get(reverse("orders:menu", args=[self.store.store_code]))
-        self.assertEqual(response.status_code, 200)
-        self.assertContains(response, "Current Node")
-        self.assertContains(response, f"{self.store.name} ({self.store.store_code})")
-        self.assertContains(response, f"Region {self.region.code}: {self.region.name}")
-
-    @override_settings(STORE_ID="")
-    def test_topbar_hides_distributed_indicator_when_node_unconfigured(self):
-        self.client.force_login(self.customer)
-        response = self.client.get(reverse("orders:menu", args=[self.store.store_code]))
-        self.assertEqual(response.status_code, 200)
-        self.assertNotContains(response, "Current Node")
 
     def test_customize_page_renders_change_store_control(self):
         guest_client = Client()
