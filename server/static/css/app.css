@@ -398,7 +398,9 @@ h3 {
 }
 
 .maintenance-panel--hero {
-    overflow: visible;
+    /* Keep rounded card containment on X while allowing dropdown/expansion on Y. */
+    overflow-x: hidden;
+    overflow-y: visible;
 }
 
 .panel-stack,
@@ -1013,7 +1015,7 @@ h3 {
 }
 
 .queue-actions-cell {
-    white-space: nowrap;
+    white-space: normal;
     vertical-align: top;
 }
 
@@ -1108,6 +1110,15 @@ h3 {
 .maintenance-assignment-note,
 .maintenance-assignment-latest {
     margin: 0;
+    overflow-wrap: anywhere;
+    word-break: break-word;
+}
+
+.maintenance-assignment-main code,
+.queue-row-detail__item code,
+.maintenance-urgent-table .data-table td {
+    overflow-wrap: anywhere;
+    word-break: break-word;
 }
 
 .maintenance-assignment-actions {
@@ -2774,9 +2785,9 @@ details.ingredient-group[open] .ingredient-group__header::after {
 
 @media (max-width: 1100px), (max-height: 860px) {
     .maintenance-panel--hero {
-        max-height: 78vh;
+        max-height: none;
         overflow-y: visible;
-        overflow-x: visible;
+        overflow-x: hidden;
         overscroll-behavior: contain;
     }
 }
