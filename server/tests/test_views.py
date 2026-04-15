@@ -104,7 +104,6 @@ class CustomerOrderingViewTests(TestCase):
             "notes": notes,
         }
 
-
     def test_customize_page_renders_change_store_control(self):
         guest_client = Client()
         response = guest_client.get(
