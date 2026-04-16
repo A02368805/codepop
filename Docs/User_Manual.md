@@ -33,15 +33,15 @@ FloatStack is a web-based ordering platform for custom sodas and floats. Custome
 
 FloatStack serves seven user types:
 
-| User Type | Who They Are | What They Do |
-|---|---|---|
-| **Guest** | One-time customer, no account | Browse stores, order online, look up order via code |
-| **Account User** | Registered customer | Order, save favorites, get recommendations, manage preferences |
-| **Manager** | Store staff | Queue orders, manage inventory, adjust stock |
-| **Admin** | Store administrator | Manage users, handle admin tasks |
-| **Logistics Manager** | Regional coordinator | Manage supply transfers, approve orders, oversee inventory |
-| **Repair Staff** | Maintenance technician | Schedule repairs, track machine health |
-| **Super Admin** | System administrator | System-wide oversight, user management, analytics |
+| User Type             | Who They Are                  | What They Do                                                   |
+| --------------------- | ----------------------------- | -------------------------------------------------------------- |
+| **Guest**             | One-time customer, no account | Browse stores, order online, look up order via code            |
+| **Account User**      | Registered customer           | Order, save favorites, get recommendations, manage preferences |
+| **Manager**           | Store staff                   | Queue orders, manage inventory, adjust stock                   |
+| **Admin**             | Store administrator           | Manage users, handle admin tasks                               |
+| **Logistics Manager** | Regional coordinator          | Manage supply transfers, approve orders, oversee inventory     |
+| **Repair Staff**      | Maintenance technician        | Schedule repairs, track machine health                         |
+| **Super Admin**       | System administrator          | System-wide oversight, user management, analytics              |
 
 ### Key Features Overview
 
@@ -61,18 +61,20 @@ FloatStack serves seven user types:
 
 **No account needed.** Guests can order immediately.
 
-1. Go to `http://[floatstack-url]/`
-   > 📸 **Screenshot:** FloatStack home page with drink hero cards and "Start Ordering" button
+1. Go to `http://localhost:8000/`
+
+   > ![FloatStack landing](diagrams/landing.png)
 
 2. **Find a Store**
-   - Click "Start Ordering" or go to `/stores/`
-   - Allow browser location access for nearest-store recommendation, or manually select a store from the list
-   > 📸 **Screenshot:** Store selection page with map view and list view
+   - Click "Start your order" or go to `/stores/`
+
+     > ![Menu header](diagrams/menu_header.png)
 
 3. **Browse the Menu**
    - You're now in the drink menu for your chosen store
-   - Featured menu items appear as cards (e.g., "Vanilla Sunset," "Cache Float")
-   > 📸 **Screenshot:** Menu page with drink cards, size selector, hero section
+   - Use the "Generate drink ideas" box at top, or scroll down to see featured menu items as cards
+
+     > ![Featured drinks](diagrams/featured_drinks.png)
 
 4. **Customize Your Drink** (see [Ordering as a Guest or Customer](#ordering-as-a-guest-or-customer) below)
 
@@ -80,24 +82,27 @@ FloatStack serves seven user types:
 
 **Creating an Account:**
 
-1. Go to `/register/`
+1. Click **"Create Account"** at the top right, or go to `/register/`
 2. Enter:
+   - First name
+   - Last name
    - Email address
-   - Password (must be at least 8 characters)
-   - Confirm password
-3. Click "Create Account"
-4. Log in with your email and password
+   - Preferred store (or choose later)
+   - Password (create a strong password)
+   - Re-enter password to confirm
+3. Click **"Create account"** at the bottom
+4. Log in with your new email and password
 
-> 📸 **Screenshot:** Registration form with email, password, confirm password fields
+> ![Create account form](diagrams/create_account.png)
 
 **Logging In:**
 
-1. Go to `/login/`
+1. Click **"Sign In"** at the top right, or go to `/login/`
 2. Enter your email and password
-3. Click "Log In"
-4. You'll be redirected to your dashboard
+3. Click **"Sign in"** at the bottom
+4. You'll be redirected to your account dashboard
 
-> 📸 **Screenshot:** Login form with email and password fields
+> ![Sign in form](diagrams/sign_in.png)
 
 ---
 
@@ -115,10 +120,12 @@ FloatStack serves seven user types:
 Once you've selected a store, you'll see the drink menu at `/orders/menu/<store>/`
 
 **Menu sections:**
+
 - **AI Drink Generation** — give the AI a prompts and it will create a drink based on that (shown towards top)
 - **All menu items** — complete drink catalog, organized by type
 
 **For each drink:**
+
 - Name and price (prices vary by size: Small, Medium, Large)
 - Badge (e.g., "Popular," "Signature," "New")
 - Customization button
@@ -131,6 +138,7 @@ Once you've selected a store, you'll see the drink menu at `/orders/menu/<store>
 **For Guests:** Use the assistant but won't be able to save the build.
 
 **Option A: AI Chat Assistant**
+
 - Click in the "Tell us what you are craving" box on the menu
 - Describe what you want in plain English (e.g., "I like fruity, sweet drinks")
 - The assistant suggests flavor combinations once the "Generate drink ideas" button is selected
@@ -139,6 +147,7 @@ Once you've selected a store, you'll see the drink menu at `/orders/menu/<store>
 > 📸 **Screenshot:** AI assistant chat box with sample responses and "Add to Cart" button
 
 **Option B: Get Recommendations (Account Users)**
+
 - Go to `/orders/recommendations/` (click the FloatStack logo in the top left of the page to access this page)
 - AI personalizes suggestions based on your taste preferences
 - Click a recommendation to customize further or add to cart
@@ -205,6 +214,7 @@ Click on any drink to customize it:
 ### Step 7: Order Confirmation
 
 After checkout, you'll see your **order confirmation page** with:
+
 - **Order Code** (e.g., `FS-M5K9TD`) — save this to look up your order later
 - **Pickup Combo** (e.g., `624`) — staff uses this to identify your order
 - **Requested Pickup Time**
@@ -215,6 +225,7 @@ After checkout, you'll see your **order confirmation page** with:
 ### Step 8: Track Your Order
 
 **As a Guest:**
+
 1. Go to `/orders/lookup/`
 2. Enter your:
    - Order Code (e.g., `FS-M5K9TD`)
@@ -226,6 +237,7 @@ After checkout, you'll see your **order confirmation page** with:
 > 📸 **Screenshot:** Guest lookup form with order code, pickup combo, guest code fields
 
 **As an Account User:**
+
 1. Go to `/orders/history/`
 2. All your past and current orders are listed with status
 3. Click on any order to see details
@@ -238,46 +250,69 @@ After checkout, you'll see your **order confirmation page** with:
 
 ### Update Your Taste Preferences
 
-Account users can help FloatStack personalize recommendations:
+Account users can customize recommendations by setting preferences:
 
-1. Log in and go to `/account/preferences/`
-2. **Sweetness Preference** — select Light, Balanced, Sweet, or Extra Sweet
-3. **Adventurousness** — select Classic (familiar flavors), Balanced, or Adventurous
-4. Click **Save**
+1. Go to **Favorites** at `/orders/favorites/` or click **"Get drink ideas"** at `/orders/recommendations/`
+2. Click **"Update taste profile"** to go to `/account/preferences/`
+3. Set your preferences:
+   - **Drinks** — choose preferred and avoided drinks
+   - **Syrups** — select favorite and disliked syrups
+   - **Add-ins** — choose preferred toppings
+   - **Ice cream** — select favorite flavors
+   - **Advanced filters** — dietary restrictions, sweetness preference (Light, Balanced, Sweet, Extra Sweet), and adventurousness (Classic, Balanced, Adventurous)
+4. Click **"Save preferences"**
 
-> 📸 **Screenshot:** Preferences page with sweetness and adventurousness radio buttons, Save button
+> ![Taste profile preferences](diagrams/preferences.png)
 
 ### Save Favorite Drinks
 
-After customizing a drink you love:
+Save your perfect drink combinations for quick reorders:
 
-1. On the customization page, check **"Save as Favorite"**
-2. Enter a nickname (optional, e.g., "My Summer Go-To")
-3. Click **"Add to Cart and Save"**
+1. Go to the drink menu (see "Ordering as a Guest or Customer" section) and customize a drink
+2. At the very bottom of the customization page, scroll to **"Quantity and pickup notes"**
+3. Check the checkbox **"Save this exact build as a favorite for faster reorders"**
+4. Set your quantity and optional pickup notes
+5. Click **"Add to Order"** — your build is saved
 
-Go to `/orders/favorites/` anytime to:
+> ![Save favorite build checkbox](diagrams/save_favorite.png)
+
+View your favorites anytime at `/orders/favorites/`:
+
 - See all your saved custom drinks
 - Click a favorite to add it to your cart (same customization applied)
 - Click the trash icon to remove a favorite
 
-> 📸 **Screenshot:** Favorites page with saved drinks, customization summary, Add to Cart and Remove buttons
+> ![Saved drinks list](diagrams/favorites.png)
 
 ### Get Personalized Recommendations
 
-1. Log in and go to `/orders/recommendations/`
-2. AI learns from your taste preferences and order history
-3. View drink suggestions tailored to you
-4. Click any recommendation to customize further or add to cart
+Get AI-curated drink ideas based on your taste preferences and order history:
 
-> 📸 **Screenshot:** Recommendations page with drink cards, "Customize" and "Add to Cart" buttons
+1. Log in and click **"Favorites"** in the navigation
+2. Click **"Get drink ideas"** at the top right (under the nav bar)
+3. Browse curated recommendations tailored to your tastes
+4. Each recommendation shows:
+   - The drink name and description
+   - Why it matches your preferences
+   - "Create this drink" button to customize it
+5. Click **"Create this drink"** to customize and add to cart, or **"Update taste profile"** to refine your preferences
+
+> ![Personalized drink recommendations](diagrams/recommendations.png)
 
 ### View Order History
 
-1. Log in and go to `/orders/history/`
-2. See all past orders with dates and totals
-3. Click an order for full details (items ordered, customizations, price, status)
+Track all your past and current orders:
 
-> 📸 **Screenshot:** Order history list, and detailed order view
+1. Log in and click **"My Orders"** on the navigation bar
+2. You'll see your order history with:
+   - Order code (e.g., FS-Q7N4RX)
+   - Store location
+   - Date and time placed
+   - Order total
+   - Current status (Queued, Preparing, Ready, Picked Up)
+3. Click **"View details"** on any order to see full customization details, items, and status
+
+> ![Order history page](diagrams/order_history.png)
 
 ---
 
@@ -288,7 +323,7 @@ Go to `/orders/favorites/` anytime to:
 1. Log in with a manager account
 2. After logging in, you'll be redirected to `/dashboards/manager/`
 
-![Manager Dashboard](diagrams/Manager_Dashboard.png)
+> ![Manager Dashboard](diagrams/Manager_Dashboard.png)
 
 ### View the Order Queue
 
@@ -299,7 +334,7 @@ Go to `/orders/favorites/` anytime to:
    - **Ready** — orders ready for pickup
    - **Picked Up** — completed orders
 
-![Order Queue](diagrams/Order_Queue.png)
+> ![Order Queue](diagrams/Order_Queue.png)
 
 ### Process an Order
 
@@ -309,7 +344,7 @@ Go to `/orders/favorites/` anytime to:
 4. **Mark as Ready:** Click "Ready for Pickup" when complete
 5. **Mark as Picked Up:** Click "Picked Up" when the customer takes the order
 
-![Process Order](diagrams/Process_Order.png)
+> ![Process Order](diagrams/Process_Order.png)
 
 ### Manage Inventory
 
@@ -320,16 +355,16 @@ Go to `/orders/favorites/` anytime to:
    - Reserved quantity (allocated to orders)
    - Adjust button
 
-![Manager Inventory](diagrams/Manager_Inventory.png)
+> ![Manager Inventory](diagrams/Manager_Inventory.png)
 
-3. **Adjust Stock:**
+1. **Adjust Stock:**
    - Click on an item
    - Under the "Adjust" section of the item click into the field box to change the quantity or in the Amount field box
    - Enter the new on-hand count
    - Provide a reason for the adjustment
    - Click **"Save"** — the system updates immediately
 
-![Adjust Stock](diagrams/Adjust_Stock.png)
+> ![Adjust Stock](diagrams/Adjust_Stock.png)
 
 ---
 
@@ -349,18 +384,18 @@ Go to `/orders/favorites/` anytime to:
 
 > 📸 **Screenshot:** Admin user management table with user names, roles, status, action buttons
 
-3. **Add a New User:**
+1. **Add a New User:**
    - Click **"Add User"** button
    - Enter email, select role (Manager, Admin, Repair Staff)
    - Set initial password
    - Click **"Create"**
 
-4. **Update a User:**
+2. **Update a User:**
    - Click on a user in the list
    - Change their role(Account User, Manager, Admin) or status (Active, Locked, Disabled, pending)
    - Click **"Save"**
 
-5. **Disable/Lock a User:**
+3. **Disable/Lock a User:**
    - Click on the user status
    - Change status to "Locked" or "Disabled"
    - Click **"Save"** — user can no longer log in
@@ -417,6 +452,7 @@ Go to `/orders/favorites/` anytime to:
 ### Track Transfer Progress
 
 Transfer lifecycle:
+
 1. **Approved** — admin has approved the request
 2. **Reserved** — items are held aside at the source
 3. **Shipped** — items left the source location
@@ -483,7 +519,7 @@ Transfer lifecycle:
 2. After sign-in, you should land on the **Repair Dashboard**
 3. Confirm the top navigation includes **Dashboard**, **Maintenance**, and **Imports**
 
-![Repair dashboard with urgent machine alerts, upcoming assignments, and regional overview](screenshots/MaintenanceDash.png)
+> ![Repair dashboard with urgent machine alerts, upcoming assignments, and regional overview](screenshots/MaintenanceDash.png)
 
 ### View Maintenance Assignments
 
@@ -493,7 +529,7 @@ Transfer lifecycle:
    - **Route-Aware Queue** — grouped city/route batches for dispatch planning
    - **Repair Assignments** — active and recent tasks assigned to you
 
-![Maintenance workspace with urgent queue, assignment cards, and route-aware grouping](screenshots/RoutesDash.png)
+> ![Maintenance workspace with urgent queue, assignment cards, and route-aware grouping](screenshots/RoutesDash.png)
 
 ### Complete a Repair Assignment
 
@@ -512,7 +548,7 @@ Transfer lifecycle:
    - **Close assignment** (when available)
 5. Confirm the card updates and your latest activity appears in the assignment history line
 
-![Repair assignment card with machine info, status, notes, and action buttons](screenshots/MaintenanceAssign.png)
+> ![Repair assignment card with machine info, status, notes, and action buttons](screenshots/MaintenanceAssign.png)
 
 ### Upload CSV Imports (Repair Status)
 
@@ -523,7 +559,7 @@ Transfer lifecycle:
    - `store_address,machine_type_code,machine_operational_from_date,machine_status,status_date`
 5. Confirm the job result in import history (queued, succeeded, or failed with validation details)
 
-![Repair status CSV import form](screenshots/CSVupload.png)
+> ![Repair status CSV import form](screenshots/CSVupload.png)
 
 ---
 
@@ -534,7 +570,7 @@ Transfer lifecycle:
 1. Log in with a super admin account
 2. You'll be redirected to `/dashboards/super-admin/`
 
-![Super Admin Dashboard](diagrams/SuperAdmin_Dashboard.png)
+> ![Super Admin Dashboard](diagrams/SuperAdmin_Dashboard.png)
 
 ### Monitor System Health
 
@@ -549,7 +585,7 @@ Transfer lifecycle:
    - Failed sync attempts
    - Conflict resolution status
 
-![Sync Workspace](diagrams/Sync_Workspace.png)
+> ![Sync Workspace](diagrams/Sync_Workspace.png)
 
 ### Manage System Users
 
@@ -586,64 +622,77 @@ If your issue needs urgent attention:
 ### Common Issues and Solutions
 
 **"I forgot my password"**
+
 - Click "Forgot Password?" on the login page
 - Enter your email
 - Check your email for a password reset link
 
 **"My order status isn't updating"**
+
 - Refresh the page (browser refresh or press F5)
 - If ordering as a guest, verify you're using the correct order code and guest lookup code
 
 **"I can't add a drink to my cart"**
+
 - Ensure you've completed all required fields (size, base soda)
 - Check that you've selected a valid store
 - Clear your browser cache and try again
 
 **"Inventory adjustment didn't save"**
+
 - Verify you have manager or admin permissions
 - Ensure the new quantity is a valid number
 - Check your internet connection and retry
 
 **"My AI recommendation won't save"**
+
 - Account users can save recommendations — are you logged in?
 - Check that your account is active and not locked
 
 **"I received an error during checkout"**
+
 - Verify all form fields are filled correctly
 - Check your internet connection
 - Try a different browser or clear cache
 
 **"Supply transfer is stuck in 'Approved' status"**
+
 - Confirm the source has sufficient inventory reserved
 - Check if destination location has space for the items
 - Retry the transfer operation
 
 **"My payment was declined or failed"**
+
 - Double-check your card number, expiration date, and CVV
 - Try a different payment method
 - Contact your bank if the issue persists — your order code is preserved and you can retry payment from your order detail page
 
 **"My Stripe checkout session expired"**
+
 - This happens if the Stripe payment page was left open too long without completing
 - Go back and click "Place Order" again to start a new checkout session
 - Complete payment promptly once the Stripe page opens
 
 **"My order is stuck on 'Payment Pending'"**
+
 - Refresh the page — the system checks payment status automatically
 - If the status doesn't update after a few minutes, try navigating back to your order detail page using your order code
 - If the problem continues, use the in-app support chat at `/support/`
 
 **"The checkout form won't submit"**
+
 - Name field cannot be blank or only spaces
 - Email must be a valid format (e.g., `name@example.com`)
 - Phone number must contain at least 10 digits
 - All three fields are required for guest checkout — verify each one is filled in correctly
 
 **"The pickup time I selected shows an error"**
+
 - This happens if the page was open for a long time and the time slot is no longer in the future
 - Refresh the page to load updated pickup time options and reselect
 
 **"FloatStack can't find my location"**
+
 - If you typed an address or ZIP code, make sure it is a valid US address
 - Try entering just a ZIP code rather than a full street address
 - If the issue continues, allow browser location access or manually select a store from the list
@@ -717,17 +766,18 @@ For support issues, bugs, or feature requests:
 
 For testing or onboarding:
 
-| Role | Email | Password |
-|---|---|---|
-| Customer | `account.casey@floatstack.local` | `FloatStack123!` |
-| Customer | `account.river@floatstack.local` | `FloatStack123!` |
-| Manager | `manager.c001@floatstack.local` | `FloatStack123!` |
-| Admin | `admin.c001@floatstack.local` | `FloatStack123!` |
-| Logistics Manager | `logistics.c@floatstack.local` | `FloatStack123!` |
-| Repair Staff | `repair.north@floatstack.local` | `FloatStack123!` |
-| Super Admin | `superadmin@floatstack.local` | `FloatStack123!` |
+| Role              | Email                            | Password         |
+| ----------------- | -------------------------------- | ---------------- |
+| Customer          | `account.casey@floatstack.local` | `FloatStack123!` |
+| Customer          | `account.river@floatstack.local` | `FloatStack123!` |
+| Manager           | `manager.c001@floatstack.local`  | `FloatStack123!` |
+| Admin             | `admin.c001@floatstack.local`    | `FloatStack123!` |
+| Logistics Manager | `logistics.c@floatstack.local`   | `FloatStack123!` |
+| Repair Staff      | `repair.north@floatstack.local`  | `FloatStack123!` |
+| Super Admin       | `superadmin@floatstack.local`    | `FloatStack123!` |
 
 **Demo Guest Order Lookup:**
+
 - Order Code: `FS-M5K9TD`
 - Pickup Combo: `624`
 - Guest Lookup Code: `GST-DEMO-001`
