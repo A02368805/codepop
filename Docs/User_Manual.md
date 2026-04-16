@@ -207,8 +207,8 @@ Click on any drink to customize it:
 After checkout, you'll see your **order confirmation page** with:
 - **Order Code** (e.g., `FS-M5K9TD`) — save this to look up your order later
 - **Pickup Combo** (e.g., `624`) — staff uses this to identify your order
-- **Estimated Pickup Time**
-- **Store Location** and hours
+- **Requested Pickup Time**
+- **Store Location**
 
 > 📸 **Screenshot:** Confirmation page with order code, pickup combo, store address, estimated time
 
@@ -344,7 +344,7 @@ Go to `/orders/favorites/` anytime to:
 
 ### Manage Users for Your Store
 
-1. Go to `/admin/users/`
+1. Go to `/admin/users/` (click on the "Team" button on the navigation bar at the top of the screen)
 2. You'll see a list of all users assigned to your store
 
 > 📸 **Screenshot:** Admin user management table with user names, roles, status, action buttons
@@ -357,11 +357,11 @@ Go to `/orders/favorites/` anytime to:
 
 4. **Update a User:**
    - Click on a user in the list
-   - Change their role, status (Active, Locked, Disabled), or password
+   - Change their role(Account User, Manager, Admin) or status (Active, Locked, Disabled, pending)
    - Click **"Save"**
 
 5. **Disable/Lock a User:**
-   - Click on the user
+   - Click on the user status
    - Change status to "Locked" or "Disabled"
    - Click **"Save"** — user can no longer log in
 
