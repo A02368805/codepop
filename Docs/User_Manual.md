@@ -105,9 +105,8 @@ FloatStack serves seven user types:
 
 ### Step 1: Browse Stores
 
-1. Start at `/stores/`
-2. (Optional) Allow browser location — FloatStack will show nearby stores first
-3. Click on a store to begin ordering
+1. Start at `/stores/` (Click "Browse Drinks" to get to this page)
+2. Click on a store to begin ordering
 
 > 📸 **Screenshot:** Stores page with map and store list, geolocation option
 
@@ -116,17 +115,37 @@ FloatStack serves seven user types:
 Once you've selected a store, you'll see the drink menu at `/orders/menu/<store>/`
 
 **Menu sections:**
-- **Featured items** — popular or new drinks (shown at top)
+- **AI Drink Generation** — give the AI a prompts and it will create a drink based on that (shown towards top)
 - **All menu items** — complete drink catalog, organized by type
 
 **For each drink:**
 - Name and price (prices vary by size: Small, Medium, Large)
 - Badge (e.g., "Popular," "Signature," "New")
-- Quick preview or customization button
+- Customization button
 
 > 📸 **Screenshot:** Menu page showing drink cards with prices, size toggles, "Customize" button
 
-### Step 3: Customize Your Drink
+### Step 3: Use AI Assistance (Optional)
+
+**For Account Users Only:** Save AI recommendations for future orders.
+**For Guests:** Use the assistant but won't be able to save the build.
+
+**Option A: AI Chat Assistant**
+- Click in the "Tell us what you are craving" box on the menu
+- Describe what you want in plain English (e.g., "I like fruity, sweet drinks")
+- The assistant suggests flavor combinations once the "Generate drink ideas" button is selected
+- Click a suggestion to add it to your cart or customize it
+
+> 📸 **Screenshot:** AI assistant chat box with sample responses and "Add to Cart" button
+
+**Option B: Get Recommendations (Account Users)**
+- Go to `/orders/recommendations/` (click the FloatStack logo in the top left of the page to access this page)
+- AI personalizes suggestions based on your taste preferences
+- Click a recommendation to customize further or add to cart
+
+> 📸 **Screenshot:** Recommendations page with personalized drink cards and "Customize" / "Add to Cart" buttons
+
+### Step 4: Customize Your Drink
 
 Click on any drink to customize it:
 
@@ -141,33 +160,14 @@ Click on any drink to customize it:
    - Cream, Whipped cream, Ice cream scoops
    - Fresh mint, citrus wedges
    - Purees
-5. **Special Requests** (optional text field)
+5. **Quantity and Pickup Notes** (optional text field)
+   - Quantity
    - Any notes or allergies
 6. **Review Price**
    - Total updates as you customize
-7. Click **"Add to Cart"**
+7. Click **"Add to Order"**
 
 > 📸 **Screenshot:** Customization page with size selector, soda dropdown, syrup checkboxes, add-ins, notes field, price summary, Add to Cart button
-
-### Step 4: Use AI Assistance (Optional)
-
-**For Account Users Only:** Save AI recommendations for future orders.
-**For Guests:** Use the assistant but won't be able to save the build.
-
-**Option A: AI Chat Assistant**
-- Click "Ask an Assistant" button on the menu
-- Describe what you want in plain English (e.g., "I like fruity, sweet drinks")
-- The assistant suggests flavor combinations
-- Click a suggestion to add it to your cart
-
-> 📸 **Screenshot:** AI assistant chat box with sample responses and "Add to Cart" button
-
-**Option B: Get Recommendations (Account Users)**
-- Go to `/orders/recommendations/`
-- AI personalizes suggestions based on your taste preferences
-- Click a recommendation to customize further or add to cart
-
-> 📸 **Screenshot:** Recommendations page with personalized drink cards and "Customize" / "Add to Cart" buttons
 
 ### Step 5: Review Your Cart
 
@@ -177,8 +177,8 @@ Click on any drink to customize it:
    - View the customization summary (base, syrups, add-ins)
    - Click the quantity field to update how many
    - Click "Remove" to delete the item from cart
-4. See your **subtotal** at the bottom
-5. Click **"Proceed to Checkout"**
+4. See your **subtotal** to the right
+5. Click **"Checkout"**
 
 > 📸 **Screenshot:** Cart page with cart items table (drink summary, quantity, remove button), subtotal, "Proceed to Checkout" button
 
