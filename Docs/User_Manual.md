@@ -1,6 +1,6 @@
 # FloatStack User Manual
 
-**Version:** 1.0 (Draft)
+**Version:** 1.0 (Draft)  
 **Last Updated:** April 2026
 
 ---
@@ -105,9 +105,8 @@ FloatStack serves seven user types:
 
 ### Step 1: Browse Stores
 
-1. Start at `/stores/`
-2. (Optional) Allow browser location — FloatStack will show nearby stores first
-3. Click on a store to begin ordering
+1. Start at `/stores/` (Click "Browse Drinks" to get to this page)
+2. Click on a store to begin ordering
 
 > 📸 **Screenshot:** Stores page with map and store list, geolocation option
 
@@ -116,17 +115,37 @@ FloatStack serves seven user types:
 Once you've selected a store, you'll see the drink menu at `/orders/menu/<store>/`
 
 **Menu sections:**
-- **Featured items** — popular or new drinks (shown at top)
+- **AI Drink Generation** — give the AI a prompts and it will create a drink based on that (shown towards top)
 - **All menu items** — complete drink catalog, organized by type
 
 **For each drink:**
 - Name and price (prices vary by size: Small, Medium, Large)
 - Badge (e.g., "Popular," "Signature," "New")
-- Quick preview or customization button
+- Customization button
 
 > 📸 **Screenshot:** Menu page showing drink cards with prices, size toggles, "Customize" button
 
-### Step 3: Customize Your Drink
+### Step 3: Use AI Assistance (Optional)
+
+**For Account Users Only:** Save AI recommendations for future orders.
+**For Guests:** Use the assistant but won't be able to save the build.
+
+**Option A: AI Chat Assistant**
+- Click in the "Tell us what you are craving" box on the menu
+- Describe what you want in plain English (e.g., "I like fruity, sweet drinks")
+- The assistant suggests flavor combinations once the "Generate drink ideas" button is selected
+- Click a suggestion to add it to your cart or customize it
+
+> 📸 **Screenshot:** AI assistant chat box with sample responses and "Add to Cart" button
+
+**Option B: Get Recommendations (Account Users)**
+- Go to `/orders/recommendations/` (click the FloatStack logo in the top left of the page to access this page)
+- AI personalizes suggestions based on your taste preferences
+- Click a recommendation to customize further or add to cart
+
+> 📸 **Screenshot:** Recommendations page with personalized drink cards and "Customize" / "Add to Cart" buttons
+
+### Step 4: Customize Your Drink
 
 Click on any drink to customize it:
 
@@ -141,33 +160,14 @@ Click on any drink to customize it:
    - Cream, Whipped cream, Ice cream scoops
    - Fresh mint, citrus wedges
    - Purees
-5. **Special Requests** (optional text field)
+5. **Quantity and Pickup Notes** (optional text field)
+   - Quantity
    - Any notes or allergies
 6. **Review Price**
    - Total updates as you customize
-7. Click **"Add to Cart"**
+7. Click **"Add to Order"**
 
 > 📸 **Screenshot:** Customization page with size selector, soda dropdown, syrup checkboxes, add-ins, notes field, price summary, Add to Cart button
-
-### Step 4: Use AI Assistance (Optional)
-
-**For Account Users Only:** Save AI recommendations for future orders.
-**For Guests:** Use the assistant but won't be able to save the build.
-
-**Option A: AI Chat Assistant**
-- Click "Ask an Assistant" button on the menu
-- Describe what you want in plain English (e.g., "I like fruity, sweet drinks")
-- The assistant suggests flavor combinations
-- Click a suggestion to add it to your cart
-
-> 📸 **Screenshot:** AI assistant chat box with sample responses and "Add to Cart" button
-
-**Option B: Get Recommendations (Account Users)**
-- Go to `/orders/recommendations/`
-- AI personalizes suggestions based on your taste preferences
-- Click a recommendation to customize further or add to cart
-
-> 📸 **Screenshot:** Recommendations page with personalized drink cards and "Customize" / "Add to Cart" buttons
 
 ### Step 5: Review Your Cart
 
@@ -177,8 +177,8 @@ Click on any drink to customize it:
    - View the customization summary (base, syrups, add-ins)
    - Click the quantity field to update how many
    - Click "Remove" to delete the item from cart
-4. See your **subtotal** at the bottom
-5. Click **"Proceed to Checkout"**
+4. See your **subtotal** to the right
+5. Click **"Checkout"**
 
 > 📸 **Screenshot:** Cart page with cart items table (drink summary, quantity, remove button), subtotal, "Proceed to Checkout" button
 
@@ -207,8 +207,8 @@ Click on any drink to customize it:
 After checkout, you'll see your **order confirmation page** with:
 - **Order Code** (e.g., `FS-M5K9TD`) — save this to look up your order later
 - **Pickup Combo** (e.g., `624`) — staff uses this to identify your order
-- **Estimated Pickup Time**
-- **Store Location** and hours
+- **Requested Pickup Time**
+- **Store Location**
 
 > 📸 **Screenshot:** Confirmation page with order code, pickup combo, store address, estimated time
 
@@ -344,7 +344,7 @@ Go to `/orders/favorites/` anytime to:
 
 ### Manage Users for Your Store
 
-1. Go to `/admin/users/`
+1. Go to `/admin/users/` (click on the "Team" button on the navigation bar at the top of the screen)
 2. You'll see a list of all users assigned to your store
 
 > 📸 **Screenshot:** Admin user management table with user names, roles, status, action buttons
@@ -357,11 +357,11 @@ Go to `/orders/favorites/` anytime to:
 
 4. **Update a User:**
    - Click on a user in the list
-   - Change their role, status (Active, Locked, Disabled), or password
+   - Change their role(Account User, Manager, Admin) or status (Active, Locked, Disabled, pending)
    - Click **"Save"**
 
 5. **Disable/Lock a User:**
-   - Click on the user
+   - Click on the user status
    - Change status to "Locked" or "Disabled"
    - Click **"Save"** — user can no longer log in
 
@@ -480,50 +480,46 @@ Transfer lifecycle:
 ### Accessing the Repair Dashboard
 
 1. Log in with a repair staff account
-2. After sign-in, you should land on the **Repair Dashboard**
-3. Confirm the top navigation includes **Dashboard**, **Maintenance**, and **Imports**
+2. You'll be redirected to `/dashboards/repair/`
 
-![Repair dashboard with urgent machine alerts, upcoming assignments, and regional overview](screenshots/MaintenanceDash.png)
+> 📸 **Screenshot:** Repair dashboard with urgent machine alerts, upcoming assignments, regional overview
 
 ### View Maintenance Assignments
 
-1. Open **Maintenance** from the top navigation (or click **Open machine queue** on the dashboard)
-2. In the maintenance workspace, review:
+1. From the repair dashboard or go to `/maintenance/`
+2. You'll see:
    - **Urgent Queue** — machines needing immediate service
-   - **Route-Aware Queue** — grouped city/route batches for dispatch planning
-   - **Repair Assignments** — active and recent tasks assigned to you
+   - **Assigned Repairs** — tasks assigned to you
+   - **Route Groups** — repairs grouped by location to optimize travel
 
-![Maintenance workspace with urgent queue, assignment cards, and route-aware grouping](screenshots/RoutesDash.png)
+> 📸 **Screenshot:** Maintenance workspace with urgent card group, assignment cards, route optimization
 
 ### Complete a Repair Assignment
 
-1. In **Repair Assignments**, open the assignment card you are working
-2. Confirm key details:
-   - Store and machine
-   - Assignment and machine status
-   - Route batch and latest activity notes
-3. Add an update note if needed in the note box
-4. Use the appropriate action button for the current state:
-   - **Acknowledge**
-   - **Start repair**
-   - **Save update**
-   - **Block**
-   - **Complete**
-   - **Close assignment** (when available)
-5. Confirm the card updates and your latest activity appears in the assignment history line
+1. Click on an assignment
+2. You'll see:
+   - Machine type and location
+   - Current status
+   - Work history
+3. Click **"Start Service"** when you arrive
+4. Complete your work
+5. Click **"Mark Complete"**
+6. System updates the machine's service history
 
-![Repair assignment card with machine info, status, notes, and action buttons](screenshots/MaintenanceAssign.png)
+> 📸 **Screenshot:** Assignment detail with machine info, status history, start/complete buttons
 
 ### Upload CSV Imports (Repair Status)
 
-1. Open **Imports** from the top navigation (or click **Import maintenance CSV** on the repair dashboard)
-2. In the imports workspace, use the **Maintenance status CSV** card
-3. Choose your CSV file and click **Import maintenance CSV**
-4. Use the required header row exactly:
-   - `store_address,machine_type_code,machine_operational_from_date,machine_status,status_date`
-5. Confirm the job result in import history (queued, succeeded, or failed with validation details)
+1. Go to `/imports/`
+2. Click **"Import Repair Status"**
+3. Upload a CSV with:
+   - Machine ID
+   - Status (Service Due, Servicing, Service Complete)
+   - Notes
+   - Date
+4. System validates and updates machine records
 
-![Repair status CSV import form](screenshots/CSVupload.png)
+> 📸 **Screenshot:** CSV import form for repair status
 
 ---
 
@@ -618,39 +614,87 @@ If your issue needs urgent attention:
 - Check if destination location has space for the items
 - Retry the transfer operation
 
+**"My payment was declined or failed"**
+- Double-check your card number, expiration date, and CVV
+- Try a different payment method
+- Contact your bank if the issue persists — your order code is preserved and you can retry payment from your order detail page
+
+**"My Stripe checkout session expired"**
+- This happens if the Stripe payment page was left open too long without completing
+- Go back and click "Place Order" again to start a new checkout session
+- Complete payment promptly once the Stripe page opens
+
+**"My order is stuck on 'Payment Pending'"**
+- Refresh the page — the system checks payment status automatically
+- If the status doesn't update after a few minutes, try navigating back to your order detail page using your order code
+- If the problem continues, use the in-app support chat at `/support/`
+
+**"The checkout form won't submit"**
+- Name field cannot be blank or only spaces
+- Email must be a valid format (e.g., `name@example.com`)
+- Phone number must contain at least 10 digits
+- All three fields are required for guest checkout — verify each one is filled in correctly
+
+**"The pickup time I selected shows an error"**
+- This happens if the page was open for a long time and the time slot is no longer in the future
+- Refresh the page to load updated pickup time options and reselect
+
+**"FloatStack can't find my location"**
+- If you typed an address or ZIP code, make sure it is a valid US address
+- Try entering just a ZIP code rather than a full street address
+- If the issue continues, allow browser location access or manually select a store from the list
+
 ---
 
 ## FAQs
 
-**Q: Can I order as a guest without creating an account?**
+**Q: Can I order as a guest without creating an account?**  
 A: Yes. Guests can browse stores, customize drinks, and checkout without an account. You'll receive an order code to look up your order later.
 
-**Q: How do I save my favorite drink combination?**
+**Q: How do I save my favorite drink combination?**  
 A: Create an account, customize your drink, and check "Save as Favorite" before adding to cart. You can later quickly add it again from your favorites list.
 
-**Q: How long does drink preparation take?**
-A: Estimated times vary by store and current queue. You'll see the estimate on your confirmation page. Typical preparation is 5–10 minutes.
+**Q: How long does drink preparation take?**  
+A: Estimated times vary by store and current queue. You'll see the estimate on your confirmation page. Typical preparation is approximately 12–15 minutes from the time you order.
 
-**Q: Can managers see all stores' orders or just their own?**
+**Q: Can managers see all stores' orders or just their own?**  
 A: Managers see orders for their assigned store only. Super admins and logistics managers have cross-store visibility.
 
-**Q: How do I know if an inventory item is low?**
+**Q: How do I know if an inventory item is low?**  
 A: The system alerts managers and logistics coordinators when inventory drops below configurable thresholds. Restock alerts appear in the logistics dashboard.
 
-**Q: Can I cancel my order?**
+**Q: Can I cancel my order?**  
 A: Yes, if the order hasn't started being prepared. Go to your order detail page and click "Cancel Order." Refunds are processed according to the payment method.
 
-**Q: What happens if I order something that runs out of stock?**
+**Q: What happens if I order something that runs out of stock?**  
 A: The system prevents ordering items that are out of stock. If an item is allocated to your order but runs out during preparation, staff will contact you to suggest alternatives.
 
-**Q: How do supply transfers work?**
+**Q: How do supply transfers work?**  
 A: Transfers move inventory from one store/hub to another. Logistics managers create requests, approvals are made, items are reserved, shipped, and delivered between locations.
 
-**Q: Can repair staff work on machines outside their assigned region?**
+**Q: Can repair staff work on machines outside their assigned region?**  
 A: Repair staff are assigned to specific regions and stores. Cross-region assignments require super admin or logistics manager coordination.
 
-**Q: Where can I see my entire order history?**
+**Q: Where can I see my entire order history?**  
 A: Account users can go to `/orders/history/` to see all past and current orders.
+
+**Q: How does FloatStack recommend a store near me?**  
+A: On the store selection page at `/stores/`, you can type a ZIP code or street address to find nearby locations. You can also click "Use My Location" to allow browser location access. FloatStack ranks stores by distance and, for logged-in users, also factors in your preferred store. If no location is provided, stores are listed alphabetically.
+
+**Q: What if my location can't be found?**  
+A: If FloatStack can't resolve the address you typed, you'll see a message: "We couldn't place that location yet." Try entering just your ZIP code, use your device's location instead, or scroll down to browse all stores manually and select one.
+
+**Q: Can I choose what time to pick up my order?**  
+A: Yes. During checkout you can select a pickup time. The default is "ASAP" (approximately 12 minutes from when you order), and the system also suggests two additional time slots spaced 15 minutes apart. You can select whichever works best for you.
+
+**Q: Where exactly do I pick up my order?**  
+A: Your order confirmation page shows the store address and any locker number or pickup code assigned to your order. Bring your order code or pickup combo and show it to staff, or use the locker code if your store has lockers.
+
+**Q: Can I order more than one of the same drink?**  
+A: Yes. On the customization page, set the quantity up to 12 per drink. You can also add the same drink multiple times from the menu and adjust quantities in your cart before checkout.
+
+**Q: What is the difference between the AI assistant and recommendations?**  
+A: The AI chat assistant (available to guests and account users) lets you describe what you're in the mood for and suggests a drink build. Recommendations at `/orders/recommendations/` are available to account users only and are personalized based on your saved taste preferences and order history. Only account users can save AI-suggested builds to their favorites.
 
 ---
 
@@ -658,10 +702,10 @@ A: Account users can go to `/orders/history/` to see all past and current orders
 
 For support issues, bugs, or feature requests:
 
-- **In-App Support (Primary):** Use **Help** in the app to start a support conversation and submit a follow-up request.
-- **Demo Escalation Email (Demo Only):** `support@floatstack.demo` (for presentation/testing use; not a production inbox).
-- **Repair Staff Operational Issues:** Report through your manager/super admin workflow and include store, machine, assignment context, and screenshots.
-- **Bug Reports / Feature Feedback:** Submit through your team’s standard tracker with clear reproduction steps and expected vs actual behavior.
+- **In-App Support:** Use the `/support/` chat feature anytime
+- **Email:** [support email — to be determined]
+- **Phone:** [support phone — to be determined]
+- **Feedback Form:** [link — to be determined]
 
 ---
 
