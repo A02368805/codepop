@@ -161,21 +161,21 @@
 
 **Tasks:**
 
-- [ ] Repair Staff Workflow:
-  - [ ] Verify repair dashboard directions match actual UI
-  - [ ] Verify urgent queue grouping described correctly
-  - [ ] Verify assignment detail directions are accurate
-  - [ ] Verify repair status CSV import field descriptions match actual form
-  - [ ] Verify all maintenance/repair terminology
-  - [ ] Add screenshots (4):
-    - [ ] Repair dashboard
-    - [ ] Maintenance workspace
-    - [ ] Assignment detail view
-    - [ ] CSV import form (repair status)
-- [ ] Contact & Feedback:
-  - [ ] Verify contact information is complete and accurate
-  - [ ] Ensure support channels are correctly listed
-  - [ ] Verify any feedback submission details
+- [x] Repair Staff Workflow:
+  - [x] Verify repair dashboard directions match actual UI
+  - [x] Verify urgent queue grouping described correctly
+  - [x] Verify assignment detail directions are accurate
+  - [x] Verify repair status CSV import field descriptions match actual form
+  - [x] Verify all maintenance/repair terminology
+  - [x] Add screenshots (4):
+    - [x] Repair dashboard
+    - [x] Maintenance workspace
+    - [x] Assignment detail view
+    - [x] CSV import form (repair status)
+- [x] Contact & Feedback:
+  - [x] Verify contact information is complete and accurate
+  - [x] Ensure support channels are correctly listed
+  - [x] Verify any feedback submission details
 
 ---
 
