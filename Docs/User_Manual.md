@@ -408,106 +408,101 @@ Track all your past and current orders:
 
 ### Accessing the Logistics Dashboard
 
-1. Log in with a logistics manager account
-2. You'll be redirected to `/dashboards/logistics/`
+1. Log in with a logistics manager account.
+2. After signing in, you will be redirected to `/dashboards/logistics/`.
+3. Use the dashboard to review supply activity, draft schedules, alerts, and regional inventory health.
 
-> 📸 **Screenshot:** Logistics dashboard with supply hub summary, transfer alerts, schedule approvals
+![Logistics Dashboard](diagrams/logistics-dashboard.png)
 
 ### Manage Supply Hubs
 
-1. From the logistics dashboard, click **"Supply Hubs"** or go to `/supply-hubs/`
-2. You'll see a workspace with:
-   - Hub inventory summary
-   - Pending supply transfer requests
-   - AI-generated supply schedules awaiting approval
-   - Supplier order management
+1. From the logistics dashboard, click **"Open logistics workspace"**, or go directly to `/supply-hubs/`.
+2. The supply hub workspace is the main logistics operations page.
+3. On this page, different sections let you create transfers, review transfer status, approve supply drafts, and manage supplier orders.
+4. You may also see hub inventory and regional summary panels on the same workspace.
 
-> 📸 **Screenshot:** Supply hub workspace with inventory, transfers, schedules, supplier orders panels
+![Supply Hub Workspace](diagrams/supply-hub-workspace.png)
 
 ### Create a Supply Transfer
 
-1. In the supply hub workspace, click **"Create Transfer"**
-2. **Select Source:**
-   - Sending store or hub (dropdown)
-3. **Select Destination:**
-   - Receiving store or hub (dropdown)
-4. **Add Items:**
-   - Click **"Add Item"** for each product to transfer
-   - Enter item name and quantity
-5. **Review Total:**
-   - System shows what's available to send
-6. Click **"Create Transfer"**
+1. Open `/supply-hubs/`.
+2. In the **Create Transfer** section, enter the transfer details.
+3. Select the **destination store**.
+4. Select the **inventory item**.
+5. Enter the **requested quantity**.
+6. Choose a **source strategy**:
+   - Smart source
+   - Specific store
+   - Specific source hub
+7. Add routing notes if needed.
+8. Click **"Request transfer"**.
 
-> 📸 **Screenshot:** Transfer creation form with source/destination dropdowns, item rows, Create button
+![Transfer Creation Form](diagrams/transfer-creation-form.png)
 
 ### Approve a Transfer
 
-1. In the supply hub workspace or at `/supply-hubs/transfers/`, find a pending transfer
-2. Review the items and quantities
-3. Click **"Approve"**
-4. Transfer moves to "Approved" status and is ready to ship
+1. Open `/supply-hubs/`.
+2. In the **Transfer Queue** section, locate the transfer request you want to review.
+3. Review the destination, source, line items, current status, and available action.
+4. Click the available action button, such as **"Approve"** or **"Reserve"**, depending on the transfer’s current state.
 
-> 📸 **Screenshot:** Transfer detail with items table, approval button, status indicator
+![Approve a Transfer](diagrams/approve-a-transfer.png)
 
 ### Track Transfer Progress
 
+Transfer progress is shown in the **Transfer Queue** section of `/supply-hubs/` using status labels and action buttons.
+
 Transfer lifecycle:
+1. **Requested** — the transfer request has been submitted.
+2. **Approved** — the request has been approved.
+3. **Reserved** — inventory has been set aside at the source.
+4. **In Transit** — the shipment is on the way.
+5. **Delivered** — the shipment has arrived at the destination.
+6. **Received** — the destination has confirmed receipt.
 
-1. **Approved** — admin has approved the request
-2. **Reserved** — items are held aside at the source
-3. **Shipped** — items left the source location
-4. **In Transit** — transfer is on its way
-5. **Delivered** — items arrived at destination
-6. **Received** — destination has confirmed receipt
-
-> 📸 **Screenshot:** Transfer progress timeline or status column in transfer table
+![Track Transfer Progress](diagrams/track-transfer-progress.png)
 
 ### Approve AI-Generated Supply Schedules
 
-1. Go to `/supply-hubs/schedules/`
-2. You'll see proposed restock schedules created by AI based on usage patterns
-3. Review each schedule:
-   - Item name
-   - Recommended quantity
-   - Frequency (daily, weekly, monthly)
-4. Click **"Approve"** to activate the schedule, or **"Edit"** to adjust quantities
+1. Open `/supply-hubs/`.
+2. In the **Supply Drafts** section, review AI-generated schedule drafts created from usage activity.
+3. Each row shows the store, item, quantity, and draft schedule timing.
+4. Click **"Approve"** to approve a draft.
 
-> 📸 **Screenshot:** Supply schedules list with item, quantity, frequency, approve/reject buttons
+![Supply Schedules List](diagrams/supply-schedules-list.png)
 
 ### Manage Supplier Orders
 
-1. Go to `/supply-hubs/supplier-orders/`
-2. Create or view bulk orders from external suppliers:
-   - **Create Order:** Enter items, quantities, and supplier
-   - **Receive Order:** Mark delivery received
-   - **Cancel Order:** Cancel if needed
+1. Open `/supply-hubs/`.
+2. Use the **Create Supplier Order** section to place a new bulk replenishment order.
+3. Enter the store, supplier, inventory item, quantity, expected delivery date, unit cost, and optional notes.
+4. In the **Supplier Orders** section, review existing supplier orders and use actions such as **"Receive"** or **"Cancel"** when available.
 
-> 📸 **Screenshot:** Supplier orders table with order number, items, status, action buttons
+![Supplier Orders Form](diagrams/supplier-orders-form.png)
+
+![Supplier Orders Table](diagrams/supplier-orders-table.png)
 
 ### Upload CSV Imports (Supply Usage)
 
-1. Go to `/imports/`
-2. Click **"Import Supply Usage"**
-3. Upload a CSV file with columns:
-   - Store ID
-   - Item Name
-   - Quantity Used
-   - Date
-4. System validates the file
-5. Approved entries update inventory usage records
+1. Go to `/imports/`.
+2. In the **Supply usage CSV** section, choose your file.
+3. Click **"Import supply usage CSV"**.
+4. Use these exact CSV column headers:
+   - `store_code`
+   - `inventory_sku`
+   - `usage_date`
+   - `quantity_used`
+5. After upload, review the import history and any validation errors shown on the page.
 
-> 📸 **Screenshot:** CSV upload form with file selector, validation message, import button
+![CSV Import Form](diagrams/csv-import-form.png)
 
 ### View Analytics
 
-1. Go to `/analytics/`
-2. You'll see cross-store reports:
-   - Revenue by store and region
-   - Usage trends
-   - Machine failure rates
-   - Supply health
+1. Go to `/analytics/`.
+2. Use the analytics page to review operational data across stores and regions.
+3. Reports may include inventory trends, usage activity, and supply health metrics.
 
-> 📸 **Screenshot:** Analytics dashboard with charts and tables
+![Analytics Dashboard](diagrams/analytics-dashboard.png)
 
 ---
 
@@ -600,20 +595,22 @@ Transfer lifecycle:
 
 ### Start a Support Conversation
 
-1. Go to `/support/` from anywhere in FloatStack
-2. Click **"Start New Conversation"**
-3. Choose a topic or describe your issue in the message box
-4. Click **"Send"**
+1. Go to `/support/`.
+2. The support page opens your current support chat.
+3. Click **"Start new chat"** if you want to reset the conversation and begin a new thread.
+4. Type your question in the **Message** box.
+5. Click **"Send message"**.
 
-> 📸 **Screenshot:** Support home with conversation list and "Start New Conversation" button
+![Support Home Page](diagrams/support-home-page.png)
 
-### Escalate an Issue
+### Request Team Follow-Up
 
-If your issue needs urgent attention:
+If your issue still is not resolved:
 
-1. From your support conversation
-2. Click **"Escalate"**
-3. Your issue is flagged for priority review
+1. Stay on the support page or open the full chat view.
+2. In the **Request team follow-up** section, enter a short summary of the issue.
+3. Add a contact email if needed.
+4. Click **"Send follow-up request"**.
 
 ---
 
