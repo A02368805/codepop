@@ -23,11 +23,11 @@ class DemoSeedTests(TestCase):
         self.assertGreaterEqual(
             User.objects.filter(role=User.Role.REPAIR_STAFF).count(), 3
         )
-        self.assertEqual(
+        self.assertGreaterEqual(
             Order.objects.filter(
                 order_type=Order.OrderType.GUEST, customer__isnull=True
             ).count(),
-            1,
+            3,
         )
         self.assertEqual(
             User.objects.filter(email="guest.lookup@floatstack.local").count(),
