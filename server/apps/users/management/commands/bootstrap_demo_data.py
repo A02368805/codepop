@@ -1380,7 +1380,11 @@ class Command(BaseCommand):
                     "lookup_code": "GST-DEMO-005",
                 },
                 "payment_intent": "pi_demo_guest_005",
-                "post_payment_transitions": [Order.Status.QUEUED, Order.Status.PREPARING, Order.Status.READY],
+                "post_payment_transitions": [
+                    Order.Status.QUEUED,
+                    Order.Status.PREPARING,
+                    Order.Status.READY,
+                ],
                 "explicit_status": Order.Status.EXPIRED,
                 "notes": "Order pickup window expired",
             },
