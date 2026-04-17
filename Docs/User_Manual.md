@@ -226,15 +226,7 @@ After checkout, you'll see your **order confirmation page** with:
 
 **As a Guest:**
 
-1. Go to `/orders/lookup/`
-2. Enter your:
-   - Order Code (e.g., `FS-M5K9TD`)
-   - Pickup Combo (e.g., `624`)
-   - Guest Lookup Code (provided in confirmation email)
-3. Click "Look Up Order"
-4. You'll see the current status (Queued, Preparing, Ready for Pickup, Picked Up)
-
-![Order Lookup](diagrams/ordering-order-lookup.png)
+1. Click "Track Order" button
 
 **As an Account User:**
 
