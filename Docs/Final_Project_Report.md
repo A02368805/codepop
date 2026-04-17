@@ -10,21 +10,27 @@
 
 ---
 
-## Sprint 0: Requirements [Dates]
+## Sprint 0: Requirements [Week of Jan 15]
 
 ### Sprint Summary
-[High-level overview of requirements gathering, analysis, and documentation completion]
+Sprint 0 focused on requirements discovery, role assignment, and completion of the rewritten requirements document. Work emphasized documenting functional, non-functional, business, and user requirements; defining use cases with diagrams; and aligning the team on scope and priorities. The sprint closed with a full-team review and final transfer/submission of the requirements document.
 
 ### Tasks & Assignments
 
 | Task | Owner(s) | Status | Work Type |
 |------|----------|--------|-----------|
-| [Task name] | [Team member(s)] | Complete/In-Progress | Design/Code/Docs/Debug/Prototype |
-| [Task name] | [Team member(s)] | Complete/In-Progress | Design/Code/Docs/Debug/Prototype |
-| [Task name] | [Team member(s)] | Complete/In-Progress | Design/Code/Docs/Debug/Prototype |
+| Review prior project requirements and run starter project to establish baseline | Everyone | Complete | Docs, Prototype |
+| Assign section ownership and create requirements doc outline | Gabriel | Complete | Docs, Design |
+| Write introduction, MoSCoW introduction, and previous-project context | Gabriel | Complete | Docs |
+| Write functional, non-functional, and business requirements sections | Braxton, Peyton | Complete | Docs |
+| Define user requirements and role-based responsibility breakdown | Matthew | Complete | Docs, Design |
+| Develop MoSCoW breakdown, use case stories, and use case diagrams | Curt, Brock | Complete | Docs, Design |
+| Cross-review completed requirements document and resolve inconsistencies | Everyone | Complete | Docs, Debug |
+| Final integration, cleanup, and transfer from draft workspace to GitHub submission | Gabriel | Complete | Docs |
+| Configure shared GitHub repository and team access for production workflow | Braxton | Complete | Prototype |
 
 ### Reflections
-[Key learnings, blockers overcome, decisions made, direction confirmed/adjusted]
+The largest early blocker was environment setup and dependency friction while bringing the starter project up locally. We resolved this by pairing setup checks with requirement review so progress continued while tooling issues were fixed. A structured ownership model improved accountability and throughput, but the sprint also showed we should increase cross-section collaboration in later sprints so ideas are shared earlier instead of only at review time. Direction for Sprint 1 was confirmed: preserve the strong ownership model while adding more coordinated design discussion across contributors.
 
 ---
 
