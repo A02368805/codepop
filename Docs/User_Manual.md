@@ -113,7 +113,7 @@ FloatStack serves seven user types:
 1. Start at `/stores/` (Click "Browse Drinks" to get to this page)
 2. Click on a store to begin ordering
 
-> 📸 **Screenshot:** Stores page with map and store list, geolocation option
+![Stores Page](diagrams/ordering-stores.png)
 
 ### Step 2: Browse the Menu
 
@@ -130,7 +130,7 @@ Once you've selected a store, you'll see the drink menu at `/orders/menu/<store>
 - Badge (e.g., "Popular," "Signature," "New")
 - Customization button
 
-> 📸 **Screenshot:** Menu page showing drink cards with prices, size toggles, "Customize" button
+![Drink Details](diagrams/ordering-drink-details.png)
 
 ### Step 3: Use AI Assistance (Optional)
 
@@ -144,7 +144,7 @@ Once you've selected a store, you'll see the drink menu at `/orders/menu/<store>
 - The assistant suggests flavor combinations once the "Generate drink ideas" button is selected
 - Click a suggestion to add it to your cart or customize it
 
-> 📸 **Screenshot:** AI assistant chat box with sample responses and "Add to Cart" button
+![AI Drink Generation](diagrams/ordering-AI-generation.png)
 
 **Option B: Get Recommendations (Account Users)**
 
@@ -152,7 +152,7 @@ Once you've selected a store, you'll see the drink menu at `/orders/menu/<store>
 - AI personalizes suggestions based on your taste preferences
 - Click a recommendation to customize further or add to cart
 
-> 📸 **Screenshot:** Recommendations page with personalized drink cards and "Customize" / "Add to Cart" buttons
+![Recommendations](diagrams/ordering-recomendations.png)
 
 ### Step 4: Customize Your Drink
 
@@ -176,11 +176,11 @@ Click on any drink to customize it:
    - Total updates as you customize
 7. Click **"Add to Order"**
 
-> 📸 **Screenshot:** Customization page with size selector, soda dropdown, syrup checkboxes, add-ins, notes field, price summary, Add to Cart button
+![Drink Customization](diagrams/ordering-drink-customization.png)
 
 ### Step 5: Review Your Cart
 
-1. Go to your cart (link in top navigation or click the cart icon)
+1. Go to your cart (you will be taken their after selecting add to order)
 2. You'll see all items you've added
 3. For each item:
    - View the customization summary (base, syrups, add-ins)
@@ -189,7 +189,7 @@ Click on any drink to customize it:
 4. See your **subtotal** to the right
 5. Click **"Checkout"**
 
-> 📸 **Screenshot:** Cart page with cart items table (drink summary, quantity, remove button), subtotal, "Proceed to Checkout" button
+![Cart](diagrams/ordering-cart.png)
 
 ### Step 6: Checkout
 
@@ -209,7 +209,7 @@ Click on any drink to customize it:
 
 5. Click **"Place Order"**
 
-> 📸 **Screenshot:** Checkout page with contact form (guest), order summary, total, payment button
+![Checkout](diagrams/ordering-place-order.png)
 
 ### Step 7: Order Confirmation
 
@@ -220,7 +220,7 @@ After checkout, you'll see your **order confirmation page** with:
 - **Requested Pickup Time**
 - **Store Location**
 
-> 📸 **Screenshot:** Confirmation page with order code, pickup combo, store address, estimated time
+![Confirmation](diagrams/ordering-confirmation.png)
 
 ### Step 8: Track Your Order
 
@@ -234,15 +234,15 @@ After checkout, you'll see your **order confirmation page** with:
 3. Click "Look Up Order"
 4. You'll see the current status (Queued, Preparing, Ready for Pickup, Picked Up)
 
-> 📸 **Screenshot:** Guest lookup form with order code, pickup combo, guest code fields
+![Order Lookup](diagrams/ordering-order-lookup.png)
 
 **As an Account User:**
 
-1. Go to `/orders/history/`
+1. Go to `/orders/history/` ("My Orders" button)
 2. All your past and current orders are listed with status
 3. Click on any order to see details
 
-> 📸 **Screenshot:** Order history page with list of orders, dates, statuses, "View Details" links
+![Order History](diagrams/ordering-order-history.png)
 
 ---
 
@@ -375,32 +375,24 @@ Track all your past and current orders:
 1. Log in with an admin account
 2. You'll be redirected to `/dashboards/admin/`
 
-> 📸 **Screenshot:** Admin dashboard with user management section
+![Admin Dashboard](diagrams/admin-dashboard.png)
 
 ### Manage Users for Your Store
 
 1. Go to `/admin/users/` (click on the "Team" button on the navigation bar at the top of the screen)
 2. You'll see a list of all users assigned to your store
 
-> 📸 **Screenshot:** Admin user management table with user names, roles, status, action buttons
+![Admin Users](diagrams/admin-team.png)
 
-1. **Add a New User:**
-   - Click **"Add User"** button
-   - Enter email, select role (Manager, Admin, Repair Staff)
-   - Set initial password
-   - Click **"Create"**
-
-2. **Update a User:**
+1. **Update a User:**
    - Click on a user in the list
    - Change their role(Account User, Manager, Admin) or status (Active, Locked, Disabled, pending)
    - Click **"Save"**
 
-3. **Disable/Lock a User:**
+2. **Disable/Lock a User:**
    - Click on the user status
    - Change status to "Locked" or "Disabled"
    - Click **"Save"** — user can no longer log in
-
-> 📸 **Screenshot:** User update form with email, role, status, password fields
 
 ---
 
