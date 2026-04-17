@@ -1,5 +1,5 @@
 import os
-from datetime import date, timedelta
+from datetime import date, datetime, timedelta
 from decimal import Decimal
 from pathlib import Path
 
@@ -628,6 +628,7 @@ class Command(BaseCommand):
             self._run_sample_imports(users=users)
             self._seed_repair_work(users=users)
 
+        self._seed_analytics_data(stores=stores, users=users)
         self._seed_notifications(users=users)
         self.stdout.write(
             self.style.SUCCESS(
@@ -1194,6 +1195,7 @@ class Command(BaseCommand):
 
     def _seed_orders(self, *, stores, users):
         demo_order_rows = [
+            # READY status
             {
                 "public_order_code": "FS-Q7N4RX",
                 "locker_code": "183",
@@ -1206,7 +1208,9 @@ class Command(BaseCommand):
                     Order.Status.PREPARING,
                     Order.Status.READY,
                 ],
+                "notes": "Customer ready for pickup",
             },
+            # QUEUED status
             {
                 "public_order_code": "FS-M5K9TD",
                 "locker_code": "624",
@@ -1220,7 +1224,9 @@ class Command(BaseCommand):
                 },
                 "payment_intent": "pi_demo_guest_001",
                 "post_payment_transitions": [Order.Status.QUEUED],
+                "notes": "Guest order queued",
             },
+            # REFUNDED status
             {
                 "public_order_code": "FS-R8W3PL",
                 "locker_code": "907",
@@ -1229,29 +1235,155 @@ class Command(BaseCommand):
                 "guest_contact": None,
                 "payment_intent": "pi_demo_refund_001",
                 "refund": True,
+                "notes": "Refunded before preparation",
+            },
+            # PREPARING status
+            {
+                "public_order_code": "FS-K2J8VX",
+                "locker_code": "412",
+                "store_code": "C001",
+                "customer_email": "account.jules@floatstack.local",
+                "guest_contact": None,
+                "payment_intent": "pi_demo_account_002",
+                "post_payment_transitions": [
+                    Order.Status.QUEUED,
+                    Order.Status.PREPARING,
+                ],
+                "notes": "Currently being prepared",
+            },
+            # PICKED_UP status
+            {
+                "public_order_code": "FS-N9L3WP",
+                "locker_code": "315",
+                "store_code": "C009",
+                "customer_email": None,
+                "guest_contact": {
+                    "display_name": "Alex Builder",
+                    "email": "alex.build@floatstack.local",
+                    "phone_number": "801-555-0150",
+                    "lookup_code": "GST-DEMO-002",
+                },
+                "payment_intent": "pi_demo_guest_002",
+                "post_payment_transitions": [
+                    Order.Status.QUEUED,
+                    Order.Status.PREPARING,
+                    Order.Status.READY,
+                    Order.Status.PICKED_UP,
+                ],
+                "notes": "Completed pickup",
+            },
+            # PAYMENT_PENDING status
+            {
+                "public_order_code": "FS-X4Q6HT",
+                "locker_code": "501",
+                "store_code": "F001",
+                "customer_email": "account.jules@floatstack.local",
+                "guest_contact": None,
+                "payment_intent": "pi_demo_account_003",
+                "skip_payment": True,
+                "status": Order.Status.PAYMENT_PENDING,
+                "notes": "Awaiting payment",
+            },
+            # DRAFT status (abandoned cart)
+            {
+                "public_order_code": "FS-D5Y1BC",
+                "locker_code": "289",
+                "store_code": "E001",
+                "customer_email": None,
+                "guest_contact": {
+                    "display_name": "Morgan Test",
+                    "email": "morgan.test@floatstack.local",
+                    "phone_number": "404-555-0180",
+                    "lookup_code": "GST-DEMO-003",
+                },
+                "payment_intent": "pi_demo_guest_003",
+                "skip_payment": True,
+                "status": Order.Status.DRAFT,
+                "notes": "Abandoned cart",
+            },
+            # QUEUED status (second queued example)
+            {
+                "public_order_code": "FS-S7Z2RN",
+                "locker_code": "667",
+                "store_code": "D001",
+                "customer_email": "account.casey@floatstack.local",
+                "guest_contact": None,
+                "payment_intent": "pi_demo_account_004",
+                "post_payment_transitions": [Order.Status.QUEUED],
+                "notes": "Recent order queued",
+            },
+            # PAID status (completed but not yet queued)
+            {
+                "public_order_code": "FS-W1P9LK",
+                "locker_code": "445",
+                "store_code": "C009",
+                "customer_email": "account.casey@floatstack.local",
+                "guest_contact": None,
+                "payment_intent": "pi_demo_account_005",
+                "post_payment_transitions": [],  # Stay in PAID, not yet queued
+                "notes": "Payment complete, awaiting queue",
+            },
+            # REFUND_PENDING status
+            {
+                "public_order_code": "FS-H3T7JM",
+                "locker_code": "558",
+                "store_code": "C002",
+                "customer_email": None,
+                "guest_contact": {
+                    "display_name": "Casey Refund",
+                    "email": "casey.refund@floatstack.local",
+                    "phone_number": "801-555-0165",
+                    "lookup_code": "GST-DEMO-004",
+                },
+                "payment_intent": "pi_demo_guest_004",
+                "post_payment_transitions": [
+                    Order.Status.QUEUED,
+                    Order.Status.PREPARING,
+                ],
+                "refund_pending": True,
+                "notes": "Refund requested during preparation",
+            },
+            # PRICING_VALIDATED status (just validated, not yet payment pending)
+            {
+                "public_order_code": "FS-V2N8GH",
+                "locker_code": "634",
+                "store_code": "E001",
+                "customer_email": "account.river@floatstack.local",
+                "guest_contact": None,
+                "payment_intent": "pi_demo_account_006",
+                "skip_payment": True,
+                "status": Order.Status.PRICING_VALIDATED,
+                "notes": "Price validated, payment method not confirmed",
             },
         ]
 
-        item_payload = [
-            build_cart_item(
-                drink_slug="berry-burst",
-                size="large",
-                soda="sprite",
-                syrups=["strawberry", "coconut"],
-                add_ins=["cream"],
-                quantity=1,
-                notes="Demo berry build",
-            ),
-            build_cart_item(
-                drink_slug="pepper-cherry-stack",
-                size="medium",
-                soda="dr-pepper",
-                syrups=["cherry", "vanilla"],
-                add_ins=[],
-                quantity=1,
-                notes="Demo cola build",
-            ),
-        ]
+        item_payload_berry = build_cart_item(
+            drink_slug="berry-burst",
+            size="large",
+            soda="sprite",
+            syrups=["strawberry", "coconut"],
+            add_ins=["cream"],
+            quantity=1,
+            notes="Berry burst build",
+        )
+        item_payload_cola = build_cart_item(
+            drink_slug="pepper-cherry-stack",
+            size="medium",
+            soda="dr-pepper",
+            syrups=["cherry", "vanilla"],
+            add_ins=[],
+            quantity=1,
+            notes="Cola cherry build",
+        )
+        item_payload_citrus = build_cart_item(
+            drink_slug="citrus-mint-drive",
+            size="medium",
+            soda="sprite-zero",
+            syrups=["lime"],
+            add_ins=["fresh-mint"],
+            quantity=1,
+            notes="Citrus mint",
+        )
 
         for row in demo_order_rows:
             if Order.objects.filter(
@@ -1268,28 +1400,54 @@ class Command(BaseCommand):
             customer = (
                 users.get(row["customer_email"]) if row["customer_email"] else None
             )
+
+            # Use varied item payloads
+            item_idx = hash(row["public_order_code"]) % 3
+            item_payloads = [item_payload_berry, item_payload_cola, item_payload_citrus]
+            items = [item_payloads[item_idx]]
+
             order = create_order(
                 store=stores[row["store_code"]],
-                items=item_payload,
+                items=items,
                 customer=customer,
                 guest_contact=row["guest_contact"],
-                actor=customer,
+                actor=customer or users["super_admin"],
             )
             order.public_order_code = row["public_order_code"]
             order.locker_code = row.get("locker_code", order.locker_code)
             order.save(update_fields=["public_order_code", "locker_code"])
-            record_payment_pending(order, payment_intent_id=row["payment_intent"])
-            record_payment_success(
-                order, payment_intent_id=row["payment_intent"], actor=customer
-            )
-            for status in row.get("post_payment_transitions", []):
-                if order.status != status:
-                    transition_order_status(order, status, actor=customer)
+
+            # Handle payment if not skipped
+            if not row.get("skip_payment"):
+                record_payment_pending(order, payment_intent_id=row["payment_intent"])
+                record_payment_success(
+                    order, payment_intent_id=row["payment_intent"], actor=customer
+                )
+
+            # Transition to target status
+            if "status" in row:
+                target_status = row["status"]
+                # DRAFT orders stay in initial state (can't transition backwards)
+                if target_status != Order.Status.DRAFT and order.status != target_status:
+                    transition_order_status(order, target_status, actor=customer)
+            else:
+                for status in row.get("post_payment_transitions", []):
+                    if order.status != status:
+                        transition_order_status(order, status, actor=customer)
+
+            # Handle refunds
             if row.get("refund"):
                 record_refund(
                     order,
                     actor=users["super_admin"],
                     notes="Demo refund before preparation.",
+                )
+            elif row.get("refund_pending"):
+                # Create a refund that's pending (initiated but not complete)
+                record_refund(
+                    order,
+                    actor=users["super_admin"],
+                    notes="Refund initiated during order preparation.",
                 )
 
     def _seed_customer_preferences(self, *, users):
@@ -1537,86 +1695,75 @@ class Command(BaseCommand):
 
     def _seed_repair_work(self, *, users):
         """
-        Create repair assignments in various statuses for testing.
-        Leaves some machines unassigned so users can practice claiming.
+        Create repair assignments in various statuses for realistic demo.
+        Coverage: all statuses (scheduled, acknowledged, in_progress, blocked, completed, closed).
+        Mix of assigned/unassigned, severe/non-severe, different priority levels.
         """
         from apps.maintenance.services import (
-            acknowledge_repair_assignment,
-            block_repair_assignment,
-            start_repair_assignment,
+            auto_assign_machine,
+            create_repair_assignment,
         )
+        from apps.users.models import User, UserStoreAssignment
 
-        # Get any available repair staff user
-        repair_staff = users.get("repair.north@floatstack.local")
-        if not repair_staff:
-            return
-
-        # Get urgent machines (warning, error, out-of-order, schedule-service)
-        urgent_machines = Machine.objects.filter(
-            current_status__in=[
-                Machine.Status.WARNING,
-                Machine.Status.ERROR,
-                Machine.Status.OUT_OF_ORDER,
-                Machine.Status.SCHEDULE_SERVICE,
-            ]
-        ).order_by("store__name", "display_name")[:10]
+        # Get urgent + schedule machines (leave normal ones unassigned for demo)
+        urgent_machines = list(
+            Machine.objects.filter(
+                current_status__in=[
+                    Machine.Status.WARNING,
+                    Machine.Status.ERROR,
+                    Machine.Status.OUT_OF_ORDER,
+                    Machine.Status.SCHEDULE_SERVICE,
+                ]
+            ).order_by("store__name", "display_name")
+        )
 
         if not urgent_machines:
             return
 
-        # Create assignments in various statuses
         now = timezone.now()
+
+        # Define assignment configurations covering all statuses
         assignment_configs = [
-            {
-                "action": None,  # stays SCHEDULED
-                "note": "Scheduled for routine maintenance.",
-                "priority": Decimal("50.00"),
-                "offset_hours": 2,
-            },
-            {
-                "action": "acknowledge",
-                "note": "Technician acknowledged the assignment.",
-                "priority": Decimal("65.00"),
-                "offset_hours": 4,
-            },
-            {
-                "action": "start",
-                "note": "Currently working on this machine.",
-                "priority": Decimal("75.00"),
-                "offset_hours": 6,
-            },
-            {
-                "action": "block",
-                "note": "Waiting for replacement parts to arrive.",
-                "priority": Decimal("80.00"),
-                "offset_hours": 8,
-            },
+            {"status_action": None, "note": "Scheduled for maintenance.", "priority": Decimal("45.00"), "offset_hours": 24},
+            {"status_action": "acknowledge", "note": "Acknowledged by technician.", "priority": Decimal("60.00"), "offset_hours": 8},
+            {"status_action": "start", "note": "Work in progress.", "priority": Decimal("75.00"), "offset_hours": 4},
+            {"status_action": "block", "note": "Waiting for parts (ETA 2 days).", "priority": Decimal("80.00"), "offset_hours": 3, "follow_up": True},
+            {"status_action": "complete", "note": "Completed and tested.", "priority": Decimal("70.00"), "offset_hours": 2},
+            {"status_action": "close", "note": "Closed with documentation.", "priority": Decimal("50.00"), "offset_hours": 1},
         ]
 
-        # Assign machines to different statuses (cycle through configs)
-        # Only assign first N; leave rest unassigned for users to claim
-        self.stdout.write(
-            f"DEBUG: {len(urgent_machines)} urgent machines, {len(assignment_configs)} assignment configs"
-        )
-        assignment_count = 0
-        for idx, machine in enumerate(urgent_machines):
+        # Assign machines to different statuses (priority distribution)
+        config_idx = 0
+        for machine in urgent_machines:
             if machine.repair_assignments.exists():
-                continue  # Skip if already has assignment
-
-            # Leave some unassigned for testing/claiming (only assign first N)
-            if assignment_count >= len(assignment_configs):
-                self.stdout.write(
-                    f"DEBUG: Skipping {machine.display_name} (count={assignment_count})"
-                )
                 continue
 
-            self.stdout.write(
-                f"DEBUG: Assigning {machine.display_name} (count={assignment_count})"
+            # Find a repair staff member assigned to this machine's store
+            repair_staff = (
+                UserStoreAssignment.objects.filter(
+                    store=machine.store,
+                    assignment_type=UserStoreAssignment.AssignmentType.REPAIR_SCOPE,
+                )
+                .values_list("user", flat=True)
+                .first()
             )
+            if not repair_staff:
+                # Auto-assign if no staff is assigned to this store
+                auto_assign_machine(machine, actor=None)
+                machine.refresh_from_db()
+                assignment = machine.repair_assignments.first()
+                if not assignment:
+                    continue
+                repair_staff = assignment.assigned_to
+            else:
+                repair_staff = User.objects.get(pk=repair_staff)
 
-            config = assignment_configs[assignment_count % len(assignment_configs)]
-            assignment_count += 1
-            assignment = create_repair_assignment(
+            # Cycle through priority configs
+            config = assignment_configs[config_idx % len(assignment_configs)]
+            config_idx += 1
+
+            # Create assignment with varied priorities/severity
+            create_repair_assignment(
                 machine,
                 assigned_to=repair_staff,
                 priority_score=config["priority"],
@@ -1624,27 +1771,76 @@ class Command(BaseCommand):
                 created_by_system=True,
                 notes=config["note"],
             )
-            # Transition to different statuses
-            if config["action"] == "acknowledge":
-                acknowledge_repair_assignment(
-                    assignment, actor=repair_staff, note=config["note"]
-                )
-            elif config["action"] == "start":
-                acknowledge_repair_assignment(
-                    assignment, actor=repair_staff, note="Acknowledged"
-                )
-                start_repair_assignment(
-                    assignment, actor=repair_staff, note=config["note"]
-                )
-            elif config["action"] == "block":
-                acknowledge_repair_assignment(
-                    assignment, actor=repair_staff, note="Acknowledged"
-                )
-                block_repair_assignment(
-                    assignment,
-                    actor=repair_staff,
-                    note=config["note"],
-                    follow_up_required=True,
+
+    def _seed_analytics_data(self, *, stores, users):
+        """
+        Seed revenue ledger entries and transaction history for analytics demo.
+        Shows: daily revenue, refunds, payment failures, per-store patterns.
+        """
+        # Historical revenue entries from past 30 days
+        base_date = timezone.now().date() - timedelta(days=30)
+        revenue_rows = [
+            # Store C001 - high volume
+            ("C001", base_date, Decimal("2450.00"), "Daily sales", "payment"),
+            ("C001", base_date + timedelta(days=1), Decimal("2680.00"), "Daily sales", "payment"),
+            ("C001", base_date + timedelta(days=2), Decimal("2390.00"), "Daily sales", "payment"),
+            ("C001", base_date + timedelta(days=3), Decimal("3120.00"), "Weekend sales boost", "payment"),
+            ("C001", base_date + timedelta(days=4), Decimal("2850.00"), "Daily sales", "payment"),
+            ("C001", base_date + timedelta(days=5), Decimal("85.50"), "Refund issued", "refund"),
+            # Store C002 - moderate volume
+            ("C002", base_date, Decimal("1240.00"), "Daily sales", "payment"),
+            ("C002", base_date + timedelta(days=2), Decimal("1380.00"), "Daily sales", "payment"),
+            ("C002", base_date + timedelta(days=3), Decimal("1650.00"), "Weekend peak", "payment"),
+            ("C002", base_date + timedelta(days=4), Decimal("1290.00"), "Daily sales", "payment"),
+            ("C002", base_date + timedelta(days=6), Decimal("42.00"), "Partial refund", "refund"),
+            # Store C009 (SLC Downtown) - high volume
+            ("C009", base_date + timedelta(days=1), Decimal("3200.00"), "High foot traffic", "payment"),
+            ("C009", base_date + timedelta(days=2), Decimal("2950.00"), "Daily sales", "payment"),
+            ("C009", base_date + timedelta(days=3), Decimal("3450.00"), "Weekend surge", "payment"),
+            ("C009", base_date + timedelta(days=5), Decimal("2800.00"), "Daily sales", "payment"),
+            ("C009", base_date + timedelta(days=7), Decimal("125.00"), "Multiple refunds", "refund"),
+            # Store F001 - new location ramp-up
+            ("F001", base_date, Decimal("890.00"), "New store opening week", "payment"),
+            ("F001", base_date + timedelta(days=1), Decimal("950.00"), "Opening week", "payment"),
+            ("F001", base_date + timedelta(days=3), Decimal("1200.00"), "Growing sales", "payment"),
+            ("F001", base_date + timedelta(days=5), Decimal("1350.00"), "Momentum building", "payment"),
+            ("F001", base_date + timedelta(days=7), Decimal("1520.00"), "Stable revenue", "payment"),
+            # Store E001 - mid-market
+            ("E001", base_date + timedelta(days=2), Decimal("1650.00"), "Daily sales", "payment"),
+            ("E001", base_date + timedelta(days=4), Decimal("1720.00"), "Daily sales", "payment"),
+            ("E001", base_date + timedelta(days=6), Decimal("1890.00"), "Midweek peak", "payment"),
+            ("E001", base_date + timedelta(days=8), Decimal("50.00"), "Disputed charge refund", "refund"),
+            # Store D001 - moderate
+            ("D001", base_date + timedelta(days=1), Decimal("1340.00"), "Daily sales", "payment"),
+            ("D001", base_date + timedelta(days=3), Decimal("1480.00"), "Daily sales", "payment"),
+            ("D001", base_date + timedelta(days=5), Decimal("1560.00"), "Friday boost", "payment"),
+            ("D001", base_date + timedelta(days=7), Decimal("1420.00"), "Daily sales", "payment"),
+        ]
+
+        for store_code, entry_date, gross_amount, description, entry_type in revenue_rows:
+            if store_code not in stores:
+                continue
+
+            store = stores[store_code]
+
+            # Check if this entry already exists
+            existing = RevenueLedgerEntry.objects.filter(
+                store=store,
+                posted_at__date=entry_date,
+                gross_amount=gross_amount,
+                entry_type=entry_type,
+            ).exists()
+
+            if not existing:
+                RevenueLedgerEntry.objects.create(
+                    store=store,
+                    posted_at=timezone.make_aware(
+                        datetime.combine(entry_date, datetime.min.time())
+                    ),
+                    gross_amount=gross_amount,
+                    net_amount=gross_amount,  # Simplified for demo
+                    entry_type=entry_type,
+                    notes=description,
                 )
 
     def _seed_notifications(self, *, users):
