@@ -1298,7 +1298,7 @@ class Command(BaseCommand):
                 },
                 "payment_intent": "pi_demo_guest_003",
                 "skip_payment": True,
-                "status": Order.Status.DRAFT,
+                "explicit_status": Order.Status.DRAFT,
                 "notes": "Abandoned cart",
             },
             # QUEUED status (second queued example)
@@ -1352,8 +1352,37 @@ class Command(BaseCommand):
                 "guest_contact": None,
                 "payment_intent": "pi_demo_account_006",
                 "skip_payment": True,
-                "status": Order.Status.PRICING_VALIDATED,
+                "explicit_status": Order.Status.PRICING_VALIDATED,
                 "notes": "Price validated, payment method not confirmed",
+            },
+            # CANCELED status
+            {
+                "public_order_code": "FS-C4L8MB",
+                "locker_code": "721",
+                "store_code": "C009",
+                "customer_email": "account.jules@floatstack.local",
+                "guest_contact": None,
+                "payment_intent": "pi_demo_account_007",
+                "post_payment_transitions": [Order.Status.QUEUED],
+                "explicit_status": Order.Status.CANCELED,
+                "notes": "Canceled by customer request",
+            },
+            # EXPIRED status
+            {
+                "public_order_code": "FS-X9M2KP",
+                "locker_code": "892",
+                "store_code": "F001",
+                "customer_email": None,
+                "guest_contact": {
+                    "display_name": "Expired Order",
+                    "email": "expired.order@floatstack.local",
+                    "phone_number": "602-555-0175",
+                    "lookup_code": "GST-DEMO-005",
+                },
+                "payment_intent": "pi_demo_guest_005",
+                "post_payment_transitions": [Order.Status.QUEUED, Order.Status.PREPARING, Order.Status.READY],
+                "explicit_status": Order.Status.EXPIRED,
+                "notes": "Order pickup window expired",
             },
         ]
 
@@ -1446,12 +1475,14 @@ class Command(BaseCommand):
                     notes="Demo refund before preparation.",
                 )
             elif row.get("refund_pending"):
-                # Create a refund that's pending (initiated but not complete)
-                record_refund(
-                    order,
-                    actor=users["super_admin"],
-                    notes="Refund initiated during order preparation.",
-                )
+                # Set order to refund_pending state
+                order.status = Order.Status.REFUND_PENDING
+                order.save(update_fields=["status"])
+
+            # Handle explicit status setting (for DRAFT, EXPIRED, CANCELED, etc.)
+            if "explicit_status" in row:
+                order.status = row["explicit_status"]
+                order.save(update_fields=["status"])
 
     def _seed_customer_preferences(self, *, users):
         casey = users["account.casey@floatstack.local"]
