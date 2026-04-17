@@ -1428,7 +1428,10 @@ class Command(BaseCommand):
             if "status" in row:
                 target_status = row["status"]
                 # DRAFT orders stay in initial state (can't transition backwards)
-                if target_status != Order.Status.DRAFT and order.status != target_status:
+                if (
+                    target_status != Order.Status.DRAFT
+                    and order.status != target_status
+                ):
                     transition_order_status(order, target_status, actor=customer)
             else:
                 for status in row.get("post_payment_transitions", []):
@@ -1724,12 +1727,43 @@ class Command(BaseCommand):
 
         # Define assignment configurations covering all statuses
         assignment_configs = [
-            {"status_action": None, "note": "Scheduled for maintenance.", "priority": Decimal("45.00"), "offset_hours": 24},
-            {"status_action": "acknowledge", "note": "Acknowledged by technician.", "priority": Decimal("60.00"), "offset_hours": 8},
-            {"status_action": "start", "note": "Work in progress.", "priority": Decimal("75.00"), "offset_hours": 4},
-            {"status_action": "block", "note": "Waiting for parts (ETA 2 days).", "priority": Decimal("80.00"), "offset_hours": 3, "follow_up": True},
-            {"status_action": "complete", "note": "Completed and tested.", "priority": Decimal("70.00"), "offset_hours": 2},
-            {"status_action": "close", "note": "Closed with documentation.", "priority": Decimal("50.00"), "offset_hours": 1},
+            {
+                "status_action": None,
+                "note": "Scheduled for maintenance.",
+                "priority": Decimal("45.00"),
+                "offset_hours": 24,
+            },
+            {
+                "status_action": "acknowledge",
+                "note": "Acknowledged by technician.",
+                "priority": Decimal("60.00"),
+                "offset_hours": 8,
+            },
+            {
+                "status_action": "start",
+                "note": "Work in progress.",
+                "priority": Decimal("75.00"),
+                "offset_hours": 4,
+            },
+            {
+                "status_action": "block",
+                "note": "Waiting for parts (ETA 2 days).",
+                "priority": Decimal("80.00"),
+                "offset_hours": 3,
+                "follow_up": True,
+            },
+            {
+                "status_action": "complete",
+                "note": "Completed and tested.",
+                "priority": Decimal("70.00"),
+                "offset_hours": 2,
+            },
+            {
+                "status_action": "close",
+                "note": "Closed with documentation.",
+                "priority": Decimal("50.00"),
+                "offset_hours": 1,
+            },
         ]
 
         # Assign machines to different statuses (priority distribution)
@@ -1782,42 +1816,204 @@ class Command(BaseCommand):
         revenue_rows = [
             # Store C001 - high volume
             ("C001", base_date, Decimal("2450.00"), "Daily sales", "payment"),
-            ("C001", base_date + timedelta(days=1), Decimal("2680.00"), "Daily sales", "payment"),
-            ("C001", base_date + timedelta(days=2), Decimal("2390.00"), "Daily sales", "payment"),
-            ("C001", base_date + timedelta(days=3), Decimal("3120.00"), "Weekend sales boost", "payment"),
-            ("C001", base_date + timedelta(days=4), Decimal("2850.00"), "Daily sales", "payment"),
-            ("C001", base_date + timedelta(days=5), Decimal("85.50"), "Refund issued", "refund"),
+            (
+                "C001",
+                base_date + timedelta(days=1),
+                Decimal("2680.00"),
+                "Daily sales",
+                "payment",
+            ),
+            (
+                "C001",
+                base_date + timedelta(days=2),
+                Decimal("2390.00"),
+                "Daily sales",
+                "payment",
+            ),
+            (
+                "C001",
+                base_date + timedelta(days=3),
+                Decimal("3120.00"),
+                "Weekend sales boost",
+                "payment",
+            ),
+            (
+                "C001",
+                base_date + timedelta(days=4),
+                Decimal("2850.00"),
+                "Daily sales",
+                "payment",
+            ),
+            (
+                "C001",
+                base_date + timedelta(days=5),
+                Decimal("85.50"),
+                "Refund issued",
+                "refund",
+            ),
             # Store C002 - moderate volume
             ("C002", base_date, Decimal("1240.00"), "Daily sales", "payment"),
-            ("C002", base_date + timedelta(days=2), Decimal("1380.00"), "Daily sales", "payment"),
-            ("C002", base_date + timedelta(days=3), Decimal("1650.00"), "Weekend peak", "payment"),
-            ("C002", base_date + timedelta(days=4), Decimal("1290.00"), "Daily sales", "payment"),
-            ("C002", base_date + timedelta(days=6), Decimal("42.00"), "Partial refund", "refund"),
+            (
+                "C002",
+                base_date + timedelta(days=2),
+                Decimal("1380.00"),
+                "Daily sales",
+                "payment",
+            ),
+            (
+                "C002",
+                base_date + timedelta(days=3),
+                Decimal("1650.00"),
+                "Weekend peak",
+                "payment",
+            ),
+            (
+                "C002",
+                base_date + timedelta(days=4),
+                Decimal("1290.00"),
+                "Daily sales",
+                "payment",
+            ),
+            (
+                "C002",
+                base_date + timedelta(days=6),
+                Decimal("42.00"),
+                "Partial refund",
+                "refund",
+            ),
             # Store C009 (SLC Downtown) - high volume
-            ("C009", base_date + timedelta(days=1), Decimal("3200.00"), "High foot traffic", "payment"),
-            ("C009", base_date + timedelta(days=2), Decimal("2950.00"), "Daily sales", "payment"),
-            ("C009", base_date + timedelta(days=3), Decimal("3450.00"), "Weekend surge", "payment"),
-            ("C009", base_date + timedelta(days=5), Decimal("2800.00"), "Daily sales", "payment"),
-            ("C009", base_date + timedelta(days=7), Decimal("125.00"), "Multiple refunds", "refund"),
+            (
+                "C009",
+                base_date + timedelta(days=1),
+                Decimal("3200.00"),
+                "High foot traffic",
+                "payment",
+            ),
+            (
+                "C009",
+                base_date + timedelta(days=2),
+                Decimal("2950.00"),
+                "Daily sales",
+                "payment",
+            ),
+            (
+                "C009",
+                base_date + timedelta(days=3),
+                Decimal("3450.00"),
+                "Weekend surge",
+                "payment",
+            ),
+            (
+                "C009",
+                base_date + timedelta(days=5),
+                Decimal("2800.00"),
+                "Daily sales",
+                "payment",
+            ),
+            (
+                "C009",
+                base_date + timedelta(days=7),
+                Decimal("125.00"),
+                "Multiple refunds",
+                "refund",
+            ),
             # Store F001 - new location ramp-up
             ("F001", base_date, Decimal("890.00"), "New store opening week", "payment"),
-            ("F001", base_date + timedelta(days=1), Decimal("950.00"), "Opening week", "payment"),
-            ("F001", base_date + timedelta(days=3), Decimal("1200.00"), "Growing sales", "payment"),
-            ("F001", base_date + timedelta(days=5), Decimal("1350.00"), "Momentum building", "payment"),
-            ("F001", base_date + timedelta(days=7), Decimal("1520.00"), "Stable revenue", "payment"),
+            (
+                "F001",
+                base_date + timedelta(days=1),
+                Decimal("950.00"),
+                "Opening week",
+                "payment",
+            ),
+            (
+                "F001",
+                base_date + timedelta(days=3),
+                Decimal("1200.00"),
+                "Growing sales",
+                "payment",
+            ),
+            (
+                "F001",
+                base_date + timedelta(days=5),
+                Decimal("1350.00"),
+                "Momentum building",
+                "payment",
+            ),
+            (
+                "F001",
+                base_date + timedelta(days=7),
+                Decimal("1520.00"),
+                "Stable revenue",
+                "payment",
+            ),
             # Store E001 - mid-market
-            ("E001", base_date + timedelta(days=2), Decimal("1650.00"), "Daily sales", "payment"),
-            ("E001", base_date + timedelta(days=4), Decimal("1720.00"), "Daily sales", "payment"),
-            ("E001", base_date + timedelta(days=6), Decimal("1890.00"), "Midweek peak", "payment"),
-            ("E001", base_date + timedelta(days=8), Decimal("50.00"), "Disputed charge refund", "refund"),
+            (
+                "E001",
+                base_date + timedelta(days=2),
+                Decimal("1650.00"),
+                "Daily sales",
+                "payment",
+            ),
+            (
+                "E001",
+                base_date + timedelta(days=4),
+                Decimal("1720.00"),
+                "Daily sales",
+                "payment",
+            ),
+            (
+                "E001",
+                base_date + timedelta(days=6),
+                Decimal("1890.00"),
+                "Midweek peak",
+                "payment",
+            ),
+            (
+                "E001",
+                base_date + timedelta(days=8),
+                Decimal("50.00"),
+                "Disputed charge refund",
+                "refund",
+            ),
             # Store D001 - moderate
-            ("D001", base_date + timedelta(days=1), Decimal("1340.00"), "Daily sales", "payment"),
-            ("D001", base_date + timedelta(days=3), Decimal("1480.00"), "Daily sales", "payment"),
-            ("D001", base_date + timedelta(days=5), Decimal("1560.00"), "Friday boost", "payment"),
-            ("D001", base_date + timedelta(days=7), Decimal("1420.00"), "Daily sales", "payment"),
+            (
+                "D001",
+                base_date + timedelta(days=1),
+                Decimal("1340.00"),
+                "Daily sales",
+                "payment",
+            ),
+            (
+                "D001",
+                base_date + timedelta(days=3),
+                Decimal("1480.00"),
+                "Daily sales",
+                "payment",
+            ),
+            (
+                "D001",
+                base_date + timedelta(days=5),
+                Decimal("1560.00"),
+                "Friday boost",
+                "payment",
+            ),
+            (
+                "D001",
+                base_date + timedelta(days=7),
+                Decimal("1420.00"),
+                "Daily sales",
+                "payment",
+            ),
         ]
 
-        for store_code, entry_date, gross_amount, description, entry_type in revenue_rows:
+        for (
+            store_code,
+            entry_date,
+            gross_amount,
+            description,
+            entry_type,
+        ) in revenue_rows:
             if store_code not in stores:
                 continue
 
