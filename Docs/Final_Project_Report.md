@@ -99,21 +99,28 @@ Overall, this sprint helped solidify the technical details of our system and gav
 
 ---
 
-## Sprint 4: Development Phase 2 [Dates]
+## Sprint 4: Development Phase 2 [3/23/26 - 4/26/26]
 
 ### Sprint Summary
-[High-level overview of remaining features, optimization, refactoring, and bug fixes]
+Sprint 4 was focused on completing all development as well as preparing for testing. The team was split into groups based on their availability during each week and were given a set of tasks to complete at given times. The beginning of the spring was dedicated to repo, config, and structure changes. Once that had been completed we are able to start working on all of the features that were needing to be completed. We focused on finishing all features and development then moved on to our preparation for the testing sprint. We finished the sprint by preparing for our last show and tell.
 
 ### Tasks & Assignments
 
 | Task | Owner(s) | Status | Work Type |
 |------|----------|--------|-----------|
-| [Task name] | [Team member(s)] | Complete/In-Progress | Design/Code/Docs/Debug/Prototype |
-| [Task name] | [Team member(s)] | Complete/In-Progress | Design/Code/Docs/Debug/Prototype |
-| [Task name] | [Team member(s)] | Complete/In-Progress | Design/Code/Docs/Debug/Prototype |
+| Repo, config, structure changes  | Gabe, Curt, and Brock | Complete | Design/Code |
+| Orders and checkout, payment orchestration, supply hubs and transfers | Braxton and Matthew | Complete | Code |
+| Dashboard and analitics and reporting | Brock and Peyton | Complete | Code |
+| UI Changes | Braxton, Brock, and Gabe | Complete | Code |
+| Functionality check | Peyton and Matthew | Complete | Code/Prototype |
+| AI integration | Matthew, Gabe, and Peyton | Complete | Code |
+| Cloud implementation | Gabe | Complete | Design/Code/Debug |
+| Test Document | Curt | Complete | Docs |
+| Show and tell prep | Braxton, Curt, Brock, and Gabe | Complete | Presentation |
+| Full app pass through | Braxton, Brock, and Gabe | Complete | Debug/Presentation |
 
 ### Reflections
-[Key learnings, blockers overcome, decisions made, direction confirmed/adjusted]
+The biggest challenge for sprint 4 was the repo, config, and structure changes that were needed at the start in order for everyone else to start working on their tasks.This took a lot more time and work than I was originally thinking. We were able to overcome that, allowing others to work on their parts. For this sprint I learned a lot about the importance of organization. I tried to organize tasks and groups as well as possible to take advantage of the time given. I found that this helped us and made us a lot more productive. I also had to be very adaptable because a lot of our tasks were delayed due to things breaking or other impediments. It was very important to be flexible to these changes and be willing to adjust the plan. Our communication was a good this sprint, but I would have still liked to improve that a little bit more. I feel that it is very helpful for each person to know how the others are doing on their tasks and to stay updated daily if possible. 
 
 ---
 
