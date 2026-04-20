@@ -37,23 +37,34 @@ The largest early blocker was environment setup and dependency friction while br
 
 ---
 
-## Sprint 1: High Level Design Documentation [Dates]
+## Sprint 1: High Level Design Documentation [January 26 - February 17, 2026]
 
 ### Sprint Summary
 
-[High-level overview of architecture design, system components, and design documentation]
+Sprint 1 focused on completing the High-Level Design document and establishing the overall structure of the CodePop system. During this sprint, the team broke the document into major sections covering architecture, modules and components, data design, integration points, user interface design, input and output, security, testing strategy, and risks. As sprint lead, I helped organize the document, assign work across the team, and make sure the major architectural sections stayed consistent with each other. In addition to documentation, the team also created a sample prototype to better visualize the system and support the presentation. By the end of the sprint, the High-Level Design document was completed and the team had a much clearer shared understanding of the system direction.
 
 ### Tasks & Assignments
 
-| Task        | Owner(s)         | Status               | Work Type                        |
-| ----------- | ---------------- | -------------------- | -------------------------------- |
-| [Task name] | [Team member(s)] | Complete/In-Progress | Design/Code/Docs/Debug/Prototype |
-| [Task name] | [Team member(s)] | Complete/In-Progress | Design/Code/Docs/Debug/Prototype |
-| [Task name] | [Team member(s)] | Complete/In-Progress | Design/Code/Docs/Debug/Prototype |
+| Task                                                                 | Owner(s)             | Status   | Work Type      |
+| -------------------------------------------------------------------- | -------------------- | -------- | -------------- |
+| Sprint coordination, section planning, and document organization     | Brock (Lead)         | Complete | Design/Docs    |
+| Introduction, System Overview, and Architectural Design              | Brock                | Complete | Docs/Design    |
+| Modules & Components (Internal Interfaces)                           | Gabriel, Peyton      | Complete | Docs/Design    |
+| Data Design                                                          | Gabriel, Peyton      | Complete | Docs/Design    |
+| Integration Points (External Interfaces)                             | Braxton, Matthew     | Complete | Docs/Design    |
+| User Interface Design Overview and Input/Output planning             | Braxton, Matthew     | Complete | Docs/Design    |
+| Security and Privacy, Testing Strategy, Risks and Mitigations        | Curt                 | Complete | Docs/Design    |
+| Shared Markdown collaboration file for team editing                  | Curt                 | Complete | Docs           |
+| Sample prototype creation and review                                 | Entire Team          | Complete | Prototype      |
+| Presentation preparation and prototype walkthrough practice          | Entire Team          | Complete | Docs/Prototype |
 
 ### Reflections
 
-[Key learnings, blockers overcome, decisions made, direction confirmed/adjusted]
+This sprint went well because we divided the High-Level Design document into clear sections early and gave each person ownership over a specific part of the work. That made the workload more manageable and helped the team stay productive throughout the sprint. One of the biggest strengths was having a shared document and consistent communication, which made collaboration smoother and reduced version confusion once everything was consolidated.
+
+A challenge we faced was keeping terminology, formatting, and architectural details consistent across sections, since different people were writing different parts at the same time. We also spent more time than expected cleaning up inconsistencies and aligning the final document before submission. Another smaller challenge was that some decisions, like branding and presentation details, took longer than expected because everyone had different opinions.
+
+Overall, Sprint 1 gave us a strong architectural foundation for the rest of the project. It helped the team move from broad ideas into a more organized system design, and it also showed us the importance of early delegation, shared documentation, and regular consistency checks before moving into lower-level design and implementation.
 
 ---
 
