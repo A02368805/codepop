@@ -45,18 +45,18 @@ Sprint 1 focused on completing the High-Level Design document and establishing t
 
 ### Tasks & Assignments
 
-| Task                                                                 | Owner(s)             | Status   | Work Type      |
-| -------------------------------------------------------------------- | -------------------- | -------- | -------------- |
-| Sprint coordination, section planning, and document organization     | Brock (Lead)         | Complete | Design/Docs    |
-| Introduction, System Overview, and Architectural Design              | Brock                | Complete | Docs/Design    |
-| Modules & Components (Internal Interfaces)                           | Gabriel, Peyton      | Complete | Docs/Design    |
-| Data Design                                                          | Gabriel, Peyton      | Complete | Docs/Design    |
-| Integration Points (External Interfaces)                             | Braxton, Matthew     | Complete | Docs/Design    |
-| User Interface Design Overview and Input/Output planning             | Braxton, Matthew     | Complete | Docs/Design    |
-| Security and Privacy, Testing Strategy, Risks and Mitigations        | Curt                 | Complete | Docs/Design    |
-| Shared Markdown collaboration file for team editing                  | Curt                 | Complete | Docs           |
-| Sample prototype creation and review                                 | Entire Team          | Complete | Prototype      |
-| Presentation preparation and prototype walkthrough practice          | Entire Team          | Complete | Docs/Prototype |
+| Task                                                             | Owner(s)         | Status   | Work Type      |
+| ---------------------------------------------------------------- | ---------------- | -------- | -------------- |
+| Sprint coordination, section planning, and document organization | Brock (Lead)     | Complete | Design/Docs    |
+| Introduction, System Overview, and Architectural Design          | Brock            | Complete | Docs/Design    |
+| Modules & Components (Internal Interfaces)                       | Gabriel, Peyton  | Complete | Docs/Design    |
+| Data Design                                                      | Gabriel, Peyton  | Complete | Docs/Design    |
+| Integration Points (External Interfaces)                         | Braxton, Matthew | Complete | Docs/Design    |
+| User Interface Design Overview and Input/Output planning         | Braxton, Matthew | Complete | Docs/Design    |
+| Security and Privacy, Testing Strategy, Risks and Mitigations    | Curt             | Complete | Docs/Design    |
+| Shared Markdown collaboration file for team editing              | Curt             | Complete | Docs           |
+| Sample prototype creation and review                             | Entire Team      | Complete | Prototype      |
+| Presentation preparation and prototype walkthrough practice      | Entire Team      | Complete | Docs/Prototype |
 
 ### Reflections
 
@@ -76,18 +76,18 @@ During this sprint, our team focused on completing the Low-Level Design (LLD) do
 
 ### Tasks & Assignments
 
-| Task                                                                                                                 | Owner(s)      | Status   | Work Type         |
-| -------------------------------------------------------------------------------------------------------------------- | ------------- | -------- | ----------------- |
-| Low-Level Design document organization & section distribution                                                        | Peyton (Lead) | Complete | Design            |
+| Task                                                                                                                    | Owner(s)      | Status   | Work Type         |
+| ----------------------------------------------------------------------------------------------------------------------- | ------------- | -------- | ----------------- |
+| Low-Level Design document organization & section distribution                                                           | Peyton (Lead) | Complete | Design            |
 | Section 1 – Introduction, Section 2 – System Architecture, Section 7.1 – Database Schema                             | Peyton        | Complete | Docs              |
 | Section 3 – User Management & Security, Section 9 – Security Considerations, Section 10 – Performance Considerations | Brock         | Complete | Docs              |
-| Section 4 – Order & Payment System Design, Stripe Integration, Push Notifications (FCM), Geolocation Services        | Matthew       | Complete | Docs              |
-| Section 5 – Supply Hub & Inventory Management, CSV Interface (Supply Usage)                                          | Gabe          | Complete | Docs              |
-| Section 6 – Machine Maintenance & Repair Scheduling, CSV Interface (Repair Schedules)                                | Braxton       | Complete | Docs              |
-| Synchronization Architecture, Conflict Resolution, Offline Handling, Data Integrity Rules, Testing Strategy          | Curt          | Complete | Docs              |
-| Price Calculator & Order functionality prototypes (individual implementations)                                       | All Members   | Complete | Prototype         |
-| Prototype evaluation and selection for demo                                                                          | Full Team     | Complete | Prototype         |
-| Presentation preparation, speaking roles, and rehearsal                                                              | Full Team     | Complete | Docs/Presentation |
+| Section 4 – Order & Payment System Design, Stripe Integration, Push Notifications (FCM), Geolocation Services          | Matthew       | Complete | Docs              |
+| Section 5 – Supply Hub & Inventory Management, CSV Interface (Supply Usage)                                            | Gabe          | Complete | Docs              |
+| Section 6 – Machine Maintenance & Repair Scheduling, CSV Interface (Repair Schedules)                                  | Braxton       | Complete | Docs              |
+| Synchronization Architecture, Conflict Resolution, Offline Handling, Data Integrity Rules, Testing Strategy             | Curt          | Complete | Docs              |
+| Price Calculator & Order functionality prototypes (individual implementations)                                          | All Members   | Complete | Prototype         |
+| Prototype evaluation and selection for demo                                                                             | Full Team     | Complete | Prototype         |
+| Presentation preparation, speaking roles, and rehearsal                                                                 | Full Team     | Complete | Docs/Presentation |
 
 ### Reflections
 
@@ -99,25 +99,42 @@ Overall, this sprint helped solidify the technical details of our system and gav
 
 ---
 
-## Sprint 3: Development Phase 1 [Dates]
+## Sprint 3: Development Phase 1 [March 2 – March 23, 2026]
 
 ### Sprint Summary
 
-[High-level overview of core features, backend/frontend implementation, and integration progress]
+Sprint 3 focused on laying the foundational infrastructure for the CodePop backend and beginning parallel development across all major system domains. The team set up project management tooling, established Django app skeletons and core data models, and divided development responsibilities across accounts/auth, orders/payments, inventory, and machine maintenance. Spring break (March 9–13) reduced the effective sprint length, so scope was trimmed to foundational model and infrastructure work. Near the end of the sprint, the team identified that the multi-app, parallel-AI-assisted development strategy was creating integration and complexity issues, and made the decision to restructure into sub-teams for Sprint 4.
 
 ### Tasks & Assignments
 
-| Task        | Owner(s)         | Status               | Work Type                        |
-| ----------- | ---------------- | -------------------- | -------------------------------- |
-| [Task name] | [Team member(s)] | Complete/In-Progress | Design/Code/Docs/Debug/Prototype |
-| [Task name] | [Team member(s)] | Complete/In-Progress | Design/Code/Docs/Debug/Prototype |
-| [Task name] | [Team member(s)] | Complete/In-Progress | Design/Code/Docs/Debug/Prototype |
+| Task                                                                                         | Owner(s)                         | Status   | Work Type   |
+| -------------------------------------------------------------------------------------------- | -------------------------------- | -------- | ----------- |
+| Monday.com workspace setup and task tracking configuration                                   | Gabriel                          | Complete | Design/Docs |
+| Django app skeleton creation (accounts, orders, inventory, maintenance, notifications, core) | Gabriel                          | Complete | Code        |
+| INSTALLED_APPS configuration and root urls.py setup                                          | Gabriel                          | Complete | Code        |
+| LLD diagram updates reflecting new architecture                                              | Gabriel                          | Complete | Design/Docs |
+| Store, Region, and SupplyHub model creation and migrations                                   | Curt                             | Complete | Code        |
+| Seed data management commands (stores, users, machines, inventory)                           | Curt                             | Complete | Code        |
+| Role field and UserProfile model definition (accounts/models.py)                             | Peyton                           | Complete | Code        |
+| Permission mixins and decorators scaffolded for each role                                    | Peyton                           | Complete | Code        |
+| Login, register, and logout views (in progress)                                              | Peyton                           | Partial  | Code        |
+| Inventory models (InventoryItem, SupplyTransfer, RestockAlert) and migrations                | Braxton                          | Complete | Code        |
+| Inventory CRUD views and serializers (in progress)                                           | Braxton                          | Partial  | Code        |
+| Machine, MachineStatusEvent, and RepairAssignment models and migrations                      | Brock                            | Complete | Code        |
+| Machine CRUD and status update views (in progress)                                           | Brock                            | Partial  | Code        |
+| New app strategy documentation and architecture redesign                                     | Brock                            | Complete | Design/Docs |
+| Order, Drink, and Revenue model migration to orders app                                      | Matthew                          | Complete | Code        |
+| Order and payment view migration to orders/views.py                                          | Matthew                          | Partial  | Code        |
+| Stripe PaymentIntent view migration (in progress)                                            | Matthew                          | Partial  | Code        |
+| Logistics dashboard prototype setup and show-and-tell preparation                            | Gabriel, Brock, Braxton, Matthew | Complete | Prototype   |
 
 ### Reflections
 
-[Key learnings, blockers overcome, decisions made, direction confirmed/adjusted]
+The sprint established all core data models and app structure across the system, with each team member owning a distinct domain. While approximately half of all tasks reached completion within the sprint window, the foundational model work was solid enough to unblock Sprint 4 development. The biggest lesson from this sprint was that splitting development across too many parallel AI-assisted workstreams caused the codebase to become fragmented and difficult to integrate — a challenge that led to a deliberate strategy shift toward smaller, higher-frequency sub-teams going into the next sprint.
 
 ---
+
+
 
 ## Sprint 4: Development Phase 2 [3/23/26 - 4/26/26]
 
