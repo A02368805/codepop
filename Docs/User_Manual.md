@@ -61,7 +61,7 @@ FloatStack serves seven user types:
 
 **No account needed.** Guests can order immediately.
 
-1. Go to `http://localhost:8000/`
+1. Go to the FloatStack website
 
    > ![FloatStack landing](diagrams/landing.png)
 
@@ -437,6 +437,7 @@ Track all your past and current orders:
 Transfer progress is shown in the **Transfer Queue** section of `/supply-hubs/` using status labels and action buttons.
 
 Transfer lifecycle:
+
 1. **Requested** — the transfer request has been submitted.
 2. **Approved** — the request has been approved.
 3. **Reserved** — inventory has been set aside at the source.
