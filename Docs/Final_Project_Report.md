@@ -2,16 +2,16 @@
 
 ## Team Members
 
-- **Curt** — [Role/Responsibilities]
-- **Gabriel** — [Role/Responsibilities]
-- **Brock** — [Role/Responsibilities]
-- **Braxton** — [Role/Responsibilities]
-- **Peyton** — [Role/Responsibilities]
-- **Matthew** — [Role/Responsibilities]
+- **Curt**
+- **Gabriel**
+- **Brock**
+- **Braxton**
+- **Peyton**
+- **Matthew**
 
 ---
 
-## Sprint 0: Requirements [Week of Jan 15]
+## Sprint 0: Requirements [January 26 - February 9, 2026]
 
 ### Sprint Summary
 
@@ -37,7 +37,7 @@ The largest early blocker was environment setup and dependency friction while br
 
 ---
 
-## Sprint 1: High Level Design Documentation [January 26 - February 17, 2026]
+## Sprint 1: High Level Design Documentation [February 9 - February 23, 2026]
 
 ### Sprint Summary
 
@@ -68,7 +68,7 @@ Overall, Sprint 1 gave us a strong architectural foundation for the rest of the 
 
 ---
 
-## Sprint 2: Low-Level Design Documentation [February 18th - March 2nd, 2026]
+## Sprint 2: Low-Level Design Documentation [February 23 - March 9, 2026]
 
 ### Sprint Summary
 
@@ -76,18 +76,18 @@ During this sprint, our team focused on completing the Low-Level Design (LLD) do
 
 ### Tasks & Assignments
 
-| Task                                                                                                                    | Owner(s)      | Status   | Work Type         |
-| ----------------------------------------------------------------------------------------------------------------------- | ------------- | -------- | ----------------- |
-| Low-Level Design document organization & section distribution                                                           | Peyton (Lead) | Complete | Design            |
+| Task                                                                                                                 | Owner(s)      | Status   | Work Type         |
+| -------------------------------------------------------------------------------------------------------------------- | ------------- | -------- | ----------------- |
+| Low-Level Design document organization & section distribution                                                        | Peyton (Lead) | Complete | Design            |
 | Section 1 – Introduction, Section 2 – System Architecture, Section 7.1 – Database Schema                             | Peyton        | Complete | Docs              |
 | Section 3 – User Management & Security, Section 9 – Security Considerations, Section 10 – Performance Considerations | Brock         | Complete | Docs              |
-| Section 4 – Order & Payment System Design, Stripe Integration, Push Notifications (FCM), Geolocation Services          | Matthew       | Complete | Docs              |
-| Section 5 – Supply Hub & Inventory Management, CSV Interface (Supply Usage)                                            | Gabe          | Complete | Docs              |
-| Section 6 – Machine Maintenance & Repair Scheduling, CSV Interface (Repair Schedules)                                  | Braxton       | Complete | Docs              |
-| Synchronization Architecture, Conflict Resolution, Offline Handling, Data Integrity Rules, Testing Strategy             | Curt          | Complete | Docs              |
-| Price Calculator & Order functionality prototypes (individual implementations)                                          | All Members   | Complete | Prototype         |
-| Prototype evaluation and selection for demo                                                                             | Full Team     | Complete | Prototype         |
-| Presentation preparation, speaking roles, and rehearsal                                                                 | Full Team     | Complete | Docs/Presentation |
+| Section 4 – Order & Payment System Design, Stripe Integration, Push Notifications (FCM), Geolocation Services        | Matthew       | Complete | Docs              |
+| Section 5 – Supply Hub & Inventory Management, CSV Interface (Supply Usage)                                          | Gabe          | Complete | Docs              |
+| Section 6 – Machine Maintenance & Repair Scheduling, CSV Interface (Repair Schedules)                                | Braxton       | Complete | Docs              |
+| Synchronization Architecture, Conflict Resolution, Offline Handling, Data Integrity Rules, Testing Strategy          | Curt          | Complete | Docs              |
+| Price Calculator & Order functionality prototypes (individual implementations)                                       | All Members   | Complete | Prototype         |
+| Prototype evaluation and selection for demo                                                                          | Full Team     | Complete | Prototype         |
+| Presentation preparation, speaking roles, and rehearsal                                                              | Full Team     | Complete | Docs/Presentation |
 
 ### Reflections
 
@@ -99,7 +99,7 @@ Overall, this sprint helped solidify the technical details of our system and gav
 
 ---
 
-## Sprint 3: Development Phase 1 [March 2 – March 23, 2026]
+## Sprint 3: Development Phase 1 [March 9 - March 23, 2026]
 
 ### Sprint Summary
 
@@ -134,9 +134,7 @@ The sprint established all core data models and app structure across the system,
 
 ---
 
-
-
-## Sprint 4: Development Phase 2 [3/23/26 - 4/26/26]
+## Sprint 4: Development Phase 2 [March 23 - April 6, 2026]
 
 ### Sprint Summary
 
@@ -163,7 +161,7 @@ The biggest challenge for sprint 4 was the repo, config, and structure changes t
 
 ---
 
-## Sprint 5: Testing
+## Sprint 5: Testing [April 6 - April 20, 2026]
 
 ### Sprint Summary
 
@@ -189,32 +187,9 @@ Splitting testing into distinct phases (reporting vs. fixing) helped maintain fo
 
 ## Final Deliverables
 
-### Core Documentation
-
-- **Requirements Document** — [Status] → See `RequirementsDoc_Rewritten.md`
-- **High-Level Design Document** — [Status] → See `CodePop_High_Level_Design_Rewritten.md`
-- **Low-Level Design Document** — [Status] → See `CodePop_Low_Level_Design_Rewritten.md`
-- **Test Design Report** — [Status] → See `Test_Design_Report_Draft_1.md`
-- **User Manual** — [Status] → See `User_Manual.md`
-- **Presentation Slides** — [Status] → [Link/Location]
-
-### Key Achievements
-
-- [Major feature completed]
-- [Critical decision resolved]
-- [Technical problem solved]
-- [Documentation milestone reached]
-
-### Lessons Learned
-
-- [Team insight or process improvement]
-- [Technical discovery]
-- [Collaboration practice that worked well]
-
----
-
-## Next Steps / Recommendations
-
-- [Item for future work]
-- [Suggestion for follow-up team]
-- [Technical debt or optimization opportunity]
+- **Requirements Document** — See `RequirementsDoc_Rewritten.md`
+- **High-Level Design Document** — See `CodePop_High_Level_Design_Rewritten.md`
+- **Low-Level Design Document** — See `CodePop_Low_Level_Design_Rewritten.md`
+- **Test Design Report** — See `Test_Design_Report_Draft_1.md`
+- **User Manual** — See `User_Manual.md`
+- **Presentation Slides** — https://docs.google.com/presentation/d/1UolMrpBiTPXKnRVRiRGFHRh3tRkCyGz_yr7OdU-5xqY/edit
